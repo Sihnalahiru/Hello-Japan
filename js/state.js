@@ -2,7 +2,7 @@ window.App = window.App || {};
 
 App.State = {
 
-    /**
+    /*
      * =========================================================
      * APPLICATION VIEW
      * =========================================================
@@ -11,25 +11,7 @@ App.State = {
     currentActiveView: "hero",
 
 
-    /**
-     * =========================================================
-     * API / WORKER STATE
-     *
-     * Gemini API key is handled by the Cloudflare Worker.
-     * Browser should not contain the real Gemini secret.
-     *
-     * Kept temporarily for compatibility with the existing
-     * apiModal.js until that module is removed.
-     * =========================================================
-     */
-
-    userApiKey:
-        localStorage.getItem(
-            "SUHADA_GEMINI_API_KEY"
-        ) || "",
-
-
-    /**
+    /*
      * =========================================================
      * CAMERA STATE
      * =========================================================
@@ -46,7 +28,7 @@ App.State = {
     currentArJapanese: "",
 
 
-    /**
+    /*
      * =========================================================
      * VOICE CONTEXT
      * =========================================================
@@ -57,7 +39,7 @@ App.State = {
     activeSpeakerLang: "ja-JP",
 
 
-    /**
+    /*
      * =========================================================
      * VOICE STATE MACHINE
      * =========================================================
@@ -79,21 +61,31 @@ App.State = {
 
     currentVoiceState: "IDLE",
 
+
+    /*
+     * =========================================================
+     * HANDS-FREE LISTENING
+     * =========================================================
+     *
+     * true  = assistant should continue listening
+     * false = user deliberately stopped it
+     */
+
     isContinuousListening: false,
 
 
-    /**
+    /*
      * =========================================================
-     * VOICE RACE-CONDITION TRACKER
+     * VOICE REQUEST RACE PROTECTION
      * =========================================================
      */
 
     voiceRequestId: 0,
 
 
-    /**
+    /*
      * =========================================================
-     * VOICE DEBOUNCE
+     * DUPLICATE TRANSCRIPT PROTECTION
      * =========================================================
      */
 
@@ -102,16 +94,20 @@ App.State = {
     lastTranscriptTime: 0,
 
 
-    /**
+    /*
      * =========================================================
-     * VOICE RESPONSE STATE
-     *
-     * These are intentionally empty.
-     * No hard-coded/demo conversation.
+     * CURRENT VOICE TRANSCRIPT
      * =========================================================
      */
 
     currentVoiceTranscript: "",
+
+
+    /*
+     * =========================================================
+     * CURRENT AI RESPONSE
+     * =========================================================
+     */
 
     currentVoiceJapanese: "",
 
@@ -123,15 +119,22 @@ App.State = {
 
     currentVoiceResponse: "",
 
+
+    /*
+     * =========================================================
+     * AI SUGGESTED REPLIES
+     * =========================================================
+     */
+
     currentVoiceSuggestions: [],
 
 
-    /**
+    /*
      * =========================================================
-     * CAMERA RESULT STATE
+     * CAMERA / VISION RESULT
+     * =========================================================
      *
-     * Empty until Gemini Vision returns a real result.
-     * =========================================================
+     * Empty until a real Gemini Vision scan succeeds.
      */
 
     currentCameraResult: {
