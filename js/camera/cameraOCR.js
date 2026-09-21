@@ -1,18 +1,18 @@
 window.App = window.App || {};
 
 App.CameraOCR = {
-
     isScanning: false,
-
     scanRequestId: 0,
 
-
     async scanFrame() {
+        if (this.isScanning) return;
 
-        if (this.isScanning) {
+        if (
+            App.State.currentActiveView !==
+            "camera"
+        ) {
             return;
         }
-
 
         const video =
             document.getElementById(
@@ -24,16 +24,12 @@ App.CameraOCR = {
                 "snapshot-canvas"
             );
 
-
         if (!video || !canvas) {
-
             this.showStatus(
-                "Camera elements are unavailable."
+                "Camera elements are missing."
             );
-
             return;
         }
-
 
         if (
             !video.srcObject ||
@@ -41,105 +37,71 @@ App.CameraOCR = {
             video.videoWidth <= 0 ||
             video.videoHeight <= 0
         ) {
-
             this.showStatus(
-                "Camera is not ready. Please wait a moment."
+                "📷 Camera is not ready yet."
             );
-
             return;
         }
-
 
         const requestId =
             ++this.scanRequestId;
 
-
-        this.isScanning =
-            true;
-
+        this.isScanning = true;
 
         const button =
             document.getElementById(
                 "camera-scan-button"
             );
 
-
         if (button) {
-            button.disabled =
-                true;
-
-            button.style.opacity =
-                "0.55";
+            button.disabled = true;
+            button.style.opacity = "0.55";
         }
-
 
         this.showStatus(
             "🔍 Scanning Japanese text..."
         );
 
-
         try {
-
             let width =
                 video.videoWidth;
 
             let height =
                 video.videoHeight;
 
-
-            const maxDimension =
+            const max =
                 App.Config?.MAX_IMAGE_DIMENSION ||
                 1280;
 
-
             if (
-                width >
-                    maxDimension ||
-                height >
-                    maxDimension
+                width > max ||
+                height > max
             ) {
-
-                if (
-                    width >= height
-                ) {
-
+                if (width >= height) {
                     height =
                         Math.round(
-                            (
-                                height *
-                                maxDimension
-                            ) /
+                            height *
+                            max /
                             width
                         );
 
-                    width =
-                        maxDimension;
-
+                    width = max;
                 } else {
-
                     width =
                         Math.round(
-                            (
-                                width *
-                                maxDimension
-                            ) /
+                            width *
+                            max /
                             height
                         );
 
-                    height =
-                        maxDimension;
+                    height = max;
                 }
             }
 
+            canvas.width = width;
+            canvas.height = height;
 
-            canvas.width =
-                width;
-
-            canvas.height =
-                height;
-
-
-            const context =
+            const ctx =
                 canvas.getContext(
                     "2d",
                     {
@@ -147,15 +109,13 @@ App.CameraOCR = {
                     }
                 );
 
-
-            if (!context) {
+            if (!ctx) {
                 throw new Error(
                     "CANVAS_CONTEXT_UNAVAILABLE"
                 );
             }
 
-
-            context.drawImage(
+            ctx.drawImage(
                 video,
                 0,
                 0,
@@ -163,133 +123,91 @@ App.CameraOCR = {
                 height
             );
 
-
-            const imageData =
+            const image =
                 canvas.toDataURL(
                     "image/jpeg",
                     0.82
                 );
 
+            const base64 =
+                image.split(",")[1];
 
-            const base64Data =
-                imageData.split(",")[1];
-
-
-            if (!base64Data) {
+            if (!base64) {
                 throw new Error(
                     "IMAGE_CAPTURE_FAILED"
                 );
             }
 
-
-            const prompt =
-                App.Prompts?.getVisionPrompt?.();
-
-
-            if (!prompt) {
-                throw new Error(
-                    "VISION_PROMPT_UNAVAILABLE"
-                );
-            }
-
-
             const result =
                 await App.Gemini.callContent(
-
                     {
                         contents: [
                             {
                                 parts: [
-
                                     {
-                                        text: prompt
+                                        text:
+                                            App.Prompts.getVisionPrompt()
                                     },
-
                                     {
                                         inlineData: {
                                             mimeType:
                                                 "image/jpeg",
-
                                             data:
-                                                base64Data
+                                                base64
                                         }
                                     }
-
                                 ]
                             }
                         ]
                     },
-
                     App.Config?.OCR_TIMEOUT_MS ||
-                    18000,
-
-                    App.Schemas?.VISION_RESPONSE_SCHEMA ||
-                    null
+                        18000,
+                    App.Schemas
+                        ?.VISION_RESPONSE_SCHEMA
                 );
-
 
             if (
                 requestId !==
-                this.scanRequestId
+                    this.scanRequestId ||
+                App.State.currentActiveView !==
+                    "camera"
             ) {
                 return;
             }
-
 
             const validated =
                 this.validateResult(
                     result
                 );
 
-
             if (!validated) {
-
                 throw new Error(
                     "INVALID_VISION_RESULT"
                 );
             }
 
+            App.CameraRenderer
+                ?.displayCard?.(
+                    validated,
+                    false
+                );
 
-            App.CameraRenderer?.displayCard?.(
-                validated,
-                false
-            );
-
-
-            if (
+            this.showStatus(
                 validated.japanese
-            ) {
-
-                this.showStatus(
-                    "✅ Japanese text detected."
-                );
-
-            } else {
-
-                this.showStatus(
-                    "No readable Japanese text detected."
-                );
-            }
-
-
-            setTimeout(
-                () => {
-
-                    if (
-                        requestId ===
-                        this.scanRequestId
-                    ) {
-
-                        this.hideStatus();
-                    }
-
-                },
-                1800
+                    ? "✅ Japanese text detected."
+                    : "No readable Japanese text detected."
             );
 
+            setTimeout(() => {
+                if (
+                    requestId ===
+                    this.scanRequestId
+                ) {
+                    this.hideStatus();
+                }
+            }, 1800);
 
         } catch (error) {
-
             if (
                 requestId !==
                 this.scanRequestId
@@ -297,60 +215,45 @@ App.CameraOCR = {
                 return;
             }
 
-
             console.error(
-                "Camera OCR error:",
+                "Camera OCR:",
                 error
             );
-
 
             const code =
                 error?.message ||
                 "UNKNOWN_ERROR";
 
-
             if (code === "TIMEOUT") {
-
                 this.showStatus(
-                    "⏱️ Vision AI timed out. Try again."
+                    "⏱️ Vision AI timed out."
                 );
-
             } else if (
                 code === "RATE_LIMIT"
             ) {
-
                 this.showStatus(
-                    "⚠️ AI limit reached. Try again shortly."
+                    "⚠️ AI limit reached."
                 );
-
             } else if (
                 code === "BAD_REQUEST"
             ) {
-
                 this.showStatus(
-                    "⚠️ Vision request was rejected."
+                    "⚠️ Vision request rejected."
                 );
-
             } else {
-
                 this.showStatus(
-                    "❌ Camera scan failed. Try again."
+                    "❌ Camera scan failed."
                 );
             }
 
         } finally {
-
             if (
                 requestId ===
                 this.scanRequestId
             ) {
-
-                this.isScanning =
-                    false;
-
+                this.isScanning = false;
 
                 if (button) {
-
                     button.disabled =
                         false;
 
@@ -361,9 +264,7 @@ App.CameraOCR = {
         }
     },
 
-
     validateResult(data) {
-
         if (
             !data ||
             typeof data !== "object" ||
@@ -372,86 +273,64 @@ App.CameraOCR = {
             return null;
         }
 
-
         return {
-
             japanese:
-                typeof data.japanese === "string"
+                typeof data.japanese ===
+                "string"
                     ? data.japanese.trim()
                     : "",
 
             romaji:
-                typeof data.romaji === "string"
+                typeof data.romaji ===
+                "string"
                     ? data.romaji.trim()
                     : "",
 
             sinhala:
-                typeof data.sinhala === "string"
+                typeof data.sinhala ===
+                "string"
                     ? data.sinhala.trim()
                     : "",
 
             english:
-                typeof data.english === "string"
+                typeof data.english ===
+                "string"
                     ? data.english.trim()
                     : "",
 
             guide:
-                typeof data.guide === "string"
+                typeof data.guide ===
+                "string"
                     ? data.guide.trim()
                     : ""
         };
     },
 
-
     cancel() {
-
         ++this.scanRequestId;
 
-        this.isScanning =
-            false;
-
+        this.isScanning = false;
 
         const button =
             document.getElementById(
                 "camera-scan-button"
             );
 
-
         if (button) {
-
-            button.disabled =
-                false;
-
-            button.style.opacity =
-                "";
+            button.disabled = false;
+            button.style.opacity = "";
         }
     },
-
 
     showStatus(message) {
-
-        if (
-            App.CameraEngine &&
-            typeof App.CameraEngine.showStatus ===
-                "function"
-        ) {
-
-            App.CameraEngine.showStatus(
+        App.CameraEngine
+            ?.showStatus?.(
                 message
             );
-
-            return;
-        }
-
-
-        App.Toast?.show?.(
-            message
-        );
     },
 
-
     hideStatus() {
-
-        App.CameraEngine?.hideStatus?.();
+        App.CameraEngine
+            ?.hideStatus?.();
     }
 };
