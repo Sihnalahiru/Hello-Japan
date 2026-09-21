@@ -7,141 +7,126 @@ App.Navigation = {
         const previousView =
             App.State.currentActiveView;
 
+
+        if (
+            previousView === viewName
+        ) {
+
+            /*
+             * Avoid repeatedly starting camera/voice.
+             */
+            return;
+        }
+
+
         App.State.currentActiveView =
             viewName;
 
+
         /*
-         * Stop previous camera immediately
-         * when leaving camera view.
+         * STOP CAMERA
          */
+
         if (
             previousView === "camera" &&
             viewName !== "camera"
         ) {
-            if (
-                App.CameraEngine &&
-                typeof App.CameraEngine.stop === "function"
-            ) {
-                App.CameraEngine.stop();
-            }
+
+            App.CameraEngine?.stop?.(false);
         }
 
+
         /*
-         * Stop previous voice session immediately
-         * when leaving voice view.
+         * STOP VOICE
          */
+
         if (
             previousView === "voice" &&
             viewName !== "voice"
         ) {
-            if (
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.stop === "function"
-            ) {
-                App.VoiceEngine.stop();
-            }
+
+            App.VoiceEngine?.stop?.();
         }
 
+
         /*
-         * Hide all screens.
+         * HIDE ALL SCREENS
          */
+
         document
             .querySelectorAll(".screen-view")
             .forEach(view => {
-                view.classList.remove("active");
+
+                view.classList.remove(
+                    "active"
+                );
             });
 
+
         /*
-         * Activate requested screen.
+         * SHOW TARGET
          */
+
         const target =
             document.getElementById(
                 `view-${viewName}`
             );
 
+
         if (target) {
-            target.classList.add("active");
+
+            target.classList.add(
+                "active"
+            );
         }
 
+
         /*
-         * Update bottom navigation buttons.
+         * BOTTOM NAV
          */
+
         document
             .querySelectorAll(".nav-icon-btn")
             .forEach(button => {
 
-                const isActive =
-                    button.dataset.nav === viewName;
+                const active =
+                    button.dataset.nav ===
+                    viewName;
 
-                if (isActive) {
 
-                    button.classList.add(
-                        "text-emerald-700"
-                    );
+                button.classList.toggle(
+                    "text-emerald-700",
+                    active
+                );
 
-                    button.classList.remove(
-                        "text-gray-400"
-                    );
 
-                } else {
-
-                    button.classList.remove(
-                        "text-emerald-700"
-                    );
-
-                    button.classList.add(
-                        "text-gray-400"
-                    );
-                }
+                button.classList.toggle(
+                    "text-gray-400",
+                    !active
+                );
             });
 
+
         /*
-         * CAMERA VIEW
+         * CAMERA
          */
+
         if (viewName === "camera") {
 
-            /*
-             * Clear previous AI result before
-             * starting a fresh camera session.
-             */
-            if (
-                App.CameraRenderer &&
-                typeof App.CameraRenderer.clearCard ===
-                    "function"
-            ) {
-                App.CameraRenderer.clearCard();
-            }
+            App.CameraRenderer?.clearCard?.();
 
-            if (
-                App.CameraEngine &&
-                typeof App.CameraEngine.init ===
-                    "function"
-            ) {
-                App.CameraEngine.init();
-            }
-
+            App.CameraEngine?.init?.();
         }
 
+
         /*
-         * VOICE VIEW
+         * VOICE
          */
+
         if (viewName === "voice") {
 
-            if (
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.start ===
-                    "function"
-            ) {
-                App.VoiceEngine.start();
-            }
-
+            App.VoiceEngine?.start?.();
         }
-
-        /*
-         * If switching to any other screen,
-         * camera and voice are already stopped
-         * above when applicable.
-         */
     },
 
 
@@ -149,6 +134,7 @@ App.Navigation = {
 
         const now =
             new Date();
+
 
         const timeStr =
             now.toLocaleTimeString(
@@ -160,12 +146,15 @@ App.Navigation = {
                 }
             );
 
+
         const clock =
             document.getElementById(
                 "hero-clock"
             );
 
+
         if (clock) {
+
             clock.textContent =
                 timeStr;
         }
