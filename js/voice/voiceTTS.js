@@ -10,23 +10,23 @@ App.VoiceTTS = {
 
     voicesReady: false,
 
+    resumeVoiceAfterSpeech: false,
+
 
     init() {
 
-        if (!("speechSynthesis" in window)) {
+        if (
+            !("speechSynthesis" in window)
+        ) {
             return false;
         }
 
-
         this.loadVoices();
-
 
         window.speechSynthesis.onvoiceschanged =
             () => {
-
                 this.loadVoices();
             };
-
 
         return true;
     },
@@ -34,71 +34,54 @@ App.VoiceTTS = {
 
     loadVoices() {
 
-        if (!("speechSynthesis" in window)) {
+        if (
+            !("speechSynthesis" in window)
+        ) {
             return;
         }
-
 
         const voices =
             window.speechSynthesis.getVoices();
 
-
         if (
             !Array.isArray(voices) ||
-            voices.length === 0
+            !voices.length
         ) {
-
             return;
         }
-
 
         this.voiceCache =
             voices.slice();
 
-        this.voicesReady =
-            true;
+        this.voicesReady = true;
     },
 
 
     findJapaneseVoice() {
 
-        if (
-            !this.voiceCache ||
-            this.voiceCache.length === 0
-        ) {
-
+        if (!this.voiceCache.length) {
             this.loadVoices();
         }
 
-
-        const voices =
-            this.voiceCache || [];
-
-
-        if (!voices.length) {
-            return null;
-        }
-
-
         const exact =
-            voices.find(voice => {
+            this.voiceCache.find(
+                voice => {
 
-                const lang =
-                    String(voice.lang || "")
-                        .toLowerCase()
-                        .replace("_", "-");
+                    const lang =
+                        String(voice.lang || "")
+                            .toLowerCase()
+                            .replace("_", "-");
 
-                return lang === "ja-jp";
-            });
-
+                    return lang === "ja-jp";
+                }
+            );
 
         if (exact) {
             return exact;
         }
 
-
-        return (
-            voices.find(voice => {
+        return this.voiceCache.find(
+            voice => {
 
                 const lang =
                     String(voice.lang || "")
@@ -106,16 +89,10 @@ App.VoiceTTS = {
                         .replace("_", "-");
 
                 return lang.startsWith("ja");
-            }) || null
-        );
+            }
+        ) || null;
     },
 
-
-    /*
-     * =========================================================
-     * SPEAK
-     * =========================================================
-     */
 
     speakText(text, options = {}) {
 
@@ -123,12 +100,12 @@ App.VoiceTTS = {
             typeof text !== "string" ||
             !text.trim()
         ) {
-
             return false;
         }
 
-
-        if (!("speechSynthesis" in window)) {
+        if (
+            !("speechSynthesis" in window)
+        ) {
 
             App.Toast?.show?.(
                 "Japanese speech is not supported by this browser."
@@ -143,26 +120,9 @@ App.VoiceTTS = {
 
 
         /*
-         * Cancel previous TTS.
+         * Pause recognition.
+         * DO NOT stop the entire voice assistant.
          */
-
-        try {
-
-            window.speechSynthesis.cancel();
-
-        } catch (error) {
-
-            console.warn(
-                "Speech cancel notice:",
-                error
-            );
-        }
-
-
-        /*
-         * Pause microphone BEFORE speaking.
-         */
-
         if (
             App.VoiceEngine &&
             App.State?.isContinuousListening &&
@@ -170,8 +130,15 @@ App.VoiceTTS = {
                 "function"
         ) {
 
+            this.resumeVoiceAfterSpeech = true;
+
             App.VoiceEngine.pauseForSpeech();
         }
+
+
+        try {
+            window.speechSynthesis.cancel();
+        } catch {}
 
 
         this.loadVoices();
@@ -190,40 +157,31 @@ App.VoiceTTS = {
         const japaneseVoice =
             this.findJapaneseVoice();
 
-
         if (japaneseVoice) {
-
             utterance.voice =
                 japaneseVoice;
         }
 
 
-        const rate =
-            Number.isFinite(options.rate)
-                ? options.rate
-                : 0.92;
-
-
         utterance.rate =
-            Math.min(
-                1.2,
-                Math.max(
-                    0.6,
-                    rate
+            Number.isFinite(options.rate)
+                ? Math.min(
+                    1.2,
+                    Math.max(0.6, options.rate)
                 )
-            );
+                : 0.9;
 
 
         utterance.pitch =
             Number.isFinite(options.pitch)
                 ? options.pitch
-                : 1.0;
+                : 1;
 
 
         utterance.volume =
             Number.isFinite(options.volume)
                 ? options.volume
-                : 1.0;
+                : 1;
 
 
         this.currentUtterance =
@@ -233,57 +191,71 @@ App.VoiceTTS = {
             true;
 
 
-        utterance.onstart = () => {
+        utterance.onstart =
+            () => {
 
-            this.isSpeaking =
-                true;
+                this.isSpeaking =
+                    true;
 
-
-            App.VoiceRenderer?.updateMicVisuals?.(
-                false
-            );
-        };
-
-
-        utterance.onend = () => {
-
-            this.isSpeaking =
-                false;
-
-            this.currentUtterance =
-                null;
+                App.VoiceRenderer
+                    ?.updateMicVisuals
+                    ?.(
+                        false
+                    );
+            };
 
 
-            /*
-             * Resume microphone after AI speech.
-             */
+        utterance.onend =
+            () => {
 
-            App.VoiceEngine?.resumeAfterSpeech?.();
-        };
+                this.isSpeaking =
+                    false;
 
-
-        utterance.onerror = event => {
-
-            this.isSpeaking =
-                false;
-
-            this.currentUtterance =
-                null;
+                this.currentUtterance =
+                    null;
 
 
-            console.warn(
-                "Speech synthesis error:",
-                event?.error || "unknown"
-            );
+                if (
+                    this.resumeVoiceAfterSpeech
+                ) {
+
+                    this.resumeVoiceAfterSpeech =
+                        false;
+
+                    App.VoiceEngine
+                        ?.resumeAfterSpeech
+                        ?.();
+                }
+            };
 
 
-            /*
-             * Even after TTS error,
-             * resume voice conversation.
-             */
+        utterance.onerror =
+            event => {
 
-            App.VoiceEngine?.resumeAfterSpeech?.();
-        };
+                console.warn(
+                    "TTS error:",
+                    event?.error
+                );
+
+                this.isSpeaking =
+                    false;
+
+                this.currentUtterance =
+                    null;
+
+
+                if (
+                    this.resumeVoiceAfterSpeech
+                ) {
+
+                    this.resumeVoiceAfterSpeech =
+                        false;
+
+                    App.VoiceEngine
+                        ?.resumeAfterSpeech
+                        ?.();
+                }
+            };
 
 
         try {
@@ -296,31 +268,52 @@ App.VoiceTTS = {
 
         } catch (error) {
 
+            console.error(
+                "TTS start error:",
+                error
+            );
+
             this.isSpeaking =
                 false;
 
             this.currentUtterance =
                 null;
 
-
-            console.error(
-                "Speech synthesis start failed:",
-                error
-            );
-
-
-            App.VoiceEngine?.resumeAfterSpeech?.();
-
             return false;
         }
     },
 
 
-    /*
-     * =========================================================
-     * MANUAL STOP
-     * =========================================================
-     */
+    speakCurrentDetected() {
+
+        const text =
+            App.State.currentVoiceJapanese ||
+            App.State.currentVoiceTranscript;
+
+        if (!text) {
+            return;
+        }
+
+        this.speakText(
+            text
+        );
+    },
+
+
+    speakReplyOption(japaneseText) {
+
+        if (
+            typeof japaneseText !== "string" ||
+            !japaneseText.trim()
+        ) {
+            return;
+        }
+
+        this.speakText(
+            japaneseText
+        );
+    },
+
 
     stop() {
 
@@ -330,117 +323,17 @@ App.VoiceTTS = {
         this.currentUtterance =
             null;
 
+        this.resumeVoiceAfterSpeech =
+            false;
 
-        if ("speechSynthesis" in window) {
+
+        if (
+            "speechSynthesis" in window
+        ) {
 
             try {
-
                 window.speechSynthesis.cancel();
-
-            } catch (error) {
-
-                console.warn(
-                    "Speech stop notice:",
-                    error
-                );
-            }
+            } catch {}
         }
-    },
-
-
-    /*
-     * =========================================================
-     * SPEAK CURRENT DETECTED
-     * =========================================================
-     */
-
-    speakCurrentDetected() {
-
-        const element =
-            document.getElementById(
-                "detected-japanese"
-            );
-
-
-        if (!element) {
-
-            App.Toast?.show?.(
-                "No detected Japanese text."
-            );
-
-            return false;
-        }
-
-
-        const japanese =
-            element.textContent?.trim() || "";
-
-
-        if (
-            !japanese ||
-            japanese.includes("Speak when") ||
-            japanese.includes("Your Japanese") ||
-            japanese.includes("No Japanese")
-        ) {
-
-            App.Toast?.show?.(
-                "No Japanese speech result available yet."
-            );
-
-            return false;
-        }
-
-
-        return this.speakText(
-            japanese
-        );
-    },
-
-
-    /*
-     * =========================================================
-     * SPEAK SUGGESTED REPLY
-     * =========================================================
-     */
-
-    speakReplyOption(jp) {
-
-        if (
-            typeof jp !== "string" ||
-            !jp.trim()
-        ) {
-
-            return false;
-        }
-
-
-        const cleanText =
-            jp.trim();
-
-
-        const spoken =
-            this.speakText(
-                cleanText
-            );
-
-
-        if (spoken) {
-
-            App.Toast?.show?.(
-                `Speaking: "${cleanText}"`
-            );
-        }
-
-
-        return spoken;
     }
 };
-
-
-window.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        App.VoiceTTS.init();
-    }
-);
