@@ -1,82 +1,133 @@
 window.App = window.App || {};
 
 App.CameraOCR = {
+
+    isScanning: false,
+
     async scanFrame() {
-        App.Toast.show("Visualizing & OCR Analyzing...");
+
+        if (this.isScanning) {
+            return;
+        }
 
         const video = document.getElementById("live-video");
         const canvas = document.getElementById("snapshot-canvas");
 
-        // --------------------------------------------------
-        // CAMERA VALIDATION
-        // --------------------------------------------------
         if (!video || !canvas) {
-            App.Toast.show("Camera elements are unavailable.");
-            this.triggerDemo();
+            this.showStatus(
+                "Camera elements are unavailable."
+            );
             return;
         }
 
-        if (video.videoWidth <= 0 || video.videoHeight <= 0) {
-            App.Toast.show("Camera frame is not ready.");
-            this.triggerDemo();
+        if (
+            !video.srcObject ||
+            video.readyState < 2 ||
+            video.videoWidth <= 0 ||
+            video.videoHeight <= 0
+        ) {
+            this.showStatus(
+                "Camera is not ready. Please wait a moment and try again."
+            );
             return;
         }
 
-        // --------------------------------------------------
-        // CAPTURE + RESIZE
-        // --------------------------------------------------
+        this.isScanning = true;
+
+        this.showStatus(
+            "🔍 Scanning Japanese text..."
+        );
+
         try {
-            let w = video.videoWidth;
-            let h = video.videoHeight;
 
-            const maxDim =
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+
+            const maxDimension =
                 App.Config?.MAX_IMAGE_DIMENSION || 1280;
 
-            if (w > maxDim || h > maxDim) {
-                if (w > h) {
-                    h = Math.round((h * maxDim) / w);
-                    w = maxDim;
+            if (width > maxDimension || height > maxDimension) {
+
+                if (width >= height) {
+
+                    height = Math.round(
+                        (height * maxDimension) / width
+                    );
+
+                    width = maxDimension;
+
                 } else {
-                    w = Math.round((w * maxDim) / h);
-                    h = maxDim;
+
+                    width = Math.round(
+                        (width * maxDimension) / height
+                    );
+
+                    height = maxDimension;
                 }
             }
 
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = width;
+            canvas.height = height;
 
-            const ctx = canvas.getContext("2d", {
-                alpha: false
-            });
-
-            if (!ctx) {
-                throw new Error("CANVAS_CONTEXT_UNAVAILABLE");
-            }
-
-            ctx.drawImage(video, 0, 0, w, h);
-
-            const dataUrl = canvas.toDataURL(
-                "image/jpeg",
-                0.8
+            const context = canvas.getContext(
+                "2d",
+                {
+                    alpha: false
+                }
             );
 
-            const base64Data = dataUrl.split(",")[1];
-
-            if (!base64Data) {
-                throw new Error("IMAGE_CAPTURE_FAILED");
+            if (!context) {
+                throw new Error(
+                    "CANVAS_CONTEXT_UNAVAILABLE"
+                );
             }
 
-            // --------------------------------------------------
-            // VISION PROMPT
-            // --------------------------------------------------
+            context.drawImage(
+                video,
+                0,
+                0,
+                width,
+                height
+            );
+
+            const imageData =
+                canvas.toDataURL(
+                    "image/jpeg",
+                    0.82
+                );
+
+            const base64Data =
+                imageData.split(",")[1];
+
+            if (!base64Data) {
+                throw new Error(
+                    "IMAGE_CAPTURE_FAILED"
+                );
+            }
+
             const prompt =
                 App.Prompts?.getVisionPrompt?.() ||
                 `
-You are a Japanese workplace and travel vision assistant.
+You are a Japanese workplace vision assistant
+for a person preparing to work in Japan.
 
-Analyze the supplied image for visible Japanese text.
+Analyze ONLY the visible image.
 
-Return ONLY valid JSON with this structure:
+Look carefully for Japanese text such as:
+
+- signs
+- menus
+- hotel notices
+- workplace instructions
+- warnings
+- labels
+- room signs
+- transportation signs
+- customer-service phrases
+
+Return ONLY valid JSON.
+
+Required structure:
 
 {
   "japanese": "",
@@ -87,176 +138,277 @@ Return ONLY valid JSON with this structure:
 }
 
 Rules:
-- If Japanese text is visible, transcribe it accurately.
-- Provide natural Hepburn-style romaji.
-- Translate the meaning into Sinhala.
-- Translate the meaning into English.
-- Give a short practical cultural/workplace explanation.
-- Do not invent text that is not visible.
-- If no useful Japanese text is visible, return empty strings.
+
+1. Read only Japanese text that is actually visible.
+2. Do not invent text.
+3. Preserve Japanese wording accurately.
+4. Give natural Hepburn-style romaji.
+5. Give a natural Sinhala meaning.
+6. Give a clear English meaning.
+7. Give a short practical Japanese workplace/travel explanation.
+8. If no useful Japanese text is visible, return empty strings.
+9. Do not return markdown.
 `;
 
-            // --------------------------------------------------
-            // GEMINI VIA CLOUDFLARE WORKER
-            // --------------------------------------------------
-            const result = await App.Gemini.callContent(
-                {
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: prompt
-                                },
-                                {
-                                    inlineData: {
-                                        mimeType: "image/jpeg",
-                                        data: base64Data
+            const result =
+                await App.Gemini.callContent(
+                    {
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: prompt
+                                    },
+                                    {
+                                        inlineData: {
+                                            mimeType:
+                                                "image/jpeg",
+                                            data:
+                                                base64Data
+                                        }
                                     }
-                                }
-                            ]
-                        }
-                    ]
-                },
-                App.Config?.OCR_TIMEOUT_MS || 18000
-            );
-
-            // --------------------------------------------------
-            // VALIDATE GEMINI RESULT
-            // --------------------------------------------------
-            if (
-                result &&
-                typeof result === "object" &&
-                typeof result.japanese === "string" &&
-                result.japanese.trim()
-            ) {
-                const normalizedResult = {
-                    japanese: result.japanese.trim(),
-                    romaji:
-                        typeof result.romaji === "string"
-                            ? result.romaji.trim()
-                            : "",
-                    sinhala:
-                        typeof result.sinhala === "string"
-                            ? result.sinhala.trim()
-                            : "",
-                    english:
-                        typeof result.english === "string"
-                            ? result.english.trim()
-                            : "",
-                    guide:
-                        typeof result.guide === "string"
-                            ? result.guide.trim()
-                            : ""
-                };
-
-                App.CameraRenderer.displayCard(
-                    normalizedResult,
-                    false
+                                ]
+                            }
+                        ]
+                    },
+                    App.Config?.OCR_TIMEOUT_MS ||
+                        18000
                 );
+
+            if (
+                !result ||
+                typeof result !== "object"
+            ) {
+                throw new Error(
+                    "INVALID_VISION_RESULT"
+                );
+            }
+
+            const japanese =
+                typeof result.japanese === "string"
+                    ? result.japanese.trim()
+                    : "";
+
+            const romaji =
+                typeof result.romaji === "string"
+                    ? result.romaji.trim()
+                    : "";
+
+            const sinhala =
+                typeof result.sinhala === "string"
+                    ? result.sinhala.trim()
+                    : "";
+
+            const english =
+                typeof result.english === "string"
+                    ? result.english.trim()
+                    : "";
+
+            const guide =
+                typeof result.guide === "string"
+                    ? result.guide.trim()
+                    : "";
+
+            /*
+             * IMPORTANT:
+             * No offline/demo result is generated here.
+             */
+
+            if (!japanese) {
+
+                this.showStatus(
+                    "No Japanese text detected. Point the camera at a Japanese sign, menu, label, or notice and scan again."
+                );
+
+                this.clearResult();
 
                 return;
             }
 
-            throw new Error("NO_JAPANESE_TEXT_DETECTED");
+            const finalResult = {
+                japanese,
+                romaji,
+                sinhala,
+                english,
+                guide
+            };
+
+            if (
+                App.CameraRenderer &&
+                typeof App.CameraRenderer.displayCard ===
+                    "function"
+            ) {
+
+                App.CameraRenderer.displayCard(
+                    finalResult,
+                    false
+                );
+
+                this.showStatus(
+                    "✅ Japanese text detected."
+                );
+
+            } else {
+
+                throw new Error(
+                    "CAMERA_RENDERER_UNAVAILABLE"
+                );
+            }
 
         } catch (error) {
-            console.warn(
-                "Gemini OCR notice:",
+
+            console.error(
+                "Camera Vision Error:",
                 error
             );
 
-            // --------------------------------------------------
-            // USER-FRIENDLY ERROR
-            // --------------------------------------------------
-            const message =
-                error?.message || "UNKNOWN_ERROR";
+            const errorMessage =
+                error?.message ||
+                "UNKNOWN_ERROR";
 
-            if (message === "TIMEOUT") {
-                App.Toast.show(
-                    "Vision AI timed out. Please try again."
-                );
-            } else if (
-                message === "API_KEY_INVALID"
+            if (
+                errorMessage === "TIMEOUT"
             ) {
-                App.Toast.show(
-                    "Gemini API key is invalid."
+
+                this.showStatus(
+                    "⏱️ Vision AI timed out. Please scan again."
                 );
+
             } else if (
-                message === "RATE_LIMIT"
+                errorMessage === "API_KEY_INVALID"
             ) {
-                App.Toast.show(
-                    "Gemini limit reached. Please try again later."
+
+                this.showStatus(
+                    "🔑 Gemini API key is invalid or unavailable."
                 );
+
             } else if (
-                message === "SERVER_CONFIGURATION_ERROR"
+                errorMessage === "RATE_LIMIT"
             ) {
-                App.Toast.show(
-                    "Gemini is not configured on Cloudflare."
+
+                this.showStatus(
+                    "⚠️ Gemini request limit reached. Please try again later."
                 );
+
+            } else if (
+                errorMessage ===
+                "SERVER_CONFIGURATION_ERROR"
+            ) {
+
+                this.showStatus(
+                    "⚠️ Gemini API is not configured on Cloudflare Worker."
+                );
+
+            } else if (
+                errorMessage ===
+                "ASSETS_BINDING_MISSING"
+            ) {
+
+                this.showStatus(
+                    "⚠️ Cloudflare Worker asset configuration error."
+                );
+
+            } else if (
+                errorMessage ===
+                "CAMERA_RENDERER_UNAVAILABLE"
+            ) {
+
+                this.showStatus(
+                    "⚠️ Camera result renderer is unavailable."
+                );
+
             } else {
-                App.Toast.show(
-                    "AI scan failed. Showing demo preview."
+
+                this.showStatus(
+                    "❌ Vision AI scan failed. Please try again."
                 );
             }
 
-            // Demo fallback keeps the camera UI usable.
-            this.triggerDemo();
+        } finally {
+
+            this.isScanning = false;
         }
     },
 
-    // --------------------------------------------------
-    // DEMO / FALLBACK
-    // --------------------------------------------------
-    triggerDemo() {
-        const signs = [
-            {
-                japanese: "止まれ",
-                romaji: "Tomare",
-                sinhala:
-                    "සම්පූර්ණ නැවතීම (නවතින්න)",
-                english:
-                    "Mandatory Full Stop",
-                guide:
-                    "Traffic law: Vehicles and bicycles must come to a complete stop."
-            },
-            {
-                japanese: "いらっしゃいませ",
-                romaji: "Irasshaimase",
-                sinhala:
-                    "සාදරයෙන් පිළිගනිමු!",
-                english:
-                    "Welcome to our shop!",
-                guide:
-                    "A common Japanese hospitality greeting used when welcoming customers."
-            },
-            {
-                japanese: "本日のおすすめ",
-                romaji: "Honjitsu no osusume",
-                sinhala:
-                    "අද දවසේ විශේෂ කෑම",
-                english:
-                    "Today's Chef Specials",
-                guide:
-                    "A restaurant menu heading indicating recommended dishes for today."
-            }
-        ];
 
-        const chosen =
-            signs[
-                Math.floor(
-                    Math.random() * signs.length
-                )
-            ];
+    showStatus(message) {
 
         if (
-            App.CameraRenderer &&
-            typeof App.CameraRenderer.displayCard ===
-                "function"
+            App.Toast &&
+            typeof App.Toast.show === "function"
         ) {
-            App.CameraRenderer.displayCard(
-                chosen,
-                false
+
+            App.Toast.show(message);
+        }
+
+        const hud =
+            document.getElementById(
+                "ar-side-hud"
             );
+
+        if (!hud) {
+            return;
+        }
+
+        /*
+         * Do not overwrite an existing
+         * successful AI result.
+         *
+         * Status is shown only temporarily
+         * through Toast when a result exists.
+         */
+
+        const status =
+            document.getElementById(
+                "camera-scan-status"
+            );
+
+        if (status) {
+
+            status.textContent = message;
+        }
+    },
+
+
+    clearResult() {
+
+        const jp =
+            document.getElementById("ar-jp");
+
+        const romaji =
+            document.getElementById("ar-romaji");
+
+        const si =
+            document.getElementById("ar-si");
+
+        const en =
+            document.getElementById("ar-en");
+
+        const guide =
+            document.getElementById("ar-guide");
+
+        if (jp) {
+            jp.textContent =
+                "No Japanese text detected";
+        }
+
+        if (romaji) {
+            romaji.textContent = "";
+        }
+
+        if (si) {
+            si.textContent =
+                "කරුණාකර ජපන් text එකක් camera එකට පෙන්වා නැවත Scan කරන්න.";
+        }
+
+        if (en) {
+            en.textContent =
+                "Point the camera at Japanese text and scan again.";
+        }
+
+        if (guide) {
+            guide.textContent =
+                "Try a Japanese sign, hotel notice, menu, label, or workplace instruction.";
         }
     }
 };
