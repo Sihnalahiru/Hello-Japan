@@ -1,296 +1,227 @@
 window.App = window.App || {};
 
 App.Gemini = {
-
     async callContent(
         payload,
         timeoutMs = App.Config?.DEFAULT_TIMEOUT_MS || 12000,
         schema = null
     ) {
-
-        const url =
-            App.Config?.WORKER_ENDPOINT;
+        const url = App.Config?.WORKER_ENDPOINT;
 
         if (!url) {
-            throw new Error(
-                "WORKER_ENDPOINT_MISSING"
-            );
+            console.error("Gemini Error: WORKER_ENDPOINT is missing in config.js");
+            throw new Error("WORKER_ENDPOINT_MISSING");
         }
 
-        if (
-            !payload ||
-            typeof payload !== "object" ||
-            Array.isArray(payload)
-        ) {
-            throw new Error(
-                "INVALID_GEMINI_PAYLOAD"
-            );
+        if (!payload || typeof payload !== "object") {
+            console.error("Gemini Error: Invalid payload", payload);
+            throw new Error("INVALID_GEMINI_PAYLOAD");
         }
 
-        const controller =
-            new AbortController();
+        const controller = new AbortController();
 
         const timer = setTimeout(() => {
             controller.abort();
         }, timeoutMs);
 
         try {
-
-            const generationConfig = {
-                ...(payload.generationConfig || {}),
-                responseMimeType:
-                    "application/json"
+            const requestPayload = {
+                ...payload,
+                generationConfig: {
+                    ...(payload.generationConfig || {}),
+                    responseMimeType: "application/json"
+                }
             };
 
             if (schema) {
-                generationConfig.responseSchema =
-                    schema;
+                requestPayload.generationConfig.responseSchema = schema;
             }
 
-            const requestPayload = {
-                ...payload,
-                generationConfig
-            };
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestPayload),
+                signal: controller.signal
+            });
 
-            const response = await fetch(
-                url,
-                {
-                    method: "POST",
+            const responseText = await response.text();
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-                        "Accept":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify(
-                            requestPayload
-                        ),
-
-                    signal:
-                        controller.signal
-                }
-            );
-
-            const responseText =
-                await response.text();
-
-            let responseData = null;
-
-            try {
-                responseData =
-                    responseText
-                        ? JSON.parse(
-                            responseText
-                        )
-                        : null;
-            } catch {
-                responseData = null;
-            }
+            // --------------------------------------------------
+            // HTTP ERROR
+            // --------------------------------------------------
 
             if (!response.ok) {
+                let backendError = null;
 
+                try {
+                    backendError = JSON.parse(responseText);
+                } catch {
+                    backendError = null;
+                }
+
+                console.error("Gemini Worker Error:", {
+                    status: response.status,
+                    body: backendError || responseText
+                });
+
+                if (response.status === 400) {
+                    throw new Error("BAD_REQUEST");
+                }
+
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("API_KEY_INVALID");
+                }
+
+                if (response.status === 429) {
+                    throw new Error("RATE_LIMIT");
+                }
+
+                if (response.status >= 500) {
+                    throw new Error("SERVER_ERROR");
+                }
+
+                throw new Error(`API_ERROR_${response.status}`);
+            }
+
+            // --------------------------------------------------
+            // PARSE WORKER RESPONSE
+            // --------------------------------------------------
+
+            let data;
+
+            try {
+                data = JSON.parse(responseText);
+            } catch (error) {
                 console.error(
-                    "Gemini Worker error:",
-                    response.status,
-                    responseData ||
-                        responseText
+                    "Gemini Worker returned invalid JSON:",
+                    responseText
                 );
 
-                if (
-                    response.status === 400
-                ) {
-                    throw new Error(
-                        responseData?.message ||
-                        "BAD_REQUEST"
-                    );
-                }
+                throw new Error("INVALID_GEMINI_RESPONSE");
+            }
 
-                if (
-                    response.status === 401 ||
-                    response.status === 403
-                ) {
-                    throw new Error(
-                        "API_KEY_INVALID"
-                    );
-                }
+            // --------------------------------------------------
+            // EXPLICIT BACKEND ERROR
+            // --------------------------------------------------
 
-                if (
-                    response.status === 429
-                ) {
-                    throw new Error(
-                        "RATE_LIMIT"
-                    );
-                }
-
-                if (
-                    response.status >= 500
-                ) {
-                    throw new Error(
-                        responseData?.message ||
-                        "SERVER_ERROR"
-                    );
-                }
+            if (data?.error) {
+                console.error(
+                    "Gemini Backend Error:",
+                    data.error,
+                    data.message || ""
+                );
 
                 throw new Error(
-                    `API_ERROR_${response.status}`
+                    typeof data.error === "string"
+                        ? data.error
+                        : "SERVER_ERROR"
                 );
             }
 
-            if (!responseData) {
-                throw new Error(
-                    "INVALID_GEMINI_RESPONSE"
-                );
+            // --------------------------------------------------
+            // GEMINI CANDIDATE CHECK
+            // --------------------------------------------------
+
+            const candidate = data?.candidates?.[0];
+
+            if (!candidate) {
+                console.error("Gemini returned no candidate:", data);
+                throw new Error("EMPTY_GEMINI_RESPONSE");
             }
 
-            /*
-             * Gemini response may contain
-             * multiple parts.
-             *
-             * DO NOT assume parts[0] is
-             * the final answer.
-             */
-            const parts =
-                Array.isArray(
-                    responseData
-                        ?.candidates?.[0]
-                        ?.content?.parts
+            // --------------------------------------------------
+            // COLLECT ALL TEXT PARTS
+            // --------------------------------------------------
+
+            const parts = Array.isArray(candidate?.content?.parts)
+                ? candidate.content.parts
+                : [];
+
+            const textParts = parts
+                .filter(part =>
+                    part &&
+                    typeof part.text === "string" &&
+                    part.text.trim() &&
+                    part.thought !== true
                 )
-                    ? responseData
-                        .candidates[0]
-                        .content
-                        .parts
-                    : [];
+                .map(part => part.text.trim());
 
-            const textParts =
-                parts
-                    .filter(
-                        part =>
-                            part &&
-                            typeof part.text ===
-                                "string" &&
-                            part.text.trim()
-                    )
-                    .filter(
-                        part =>
-                            part.thought !== true
-                    );
-
-            let outputText =
-                textParts
-                    .map(
-                        part =>
-                            part.text.trim()
-                    )
-                    .join("\n")
-                    .trim();
-
-            /*
-             * Fallback:
-             * if the API returns text but does
-             * not expose thought metadata.
-             */
-            if (!outputText) {
-
-                outputText =
-                    parts
-                        .filter(
-                            part =>
-                                part &&
-                                typeof part.text ===
-                                    "string" &&
-                                part.text.trim()
-                        )
-                        .map(
-                            part =>
-                                part.text.trim()
-                        )
-                        .join("\n")
-                        .trim();
-            }
-
-            if (!outputText) {
-
+            if (!textParts.length) {
                 console.error(
-                    "Gemini returned no usable text:",
-                    responseData
+                    "Gemini returned no usable text parts:",
+                    data
                 );
 
-                throw new Error(
-                    "EMPTY_GEMINI_RESPONSE"
-                );
+                throw new Error("EMPTY_GEMINI_RESPONSE");
             }
 
-            let cleaned =
-                outputText
-                    .replace(
-                        /^```json\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /^```\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /\s*```$/i,
-                        ""
-                    )
-                    .trim();
+            const outputText = textParts.join("\n").trim();
+
+            // --------------------------------------------------
+            // CLEAN MARKDOWN JSON FENCES
+            // --------------------------------------------------
+
+            const cleaned = outputText
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/i, "")
+                .trim();
 
             if (!cleaned) {
-                throw new Error(
-                    "EMPTY_GEMINI_JSON"
-                );
+                throw new Error("EMPTY_GEMINI_JSON");
             }
+
+            // --------------------------------------------------
+            // PARSE FINAL JSON
+            // --------------------------------------------------
 
             let result;
 
             try {
-
-                result =
-                    JSON.parse(cleaned);
-
+                result = JSON.parse(cleaned);
             } catch (error) {
-
                 console.error(
-                    "Gemini JSON parse failed:",
+                    "Gemini JSON parsing failed:",
                     cleaned
                 );
 
-                throw new Error(
-                    "INVALID_GEMINI_JSON"
-                );
+                throw new Error("INVALID_GEMINI_JSON");
             }
+
+            // --------------------------------------------------
+            // VALID RESULT CHECK
+            // --------------------------------------------------
 
             if (
                 !result ||
                 typeof result !== "object" ||
                 Array.isArray(result)
             ) {
-                throw new Error(
-                    "INVALID_GEMINI_DATA"
+                console.error(
+                    "Gemini returned invalid object:",
+                    result
                 );
+
+                throw new Error("INVALID_GEMINI_DATA");
             }
 
             return result;
 
         } catch (error) {
 
-            if (
-                error?.name ===
-                "AbortError"
-            ) {
-                throw new Error(
-                    "TIMEOUT"
+            if (error?.name === "AbortError") {
+                console.error(
+                    `Gemini request timed out after ${timeoutMs}ms`
                 );
+
+                throw new Error("TIMEOUT");
             }
 
             throw error;
 
         } finally {
-
             clearTimeout(timer);
         }
     }
