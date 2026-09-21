@@ -1,320 +1,466 @@
 window.App = window.App || {};
 
 App.VoiceEngine = {
-    recognition: null,
-    restartTimer: null,
 
+    recognition: null,
+
+    isSupported: false,
+    isListening: false,
     isStarting: false,
     isStopping: false,
-    isPausedForSpeech: false,
-    shouldResumeAfterSpeech: false,
 
-    createRecognition() {
+    shouldListen: false,
+    restartTimer: null,
+
+    init() {
+
+        if (this.recognition) {
+            return this.isSupported;
+        }
+
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            return null;
-        }
 
-        const recognition =
-            new SpeechRecognition();
-
-        recognition.continuous = true;
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        recognition.lang =
-            App.State.activeSpeakerLang;
-
-        recognition.onstart = () => {
-            this.isStarting = false;
-            this.isStopping = false;
-
-            if (this.isPausedForSpeech) {
-                try {
-                    recognition.stop();
-                } catch {}
-                return;
-            }
-
-            App.State.currentVoiceState =
-                App.State.VoiceState.LISTENING;
-
-            App.VoiceRenderer?.updateMicVisuals?.(
-                true
-            );
-        };
-
-        recognition.onresult = event => {
-            if (this.isPausedForSpeech) return;
-            if (!App.State.isContinuousListening) return;
-
-            for (
-                let i = event.resultIndex;
-                i < event.results.length;
-                i++
-            ) {
-                const result =
-                    event.results[i];
-
-                if (!result?.isFinal) continue;
-
-                const transcript =
-                    result?.[0]?.transcript
-                        ?.trim();
-
-                if (!transcript) continue;
-
-                const now = Date.now();
-
-                if (
-                    transcript ===
-                        App.State.lastTranscript &&
-                    now -
-                        App.State.lastTranscriptTime <
-                        2500
-                ) {
-                    continue;
-                }
-
-                App.State.lastTranscript =
-                    transcript;
-
-                App.State.lastTranscriptTime =
-                    now;
-
-                App.State.currentVoiceTranscript =
-                    transcript;
-
-                App.State.currentVoiceState =
-                    App.State.VoiceState.PROCESSING;
-
-                App.VoiceAI
-                    ?.handleSpokenVoice?.(
-                        transcript
-                    );
-            }
-        };
-
-        recognition.onerror = event => {
-            const error =
-                event?.error || "unknown";
-
-            console.warn(
-                "SpeechRecognition:",
-                error
-            );
-
-            if (this.isPausedForSpeech) {
-                return;
-            }
-
-            if (
-                error === "not-allowed" ||
-                error === "service-not-allowed"
-            ) {
-                App.State.isContinuousListening =
-                    false;
-
-                this.cancelRestart();
-
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
-
-                App.VoiceRenderer?.updateMicVisuals?.(
-                    false
-                );
-
-                App.Toast?.show?.(
-                    "Microphone permission denied."
-                );
-
-                return;
-            }
-
-            if (
-                error === "aborted" ||
-                error === "no-speech" ||
-                error === "audio-capture" ||
-                error === "network"
-            ) {
-                if (
-                    App.State.isContinuousListening
-                ) {
-                    this.scheduleRestart(
-                        error === "no-speech"
-                            ? 600
-                            : 1000
-                    );
-                }
-
-                return;
-            }
-
-            if (
-                App.State.isContinuousListening
-            ) {
-                this.scheduleRestart(1200);
-            }
-        };
-
-        recognition.onend = () => {
-            this.isStarting = false;
-            this.isStopping = false;
-
-            if (this.isPausedForSpeech) {
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
-                return;
-            }
-
-            if (
-                !App.State.isContinuousListening
-            ) {
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
-
-                App.VoiceRenderer?.updateMicVisuals?.(
-                    false
-                );
-
-                return;
-            }
+            this.isSupported = false;
 
             App.State.currentVoiceState =
                 App.State.VoiceState.IDLE;
 
-            this.scheduleRestart(500);
+            App.VoiceRenderer?.setListeningState(
+                false,
+                "Speech recognition is not supported on this browser."
+            );
+
+            return false;
+        }
+
+        this.isSupported = true;
+
+        const recognition =
+            new SpeechRecognition();
+
+        /*
+         * IMPORTANT
+         *
+         * continuous=true is useful on
+         * desktop/Android but iOS Safari
+         * may terminate it frequently.
+         *
+         * We handle onend and restart
+         * ourselves.
+         */
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.lang =
+            App.State.activeSpeakerLang ||
+            "ja-JP";
+
+        recognition.onstart = () => {
+
+            this.isStarting = false;
+            this.isStopping = false;
+            this.isListening = true;
+
+            App.State.currentVoiceState =
+                App.State.VoiceState.LISTENING;
+
+            App.VoiceRenderer?.setListeningState(
+                true,
+                "Listening..."
+            );
         };
 
-        return recognition;
+        recognition.onresult = async (event) => {
+
+            if (!this.shouldListen) {
+                return;
+            }
+
+            const lastIndex =
+                event.results.length - 1;
+
+            const result =
+                event.results[lastIndex];
+
+            if (!result) {
+                return;
+            }
+
+            const transcript =
+                result[0]?.transcript
+                    ?.trim();
+
+            if (!transcript) {
+                return;
+            }
+
+            /*
+             * Ignore duplicate iOS results.
+             */
+            const now = Date.now();
+
+            if (
+                transcript ===
+                    App.State.lastTranscript &&
+                now -
+                    App.State.lastTranscriptTime <
+                    1200
+            ) {
+                return;
+            }
+
+            App.State.lastTranscript =
+                transcript;
+
+            App.State.lastTranscriptTime =
+                now;
+
+            App.State.currentVoiceTranscript =
+                transcript;
+
+            App.State.currentVoiceState =
+                App.State.VoiceState.PROCESSING;
+
+            App.VoiceRenderer?.setListeningState(
+                false,
+                "Processing..."
+            );
+
+            try {
+
+                await App.VoiceAI
+                    ?.handleSpokenVoice(
+                        transcript
+                    );
+
+            } catch (error) {
+
+                console.error(
+                    "Voice processing error:",
+                    error
+                );
+
+                App.VoiceRenderer?.showError(
+                    "AI processing failed."
+                );
+
+            } finally {
+
+                if (
+                    this.shouldListen &&
+                    App.State.currentActiveView ===
+                        "voice"
+                ) {
+
+                    App.State.currentVoiceState =
+                        App.State.VoiceState.LISTENING;
+
+                    /*
+                     * Recognition may have stopped
+                     * while Gemini was processing.
+                     *
+                     * Restart safely.
+                     */
+                    this.safeRestart();
+                }
+            }
+        };
+
+        recognition.onerror = (event) => {
+
+            console.warn(
+                "Speech recognition error:",
+                event.error
+            );
+
+            this.isStarting = false;
+            this.isListening = false;
+
+            /*
+             * Permission problems must stop.
+             */
+            if (
+                event.error ===
+                    "not-allowed" ||
+                event.error ===
+                    "service-not-allowed"
+            ) {
+
+                this.shouldListen = false;
+
+                App.State.currentVoiceState =
+                    App.State.VoiceState.IDLE;
+
+                App.VoiceRenderer?.setListeningState(
+                    false,
+                    "Microphone permission required."
+                );
+
+                return;
+            }
+
+            /*
+             * These are recoverable.
+             */
+            if (
+                event.error ===
+                    "no-speech" ||
+                event.error ===
+                    "aborted" ||
+                event.error ===
+                    "network" ||
+                event.error ===
+                    "audio-capture"
+            ) {
+
+                if (
+                    this.shouldListen
+                ) {
+                    this.scheduleRestart();
+                }
+
+                return;
+            }
+
+            if (
+                this.shouldListen
+            ) {
+                this.scheduleRestart();
+            }
+        };
+
+        recognition.onend = () => {
+
+            this.isListening = false;
+            this.isStarting = false;
+
+            if (
+                !this.shouldListen
+            ) {
+
+                App.State.currentVoiceState =
+                    App.State.VoiceState.IDLE;
+
+                App.VoiceRenderer?.setListeningState(
+                    false,
+                    "Tap microphone to speak."
+                );
+
+                return;
+            }
+
+            /*
+             * iOS Safari frequently ends
+             * recognition automatically.
+             *
+             * Restart it safely.
+             */
+            this.scheduleRestart();
+        };
+
+        this.recognition =
+            recognition;
+
+        return true;
     },
 
-    scheduleRestart(delay = 500) {
-        this.cancelRestart();
+    async start() {
 
-        if (!App.State.isContinuousListening) {
+        if (!this.init()) {
+            return false;
+        }
+
+        if (this.isListening) {
+            return true;
+        }
+
+        if (this.isStarting) {
+            return true;
+        }
+
+        this.shouldListen = true;
+
+        App.State.isContinuousListening =
+            true;
+
+        App.State.currentVoiceState =
+            App.State.VoiceState.STARTING;
+
+        App.VoiceRenderer?.setListeningState(
+            false,
+            "Starting microphone..."
+        );
+
+        return this.safeStart();
+    },
+
+    safeStart() {
+
+        if (
+            !this.recognition ||
+            !this.shouldListen
+        ) {
+            return false;
+        }
+
+        if (
+            this.isListening ||
+            this.isStarting
+        ) {
+            return true;
+        }
+
+        this.isStarting = true;
+
+        try {
+
+            this.recognition.start();
+
+            return true;
+
+        } catch (error) {
+
+            this.isStarting = false;
+
+            /*
+             * InvalidStateError normally means
+             * recognition is already starting/
+             * running even though browser state
+             * has not updated yet.
+             */
+            if (
+                error?.name ===
+                "InvalidStateError"
+            ) {
+
+                this.scheduleRestart(
+                    500
+                );
+
+                return true;
+            }
+
+            console.error(
+                "SpeechRecognition.start failed:",
+                error
+            );
+
+            this.shouldListen = false;
+
+            App.State.currentVoiceState =
+                App.State.VoiceState.IDLE;
+
+            App.VoiceRenderer?.setListeningState(
+                false,
+                "Could not start microphone."
+            );
+
+            return false;
+        }
+    },
+
+    scheduleRestart(
+        delay = 350
+    ) {
+
+        if (
+            !this.shouldListen
+        ) {
             return;
         }
 
-        if (this.isPausedForSpeech) {
+        if (
+            this.restartTimer
+        ) {
             return;
         }
 
         this.restartTimer =
             setTimeout(() => {
-                this.restartTimer = null;
+
+                this.restartTimer =
+                    null;
 
                 if (
-                    !App.State.isContinuousListening ||
-                    this.isPausedForSpeech
+                    !this.shouldListen ||
+                    this.isListening ||
+                    this.isStarting
                 ) {
                     return;
                 }
 
-                if (
-                    App.State.currentActiveView !==
-                    "voice"
-                ) {
-                    return;
-                }
+                this.safeStart();
 
-                if (
-                    App.State.currentVoiceState !==
-                    App.State.VoiceState.IDLE
-                ) {
-                    return;
-                }
-
-                this.startRecognition();
             }, delay);
     },
 
-    cancelRestart() {
-        if (this.restartTimer) {
-            clearTimeout(
-                this.restartTimer
-            );
+    safeRestart() {
 
-            this.restartTimer = null;
-        }
-    },
-
-    startRecognition() {
         if (
-            !App.State.isContinuousListening ||
-            this.isPausedForSpeech ||
+            !this.shouldListen
+        ) {
+            return;
+        }
+
+        if (
+            this.isListening ||
             this.isStarting
         ) {
             return;
         }
 
+        this.scheduleRestart(
+            300
+        );
+    },
+
+    pauseForSpeech() {
+
         if (
-            App.State.currentActiveView !==
-            "voice"
+            !this.recognition
         ) {
             return;
         }
 
+        /*
+         * We temporarily stop recognition
+         * while TTS is speaking.
+         *
+         * shouldListen remains TRUE so
+         * resumeAfterSpeech() can restart it.
+         */
         if (
-            App.State.currentVoiceState ===
-                App.State.VoiceState.LISTENING ||
-            App.State.currentVoiceState ===
-                App.State.VoiceState.STARTING
+            this.isListening ||
+            this.isStarting
         ) {
-            return;
-        }
 
-        if (!this.recognition) {
-            this.recognition =
-                this.createRecognition();
-        }
+            try {
 
-        if (!this.recognition) {
-            App.State.isContinuousListening =
-                false;
+                this.recognition.stop();
 
-            App.State.currentVoiceState =
-                App.State.VoiceState.IDLE;
+            } catch (error) {
 
-            App.Toast?.show?.(
-                "Voice Recognition is not supported by this browser."
-            );
-
-            return;
-        }
-
-        this.recognition.lang =
-            App.State.activeSpeakerLang;
-
-        this.isStarting = true;
-
-        App.State.currentVoiceState =
-            App.State.VoiceState.STARTING;
-
-        try {
-            this.recognition.start();
-        } catch (error) {
-            this.isStarting = false;
-
-            console.warn(
-                "Recognition start:",
-                error
-            );
-
-            App.State.currentVoiceState =
-                App.State.VoiceState.IDLE;
-
-            if (
-                App.State.isContinuousListening
-            ) {
-                this.scheduleRestart(900);
+                console.warn(
+                    "Recognition stop during TTS:",
+                    error
+                );
             }
         }
     },
 
-    start() {
+    resumeAfterSpeech() {
+
+        if (
+            !this.shouldListen
+        ) {
+            return;
+        }
+
         if (
             App.State.currentActiveView !==
             "voice"
@@ -322,227 +468,139 @@ App.VoiceEngine = {
             return;
         }
 
-        App.State.isContinuousListening =
-            true;
-
-        this.cancelRestart();
-
-        this.startRecognition();
-    },
-
-    pauseForSpeech() {
-        if (
-            !App.State.isContinuousListening
-        ) {
-            return;
-        }
-
-        this.isPausedForSpeech = true;
-        this.shouldResumeAfterSpeech = true;
-
-        this.cancelRestart();
-
-        if (this.recognition) {
-            try {
-                this.recognition.stop();
-            } catch {}
-        }
-
-        this.isStarting = false;
-
-        App.State.currentVoiceState =
-            App.State.VoiceState.IDLE;
-
-        App.VoiceRenderer?.updateMicVisuals?.(
-            false
+        this.scheduleRestart(
+            450
         );
     },
 
-    resumeAfterSpeech() {
-        if (
-            !this.shouldResumeAfterSpeech
-        ) {
-            this.isPausedForSpeech = false;
-            return;
-        }
-
-        this.isPausedForSpeech = false;
-        this.shouldResumeAfterSpeech = false;
-
-        if (
-            !App.State.isContinuousListening ||
-            App.State.currentActiveView !==
-                "voice"
-        ) {
-            return;
-        }
-
-        this.scheduleRestart(500);
-    },
-
     stop() {
+
+        this.shouldListen = false;
+
         App.State.isContinuousListening =
             false;
 
-        this.shouldResumeAfterSpeech = false;
-        this.isPausedForSpeech = false;
+        if (
+            this.restartTimer
+        ) {
 
-        this.cancelRestart();
+            clearTimeout(
+                this.restartTimer
+            );
 
-        App.State.voiceRequestId++;
+            this.restartTimer =
+                null;
+        }
 
         this.isStopping = true;
         this.isStarting = false;
 
-        App.State.currentVoiceState =
-            App.State.VoiceState.STOPPING;
+        if (
+            this.recognition
+        ) {
 
-        if (this.recognition) {
             try {
-                this.recognition.abort();
-            } catch {
-                try {
-                    this.recognition.stop();
-                } catch {}
+
+                this.recognition.stop();
+
+            } catch (error) {
+
+                console.warn(
+                    "Recognition stop:",
+                    error
+                );
             }
         }
 
-        App.VoiceTTS?.stop?.();
-
-        App.VoiceRenderer?.updateMicVisuals?.(
-            false
-        );
+        this.isListening = false;
 
         App.State.currentVoiceState =
             App.State.VoiceState.IDLE;
+
+        App.VoiceRenderer?.setListeningState(
+            false,
+            "Tap microphone to speak."
+        );
 
         this.isStopping = false;
     },
 
     toggleListening() {
+
         if (
-            App.State.isContinuousListening
+            this.shouldListen ||
+            this.isListening ||
+            this.isStarting
         ) {
+
             this.stop();
 
-            App.Toast?.show?.(
-                "Voice Listening Paused"
-            );
-        } else {
-            this.start();
-
-            App.Toast?.show?.(
-                "Hands-Free Listening Started"
-            );
+            return false;
         }
+
+        return this.start();
     },
 
-    setSpeaker(lang) {
-        if (
-            typeof lang !== "string" ||
-            !lang.trim()
-        ) {
-            return;
-        }
+    setSpeaker(
+        lang
+    ) {
 
         const wasListening =
-            App.State.isContinuousListening;
+            this.shouldListen;
 
-        if (wasListening) {
-            this.stop();
-        }
+        /*
+         * Stop first so the browser does not
+         * keep the old language session.
+         */
+        this.stop();
 
         App.State.activeSpeakerLang =
             lang;
 
-        const buttons = [
-            document.getElementById(
-                "btn-speaker-jp"
-            ),
-            document.getElementById(
-                "btn-speaker-si"
-            ),
-            document.getElementById(
-                "btn-speaker-en"
-            )
-        ];
+        if (
+            this.recognition
+        ) {
 
-        const normal =
-            "bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
-
-        const active =
-            "bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
-
-        buttons.forEach(button => {
-            if (button) {
-                button.className = normal;
-            }
-        });
-
-        const badge =
-            document.getElementById(
-                "detected-speaker-badge"
-            );
-
-        if (lang === "ja-JP") {
-            buttons[0] &&
-                (buttons[0].className = active);
-
-            if (badge) {
-                badge.textContent =
-                    "🇯🇵 JAPANESE SPOKEN:";
-            }
-        } else if (lang === "si-LK") {
-            buttons[1] &&
-                (buttons[1].className = active);
-
-            if (badge) {
-                badge.textContent =
-                    "🇱🇰 SINHALA SPOKEN:";
-            }
-        } else {
-            buttons[2] &&
-                (buttons[2].className = active);
-
-            if (badge) {
-                badge.textContent =
-                    "🇬🇧 ENGLISH SPOKEN:";
-            }
+            this.recognition.lang =
+                lang;
         }
 
-        if (wasListening) {
+        App.VoiceRenderer?.updateSpeakerUI?.(
+            lang
+        );
+
+        /*
+         * Restart only if the user was
+         * already listening.
+         */
+        if (
+            wasListening
+        ) {
+
             setTimeout(
-                () => this.start(),
-                400
+                () => {
+                    this.start();
+                },
+                250
             );
         }
     },
 
-    setContext(key, element) {
+    setContext(
+        context
+    ) {
+
         if (
-            typeof key !== "string" ||
-            !key.trim()
+            !context
         ) {
             return;
         }
 
         App.State.activeVoiceContext =
-            key.trim();
+            context;
 
-        document
-            .querySelectorAll(".ctx-pill")
-            .forEach(button => {
-                button.className =
-                    "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
-            });
-
-        if (element) {
-            element.className =
-                "ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
-        }
-
-        App.Toast?.show?.(
-            `Situation: ${key.toUpperCase()}`
+        App.VoiceRenderer?.updateContextUI?.(
+            context
         );
     }
 };
