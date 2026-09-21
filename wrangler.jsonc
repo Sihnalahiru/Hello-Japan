@@ -1,15 +1,16 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hello-japan",
   "main": "worker.js",
-  "compatibility_date": "2026-09-18",
-
-  "observability": {
-    "enabled": true
-  },
-
+  "compatibility_date": "2024-09-23",
   "assets": {
-    "directory": ".",
-    "binding": "ASSETS"
+    "directory": "./",
+    "exclude": [
+      ".git/**",
+      ".github/**",
+      ".wrangler/**",
+      "node_modules/**",
+      "worker.js",
+      "README.md"
+    ]
   }
 }
