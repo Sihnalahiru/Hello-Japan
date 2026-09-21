@@ -1,26 +1,13 @@
 window.App = window.App || {};
 
 App.State = {
-
     currentActiveView: "hero",
 
-    /*
-     * Gemini secret is NOT stored in the browser.
-     * Cloudflare Worker handles authentication.
-     */
-    userApiKey: "",
-
-    /*
-     * CAMERA
-     */
+    // CAMERA
     mediaStream: null,
-
     useFacingMode: "environment",
-
     isTorchOn: false,
-
     cameraRequestId: 0,
-
     currentArJapanese: "",
 
     currentCameraResult: {
@@ -31,11 +18,8 @@ App.State = {
         guide: ""
     },
 
-    /*
-     * VOICE
-     */
+    // VOICE
     activeVoiceContext: "daily",
-
     activeSpeakerLang: "ja-JP",
 
     VoiceState: {
@@ -47,35 +31,24 @@ App.State = {
     },
 
     currentVoiceState: "IDLE",
-
     isContinuousListening: false,
 
-    /*
-     * Prevent stale Gemini responses.
-     */
     voiceRequestId: 0,
 
-    /*
-     * Prevent duplicate speech recognition results.
-     */
     lastTranscript: "",
-
     lastTranscriptTime: 0,
 
-    /*
-     * REAL voice result only.
-     */
     currentVoiceTranscript: "",
 
     currentVoiceJapanese: "",
-
     currentVoiceRomaji: "",
-
     currentVoiceSinhala: "",
-
     currentVoiceEnglish: "",
 
-    currentVoiceResponse: "",
+    currentVoiceResponseJapanese: "",
+    currentVoiceResponseRomaji: "",
+    currentVoiceResponseSinhala: "",
+    currentVoiceResponseEnglish: "",
 
     currentVoiceSuggestions: []
 };
