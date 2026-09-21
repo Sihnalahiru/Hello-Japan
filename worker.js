@@ -1,127 +1,56 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
-
-    // --------------------------------------------------
-    // CORS PREFLIGHT
-    // --------------------------------------------------
+    // Handle CORS preflight requests
     if (request.method === "OPTIONS") {
       return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
       });
     }
 
-    // --------------------------------------------------
-    // GEMINI API PROXY
-    // --------------------------------------------------
-    if (request.method === "POST") {
+    // Pass non-POST requests to static assets
+    if (request.method !== "POST") {
+      return env.ASSETS ? env.ASSETS.fetch(request) : new Response("Not Found", { status: 404 });
+    }
+
+    try {
+      // Check if API Key secret exists on Worker
       if (!env.GEMINI_API_KEY) {
         return new Response(
-          JSON.stringify({
-            error: "SERVER_CONFIGURATION_ERROR",
-            message: "Gemini API key is not configured on the Worker.",
-          }),
-          {
-            status: 500,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
+          JSON.stringify({ error: "SERVER_CONFIGURATION_ERROR: GEMINI_API_KEY secret missing on Cloudflare Worker." }),
+          { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
         );
       }
 
-      try {
-        const body = await request.json();
+      const body = await request.json();
+      
+      // Valid Google AI Studio Model: gemini-1.5-flash
+      const geminiModel = "gemini-1.5-flash";
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${env.GEMINI_API_KEY}`;
 
-        if (
-          !body ||
-          typeof body !== "object" ||
-          Array.isArray(body)
-        ) {
-          return new Response(
-            JSON.stringify({
-              error: "INVALID_REQUEST",
-              message: "Request body must be a JSON object.",
-            }),
-            {
-              status: 400,
-              headers: {
-                ...corsHeaders,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-        }
+      const response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
 
-        const geminiUrl =
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+      const data = await response.json();
 
-        const geminiResponse = await fetch(geminiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": env.GEMINI_API_KEY,
-          },
-          body: JSON.stringify(body),
-        });
-
-        const responseText = await geminiResponse.text();
-
-        return new Response(responseText, {
-          status: geminiResponse.status,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        });
-      } catch (error) {
-        return new Response(
-          JSON.stringify({
-            error: "WORKER_ERROR",
-            message:
-              error?.message ||
-              "An unexpected Worker error occurred.",
-          }),
-          {
-            status: 500,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      }
-    }
-
-    // --------------------------------------------------
-    // STATIC PWA
-    // --------------------------------------------------
-    if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
-    }
-
-    // --------------------------------------------------
-    // FALLBACK
-    // --------------------------------------------------
-    return new Response(
-      JSON.stringify({
-        error: "ASSETS_BINDING_MISSING",
-        message: "Static assets binding is not configured.",
-      }),
-      {
-        status: 500,
+      return new Response(JSON.stringify(data), {
+        status: response.status,
         headers: {
           "Content-Type": "application/json",
-        },
-      }
-    );
-  },
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      );
+    }
+  }
 };
