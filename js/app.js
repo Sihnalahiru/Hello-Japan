@@ -1,184 +1,165 @@
-/*
- * =========================================================
- * NAVIGATION VIEW SWITCHER FUNCTION
- * =========================================================
- */
-function switchView(viewName) {
-    const previousView = App.State.currentActiveView;
-    const isSameView = previousView === viewName;
+window.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    App.State.currentActiveView = viewName;
-
-    if (!isSameView && previousView === "camera" && viewName !== "camera") {
-        App.CameraEngine?.stop?.(false);
-    }
-
-    if (!isSameView && previousView === "voice" && viewName !== "voice") {
-        App.VoiceEngine?.stop?.();
-    }
-
-    document.querySelectorAll(".screen-view").forEach(view => {
-        view.classList.remove("active");
-    });
-
-    const target = document.getElementById(`view-${viewName}`);
-    if (target) {
-        target.classList.add("active");
-    }
-
-    document.querySelectorAll(".nav-icon-btn").forEach(button => {
-        const active = button.dataset.nav === viewName;
-
-        button.classList.toggle("text-emerald-700", active);
-        button.classList.toggle("text-gray-400", !active);
-    });
-
-    /*
-     * Do not restart an already active view.
-     */
-    if (isSameView) {
-        return;
-    }
-
-    if (viewName === "camera") {
-        App.CameraRenderer?.clearCard?.();
-        App.CameraEngine?.init?.();
-    }
-
-    if (viewName === "voice") {
-        App.VoiceEngine?.start?.();
-    }
-}
-
-// Make switchView globally accessible for HTML inline onclick handlers
-if (App.Navigation) {
-    App.Navigation.switchView = switchView;
-}
-window.switchView = switchView;
+        console.log(
+            "Hello Japan AI starting..."
+        );
 
 
-/*
- * =========================================================
- * APPLICATION BOOTSTRAPPER
- * =========================================================
- */
-window.addEventListener("DOMContentLoaded", () => {
-
-    /*
-     * CLOCK
-     */
-    if (
-        App.Navigation &&
-        typeof App.Navigation.tickClock === "function"
-    ) {
-        App.Navigation.tickClock();
-
-        setInterval(() => {
-            App.Navigation.tickClock();
-        }, 1000);
-    }
+        /*
+         * Clock
+         */
+        App.Navigation
+            ?.tickClock
+            ?.();
 
 
-    /*
-     * API / WORKER STATUS
-     */
-    if (
-        App.UI &&
-        typeof App.UI.updateApiStatus === "function"
-    ) {
-        App.UI.updateApiStatus();
-    }
+        setInterval(
+            () => {
+
+                App.Navigation
+                    ?.tickClock
+                    ?.();
+
+            },
+            1000
+        );
 
 
-    /*
-     * DEFAULT SPEAKER
-     */
-    if (
-        App.VoiceEngine &&
-        typeof App.VoiceEngine.setSpeaker === "function"
-    ) {
-        App.VoiceEngine.setSpeaker("ja-JP");
-    }
+        /*
+         * Secure AI status
+         */
+        App.UI
+            ?.updateApiStatus
+            ?.();
 
 
-    /*
-     * INITIAL VOICE STATE
-     */
-    if (
-        App.VoiceRenderer &&
-        typeof App.VoiceRenderer.clearConversation === "function"
-    ) {
-        App.VoiceRenderer.clearConversation();
-    }
+        /*
+         * Voice TTS initialization
+         */
+        App.VoiceTTS
+            ?.init
+            ?.();
 
 
-    /*
-     * VISIBILITY
-     * Release microphone/camera while app is hidden.
-     * Resume only the active feature when returning.
-     */
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            if (
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.stop === "function"
-            ) {
-                App.VoiceEngine.stop();
+        /*
+         * Default speaker
+         */
+        App.VoiceEngine
+            ?.setSpeaker
+            ?.(
+                "ja-JP"
+            );
+
+
+        /*
+         * Empty voice UI
+         */
+        App.VoiceRenderer
+            ?.clearConversation
+            ?.();
+
+
+        /*
+         * Visibility handling
+         */
+        document.addEventListener(
+            "visibilitychange",
+            () => {
+
+                if (
+                    document.hidden
+                ) {
+
+                    App.VoiceEngine
+                        ?.stop
+                        ?.();
+
+                    App.CameraOCR
+                        ?.cancel
+                        ?.();
+
+                    App.CameraEngine
+                        ?.stop
+                        ?.(
+                            true
+                        );
+
+                    return;
+                }
+
+
+                const view =
+                    App.State.currentActiveView;
+
+
+                if (
+                    view === "voice"
+                ) {
+
+                    App.VoiceEngine
+                        ?.start
+                        ?.();
+                }
+
+
+                if (
+                    view === "camera"
+                ) {
+
+                    App.CameraEngine
+                        ?.init
+                        ?.();
+                }
             }
+        );
 
-            if (
-                App.CameraEngine &&
-                typeof App.CameraEngine.stop === "function"
-            ) {
-                App.CameraEngine.stop(false);
-            }
 
-            return;
-        }
-
-        const activeView = App.State.currentActiveView;
-
+        /*
+         * Service Worker
+         */
         if (
-            activeView === "voice" &&
-            App.VoiceEngine &&
-            typeof App.VoiceEngine.start === "function"
+            "serviceWorker" in navigator
         ) {
-            App.VoiceEngine.start();
+
+            navigator.serviceWorker
+                .register(
+                    "sw.js"
+                )
+                .then(
+                    registration => {
+
+                        console.log(
+                            "Service Worker registered:",
+                            registration.scope
+                        );
+                    }
+                )
+                .catch(
+                    error => {
+
+                        console.warn(
+                            "Service Worker registration failed:",
+                            error
+                        );
+                    }
+                );
         }
 
-        if (
-            activeView === "camera" &&
-            App.CameraEngine &&
-            typeof App.CameraEngine.init === "function"
-        ) {
-            App.CameraEngine.init();
-        }
-    });
+
+        /*
+         * Start on Home
+         */
+        App.Navigation
+            ?.switchView
+            ?.(
+                "hero"
+            );
 
 
-    /*
-     * SERVICE WORKER
-     */
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-            .register("sw.js")
-            .then(registration => {
-                console.log(
-                    "Hello Japan service worker registered.",
-                    registration.scope
-                );
-            })
-            .catch(error => {
-                console.warn(
-                    "Service worker registration notice:",
-                    error
-                );
-            });
+        console.log(
+            "Hello Japan AI ready."
+        );
     }
-
-
-    /*
-     * INITIAL VIEW LAUNCH
-     */
-    switchView("hero");
-});
+);
