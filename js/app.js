@@ -1,71 +1,70 @@
 window.addEventListener(
     "DOMContentLoaded",
     () => {
+
         console.log(
             "Hello Japan AI starting..."
         );
 
+        /*
+         * Clock
+         */
         App.Navigation
             ?.tickClock?.();
 
         setInterval(
-            () =>
+            () => {
                 App.Navigation
-                    ?.tickClock?.(),
+                    ?.tickClock?.();
+            },
             1000
         );
 
+        /*
+         * UI
+         */
         App.UI
             ?.updateApiStatus?.();
 
+        /*
+         * TTS
+         */
         App.VoiceTTS
             ?.init?.();
 
-        App.VoiceEngine
-            ?.setSpeaker?.(
-                "ja-JP"
-            );
+        /*
+         * Set default language.
+         *
+         * IMPORTANT:
+         * Do not start recognition here.
+         */
+        App.State.activeSpeakerLang =
+            "ja-JP";
 
+        if (
+            App.VoiceEngine?.recognition
+        ) {
+            App.VoiceEngine
+                .recognition.lang =
+                "ja-JP";
+        }
+
+        /*
+         * Clear initial UI
+         */
         App.VoiceRenderer
             ?.clearConversation?.();
 
         App.CameraRenderer
             ?.clearCard?.();
 
-        document.addEventListener(
-            "visibilitychange",
-            () => {
-                if (document.hidden) {
-                    App.VoiceEngine
-                        ?.stop?.();
-
-                    App.CameraOCR
-                        ?.cancel?.();
-
-                    App.CameraEngine
-                        ?.stop?.(true);
-
-                    return;
-                }
-
-                const view =
-                    App.State.currentActiveView;
-
-                if (view === "voice") {
-                    App.VoiceEngine
-                        ?.start?.();
-                }
-
-                if (view === "camera") {
-                    App.CameraEngine
-                        ?.init?.();
-                }
-            }
-        );
-
+        /*
+         * Service Worker
+         */
         if (
             "serviceWorker" in navigator
         ) {
+
             navigator.serviceWorker
                 .register(
                     "./sw.js",
@@ -74,24 +73,35 @@ window.addEventListener(
                             "none"
                     }
                 )
-                .then(registration => {
-                    registration
-                        .update()
-                        .catch(() => {});
+                .then(
+                    registration => {
 
-                    console.log(
-                        "Service Worker:",
-                        registration.scope
-                    );
-                })
-                .catch(error => {
-                    console.warn(
-                        "Service Worker registration:",
-                        error
-                    );
-                });
+                        registration
+                            .update()
+                            .catch(
+                                () => {}
+                            );
+
+                        console.log(
+                            "Service Worker:",
+                            registration.scope
+                        );
+                    }
+                )
+                .catch(
+                    error => {
+
+                        console.warn(
+                            "Service Worker registration:",
+                            error
+                        );
+                    }
+                );
         }
 
+        /*
+         * Start on HOME.
+         */
         App.Navigation
             ?.switchView?.(
                 "hero"
