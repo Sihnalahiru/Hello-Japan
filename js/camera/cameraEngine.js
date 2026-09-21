@@ -2,68 +2,113 @@ window.App = window.App || {};
 
 App.CameraEngine = {
 
+    stream: null,
+
+    facingMode: "environment",
+
     isStarting: false,
 
     isReady: false,
 
-    facingMode: "environment",
-
-    stream: null,
-
     torchSupported: false,
 
-    statusTimer: null,
-
-    basicRetryRunning: false,
+    startPromise: null,
 
 
     async init() {
+
+        if (
+            this.isReady &&
+            this.stream
+        ) {
+            return true;
+        }
+
+
+        if (this.startPromise) {
+            return this.startPromise;
+        }
+
 
         const requestId =
             ++App.State.cameraRequestId;
 
 
+        this.isStarting =
+            true;
+
+
+        this.startPromise =
+            this._start(requestId);
+
+
+        try {
+
+            return await this.startPromise;
+
+        } finally {
+
+            this.startPromise =
+                null;
+        }
+    },
+
+
+    async _start(requestId) {
+
         const video =
-            document.getElementById("live-video");
+            document.getElementById(
+                "live-video"
+            );
 
 
         if (!video) {
 
-            console.error(
-                "CameraEngine: #live-video not found."
+            this.showStatus(
+                "Camera video element is missing."
             );
 
+            this.isStarting =
+                false;
+
             return false;
         }
 
 
-        if (this.isStarting) {
-            return false;
-        }
+        this._stopStreamOnly();
 
 
-        if (this.isReady && this.stream) {
-            return true;
-        }
-
-
-        this.isStarting = true;
-
-        this.isReady = false;
-
-
-        this.facingMode =
-            App.State.useFacingMode ||
-            this.facingMode ||
-            "environment";
-
-
-        this.stop(false);
+        this.isReady =
+            false;
 
 
         this.showStatus(
-            "📷 Starting camera..."
+            "Starting camera..."
         );
+
+
+        let stream;
+
+
+        const constraints = {
+            audio: false,
+
+            video: {
+                facingMode: {
+                    ideal: this.facingMode
+                },
+
+                width: {
+                    ideal: 1280,
+                    max: 1920
+                },
+
+                height: {
+                    ideal: 720,
+                    max: 1080
+                }
+            }
+        };
 
 
         try {
@@ -72,351 +117,307 @@ App.CameraEngine = {
                 !navigator.mediaDevices ||
                 !navigator.mediaDevices.getUserMedia
             ) {
-
                 throw new Error(
-                    "CAMERA_API_UNAVAILABLE"
+                    "CAMERA_NOT_SUPPORTED"
                 );
             }
 
 
-            const constraints = {
-
-                audio: false,
-
-                video: {
-
-                    facingMode: {
-                        ideal: this.facingMode
-                    },
-
-                    width: {
-                        ideal: 1280,
-                        max: 1920
-                    },
-
-                    height: {
-                        ideal: 720,
-                        max: 1080
-                    }
-                }
-            };
-
-
-            const stream =
-                await navigator.mediaDevices.getUserMedia(
-                    constraints
-                );
-
-
-            if (
-                requestId !==
-                App.State.cameraRequestId
-            ) {
-
-                stream
-                    .getTracks()
-                    .forEach(track => track.stop());
-
-                return false;
-            }
-
-
-            this.stream =
-                stream;
-
-
-            App.State.mediaStream =
-                stream;
-
-
-            video.srcObject =
-                stream;
-
-
-            await this.waitForVideoReady(
-                video
-            );
-
-
-            try {
-
-                await video.play();
-
-            } catch (error) {
-
-                if (video.paused) {
-                    throw error;
-                }
-            }
-
-
-            if (
-                video.videoWidth <= 0 ||
-                video.videoHeight <= 0
-            ) {
-
-                throw new Error(
-                    "CAMERA_VIDEO_NOT_READY"
-                );
-            }
-
-
-            this.updateTorchCapability(
-                stream
-            );
-
-
-            this.isReady = true;
-
-            this.isStarting = false;
-
-
-            this.showStatus(
-                "✅ Camera ready — point at Japanese text"
-            );
-
-
-            return true;
-
-        } catch (error) {
-
-            console.error(
-                "CameraEngine.init error:",
-                error
-            );
-
-
-            this.isReady = false;
-
-            this.isStarting = false;
-
-
-            this.stop(false);
-
-            this.handleCameraError(
-                error
-            );
-
-
-            return false;
-        }
-    },
-
-
-    waitForVideoReady(video) {
-
-        return new Promise(
-            (resolve, reject) => {
-
-                if (
-                    video.readyState >= 2 &&
-                    video.videoWidth > 0 &&
-                    video.videoHeight > 0
-                ) {
-
-                    resolve();
-                    return;
-                }
-
-
-                let finished = false;
-
-
-                const cleanup = () => {
-
-                    video.removeEventListener(
-                        "loadedmetadata",
-                        onReady
+            stream =
+                await navigator.mediaDevices
+                    .getUserMedia(
+                        constraints
                     );
-
-                    video.removeEventListener(
-                        "canplay",
-                        onReady
-                    );
-
-                    video.removeEventListener(
-                        "error",
-                        onError
-                    );
-
-                    clearTimeout(timeout);
-                };
-
-
-                const complete = () => {
-
-                    if (finished) {
-                        return;
-                    }
-
-                    finished = true;
-
-                    cleanup();
-
-                    resolve();
-                };
-
-
-                const fail = () => {
-
-                    if (finished) {
-                        return;
-                    }
-
-                    finished = true;
-
-                    cleanup();
-
-                    reject(
-                        new Error(
-                            "CAMERA_VIDEO_NOT_READY"
-                        )
-                    );
-                };
-
-
-                const onReady = () => {
-
-                    if (
-                        video.videoWidth > 0 &&
-                        video.videoHeight > 0
-                    ) {
-
-                        complete();
-                    }
-                };
-
-
-                const onError = () => {
-                    fail();
-                };
-
-
-                const timeout =
-                    setTimeout(() => {
-
-                        if (
-                            video.videoWidth > 0 &&
-                            video.videoHeight > 0
-                        ) {
-
-                            complete();
-
-                        } else {
-
-                            fail();
-                        }
-
-                    }, 10000);
-
-
-                video.addEventListener(
-                    "loadedmetadata",
-                    onReady
-                );
-
-                video.addEventListener(
-                    "canplay",
-                    onReady
-                );
-
-                video.addEventListener(
-                    "error",
-                    onError
-                );
-
-
-                setTimeout(
-                    onReady,
-                    100
-                );
-            }
-        );
-    },
-
-
-    updateTorchCapability(stream) {
-
-        this.torchSupported =
-            false;
-
-
-        const track =
-            stream?.getVideoTracks?.()[0];
-
-
-        if (!track) {
-            return;
-        }
-
-
-        try {
-
-            const capabilities =
-                track.getCapabilities
-                    ? track.getCapabilities()
-                    : {};
-
-
-            this.torchSupported =
-                capabilities?.torch === true;
 
         } catch (error) {
 
             console.warn(
-                "Torch capability check failed:",
+                "Primary camera request failed:",
+                error
+            );
+
+
+            if (
+                error?.name ===
+                "OverconstrainedError"
+            ) {
+
+                stream =
+                    await this.retryBasicCamera(
+                        requestId
+                    );
+
+            } else {
+
+                this.handleCameraError(
+                    error
+                );
+
+                this.isStarting =
+                    false;
+
+                return false;
+            }
+        }
+
+
+        /*
+         * User navigated away while getUserMedia
+         * was still waiting.
+         */
+        if (
+            requestId !==
+                App.State.cameraRequestId ||
+            App.State.currentActiveView !==
+                "camera"
+        ) {
+
+            stream
+                ?.getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+            this.isStarting =
+                false;
+
+            return false;
+        }
+
+
+        if (!stream) {
+
+            this.isStarting =
+                false;
+
+            return false;
+        }
+
+
+        this.stream =
+            stream;
+
+        App.State.mediaStream =
+            stream;
+
+
+        video.srcObject =
+            stream;
+
+
+        video.muted =
+            true;
+
+        video.playsInline =
+            true;
+
+        video.autoplay =
+            true;
+
+
+        try {
+
+            await this.waitForVideoMetadata(
+                video,
+                6000
+            );
+
+            await video.play();
+
+        } catch (error) {
+
+            console.warn(
+                "Video start warning:",
                 error
             );
         }
-    },
 
 
-    stop(showStatus = false) {
+        if (
+            requestId !==
+                App.State.cameraRequestId ||
+            App.State.currentActiveView !==
+                "camera"
+        ) {
 
-        this.isReady = false;
+            this.stop(
+                true
+            );
 
-        this.isStarting = false;
+            return false;
+        }
 
-        this.torchSupported = false;
+
+        const track =
+            stream.getVideoTracks()[0];
+
+
+        const capabilities =
+            track?.getCapabilities
+                ? track.getCapabilities()
+                : {};
+
+
+        this.torchSupported =
+            Boolean(
+                capabilities?.torch
+            );
 
 
         App.State.isTorchOn =
             false;
 
 
-        if (this.stream) {
+        this.isReady =
+            true;
 
-            try {
+        this.isStarting =
+            false;
 
-                this.stream
-                    .getTracks()
-                    .forEach(track => {
 
-                        try {
-                            track.stop();
-                        } catch (error) {
-                            console.warn(
-                                "Camera track stop failed:",
-                                error
-                            );
+        this.showStatus(
+            "Camera ready — point at Japanese text."
+        );
+
+
+        setTimeout(
+            () => {
+                this.hideStatus();
+            },
+            1800
+        );
+
+
+        return true;
+    },
+
+
+    waitForVideoMetadata(
+        video,
+        timeoutMs
+    ) {
+
+        return new Promise(
+            resolve => {
+
+                if (
+                    video.videoWidth > 0 &&
+                    video.videoHeight > 0
+                ) {
+                    resolve();
+                    return;
+                }
+
+
+                let finished =
+                    false;
+
+
+                const finish =
+                    () => {
+
+                        if (finished) {
+                            return;
                         }
+
+                        finished =
+                            true;
+
+                        video.removeEventListener(
+                            "loadedmetadata",
+                            finish
+                        );
+
+                        resolve();
+                    };
+
+
+                video.addEventListener(
+                    "loadedmetadata",
+                    finish,
+                    {
+                        once: true
+                    }
+                );
+
+
+                setTimeout(
+                    finish,
+                    timeoutMs
+                );
+            }
+        );
+    },
+
+
+    async retryBasicCamera(
+        requestId
+    ) {
+
+        try {
+
+            const stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+                        video: true,
+                        audio: false
                     });
 
-            } catch (error) {
 
-                console.warn(
-                    "Camera stream stop failed:",
-                    error
-                );
+            if (
+                requestId !==
+                    App.State.cameraRequestId ||
+                App.State.currentActiveView !==
+                    "camera"
+            ) {
+
+                stream
+                    .getTracks()
+                    .forEach(
+                        track =>
+                            track.stop()
+                    );
+
+                return null;
             }
 
 
-            this.stream = null;
+            return stream;
+
+        } catch (error) {
+
+            this.handleCameraError(
+                error
+            );
+
+            return null;
+        }
+    },
+
+
+    stop(invalidate = true) {
+
+        if (invalidate) {
+
+            ++App.State.cameraRequestId;
         }
 
 
-        App.State.mediaStream =
-            null;
+        this._stopStreamOnly();
+
+
+        this.isStarting =
+            false;
+
+        this.isReady =
+            false;
+
+        this.torchSupported =
+            false;
+
+        App.State.isTorchOn =
+            false;
 
 
         const video =
@@ -429,85 +430,72 @@ App.CameraEngine = {
 
             try {
                 video.pause();
-            } catch (error) {
-                /* ignore */
-            }
+            } catch {}
 
 
             video.srcObject =
                 null;
         }
+    },
 
 
-        if (showStatus) {
+    _stopStreamOnly() {
 
-            this.showStatus(
-                "Camera stopped"
-            );
+        const stream =
+            this.stream ||
+            App.State.mediaStream;
+
+
+        if (stream) {
+
+            stream
+                .getTracks()
+                .forEach(
+                    track => {
+
+                        try {
+                            track.stop();
+                        } catch {}
+                    }
+                );
         }
+
+
+        this.stream =
+            null;
+
+        App.State.mediaStream =
+            null;
     },
 
 
     async toggleFacing() {
 
-        const nextMode =
-            this.getFacingMode() ===
+        this.facingMode =
+            this.facingMode ===
             "environment"
                 ? "user"
                 : "environment";
 
 
-        this.facingMode =
-            nextMode;
-
-
         App.State.useFacingMode =
-            nextMode;
+            this.facingMode;
 
 
-        App.State.cameraRequestId++;
-
-
-        this.stop(false);
-
-
-        this.showStatus(
-            nextMode === "environment"
-                ? "📷 Switching to rear camera..."
-                : "🤳 Switching to front camera..."
+        this.stop(
+            true
         );
 
 
-        const success =
-            await this.init();
-
-
-        if (success) {
-
-            App.Toast?.show?.(
-                nextMode === "environment"
-                    ? "Rear camera active"
-                    : "Front camera active"
-            );
-        }
-    },
-
-
-    getFacingMode() {
-
         if (
-            App.State.useFacingMode ===
-                "environment" ||
-            App.State.useFacingMode ===
-                "user"
+            App.State.currentActiveView !==
+            "camera"
         ) {
-
-            return App.State.useFacingMode;
+            return;
         }
 
 
-        return this.facingMode ||
-            "environment";
+        await this.init();
     },
 
 
@@ -518,108 +506,78 @@ App.CameraEngine = {
             App.State.mediaStream;
 
 
-        if (!stream) {
-
-            App.Toast?.show?.(
-                "Camera is not ready"
-            );
-
-            return;
-        }
-
-
         const track =
-            stream.getVideoTracks?.()[0];
+            stream?.getVideoTracks?.()[0];
 
 
         if (!track) {
 
-            App.Toast?.show?.(
-                "Camera video track unavailable"
+            this.showStatus(
+                "Camera is not ready."
             );
 
             return;
         }
 
 
-        let capabilities = {};
+        const capabilities =
+            track.getCapabilities
+                ? track.getCapabilities()
+                : {};
 
 
-        try {
+        if (!capabilities.torch) {
 
-            capabilities =
-                track.getCapabilities
-                    ? track.getCapabilities()
-                    : {};
-
-        } catch (error) {
-
-            console.warn(
-                "Unable to read camera capabilities:",
-                error
-            );
-        }
-
-
-        if (
-            capabilities?.torch !== true
-        ) {
-
-            App.Toast?.show?.(
-                "Torch not supported on this device"
+            this.showStatus(
+                "Torch is not supported by this camera."
             );
 
             return;
         }
 
 
-        const current =
-            Boolean(
-                App.State.isTorchOn
-            );
-
-
-        const next =
-            !current;
-
-
         try {
+
+            const nextState =
+                !App.State.isTorchOn;
+
 
             await track.applyConstraints({
-
                 advanced: [
                     {
-                        torch: next
+                        torch: nextState
                     }
                 ]
-
             });
 
 
             App.State.isTorchOn =
-                next;
+                nextState;
 
 
-            App.Toast?.show?.(
-                next
-                    ? "Torch ON"
-                    : "Torch OFF"
+            this.showStatus(
+                nextState
+                    ? "🔦 Torch ON"
+                    : "🔦 Torch OFF"
+            );
+
+
+            setTimeout(
+                () => {
+                    this.hideStatus();
+                },
+                1200
             );
 
         } catch (error) {
 
-            console.error(
+            console.warn(
                 "Torch error:",
                 error
             );
 
-
-            App.State.isTorchOn =
-                current;
-
-
-            App.Toast?.show?.(
-                "Unable to control camera torch"
+            this.showStatus(
+                "Torch could not be changed."
             );
         }
     },
@@ -633,232 +591,87 @@ App.CameraEngine = {
             );
 
 
-        if (status) {
-
-            status.textContent =
-                message;
-
-            status.classList.remove(
-                "hidden"
-            );
-
-
-            clearTimeout(
-                this.statusTimer
-            );
-
-
-            this.statusTimer =
-                setTimeout(() => {
-
-                    status.classList.add(
-                        "hidden"
-                    );
-
-                }, 3500);
+        if (!status) {
+            return;
         }
 
 
-        App.Toast?.show?.(
-            message
+        status.textContent =
+            message;
+
+
+        status.classList.remove(
+            "hidden"
         );
+    },
+
+
+    hideStatus() {
+
+        const status =
+            document.getElementById(
+                "camera-status"
+            );
+
+
+        if (status) {
+
+            status.classList.add(
+                "hidden"
+            );
+        }
     },
 
 
     handleCameraError(error) {
 
-        const name =
-            error?.name || "";
+        console.error(
+            "Camera error:",
+            error
+        );
 
 
-        const message =
-            error?.message || "";
+        let message =
+            "Unable to start camera.";
 
 
-        if (
-            name === "NotAllowedError" ||
-            name === "PermissionDeniedError"
+        switch (
+            error?.name
         ) {
 
-            this.showStatus(
-                "🔒 Camera permission denied. Allow camera access and try again."
-            );
+            case "NotAllowedError":
+                message =
+                    "📷 Camera permission was denied. Allow camera access and try again.";
+                break;
 
-            return;
-        }
+            case "NotFoundError":
+                message =
+                    "📷 No camera was found on this device.";
+                break;
 
+            case "NotReadableError":
+                message =
+                    "📷 Camera is already being used by another application.";
+                break;
 
-        if (name === "NotFoundError") {
+            case "SecurityError":
+                message =
+                    "🔒 Camera requires a secure HTTPS connection.";
+                break;
 
-            this.showStatus(
-                "📷 No camera was found on this device."
-            );
-
-            return;
-        }
-
-
-        if (name === "NotReadableError") {
-
-            this.showStatus(
-                "⚠️ Camera is busy or unavailable. Close other camera apps and try again."
-            );
-
-            return;
-        }
-
-
-        if (name === "OverconstrainedError") {
-
-            this.showStatus(
-                "⚠️ Camera settings are not supported. Trying basic camera..."
-            );
-
-
-            this.retryBasicCamera();
-
-            return;
-        }
-
-
-        if (name === "SecurityError") {
-
-            this.showStatus(
-                "🔐 Camera access requires a secure HTTPS page."
-            );
-
-            return;
-        }
-
-
-        if (
-            message ===
-            "CAMERA_API_UNAVAILABLE"
-        ) {
-
-            this.showStatus(
-                "⚠️ This browser does not support camera access."
-            );
-
-            return;
-        }
-
-
-        if (
-            message ===
-            "CAMERA_VIDEO_NOT_READY"
-        ) {
-
-            this.showStatus(
-                "⚠️ Camera started but video is not ready. Please try again."
-            );
-
-            return;
+            case "CAMERA_NOT_SUPPORTED":
+                message =
+                    "📷 This browser does not support camera access.";
+                break;
         }
 
 
         this.showStatus(
-            "❌ Camera could not start. Check permission and try again."
+            message
         );
-    },
 
-
-    async retryBasicCamera() {
-
-        if (this.basicRetryRunning) {
-            return;
-        }
-
-
-        this.basicRetryRunning =
-            true;
-
-
-        try {
-
-            App.State.cameraRequestId++;
-
-
-            this.stop(false);
-
-
-            const video =
-                document.getElementById(
-                    "live-video"
-                );
-
-
-            if (!video) {
-                return;
-            }
-
-
-            this.showStatus(
-                "📷 Retrying camera..."
-            );
-
-
-            const stream =
-                await navigator.mediaDevices.getUserMedia({
-
-                    video: true,
-
-                    audio: false
-                });
-
-
-            this.stream =
-                stream;
-
-
-            App.State.mediaStream =
-                stream;
-
-
-            video.srcObject =
-                stream;
-
-
-            await this.waitForVideoReady(
-                video
-            );
-
-
-            await video.play();
-
-
-            this.updateTorchCapability(
-                stream
-            );
-
-
-            this.isReady =
-                true;
-
-
-            this.showStatus(
-                "✅ Camera ready"
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Basic camera retry failed:",
-                error
-            );
-
-
-            this.stop(false);
-
-
-            this.showStatus(
-                "❌ Camera retry failed. Please check browser permission."
-            );
-
-        } finally {
-
-            this.basicRetryRunning =
-                false;
-        }
+        App.Toast?.show?.(
+            message
+        );
     }
 };
