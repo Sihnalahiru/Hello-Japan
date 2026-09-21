@@ -1,174 +1,111 @@
 window.App = window.App || {};
 
 App.Navigation = {
-
     switchView(viewName) {
-
         const validViews = [
             "hero",
             "camera",
             "voice"
         ];
 
-
         if (
-            !validViews.includes(
-                viewName
-            )
+            !validViews.includes(viewName)
         ) {
             return;
         }
 
-
-        const previousView =
+        const previous =
             App.State.currentActiveView;
 
-
         if (
-            previousView === "camera" &&
-            viewName !== "camera"
-        ) {
-
-            App.CameraOCR
-                ?.cancel
-                ?.();
-
-            App.CameraEngine
-                ?.stop
-                ?.(
-                    true
-                );
-        }
-
-
-        if (
-            previousView === "voice" &&
+            previous === "voice" &&
             viewName !== "voice"
         ) {
-
-            App.VoiceEngine
-                ?.stop
-                ?.();
+            App.VoiceEngine?.stop?.();
         }
 
+        if (
+            previous === "camera" &&
+            viewName !== "camera"
+        ) {
+            App.CameraOCR?.cancel?.();
+            App.CameraEngine?.stop?.(true);
+        }
 
         App.State.currentActiveView =
             viewName;
-
 
         document
             .querySelectorAll(
                 ".screen-view"
             )
-            .forEach(
-                view => {
-
-                    view.classList.remove(
-                        "active"
-                    );
-                }
-            );
-
+            .forEach(view => {
+                view.classList.remove(
+                    "active"
+                );
+            });
 
         const target =
             document.getElementById(
                 `view-${viewName}`
             );
 
-
         if (target) {
-
             target.classList.add(
                 "active"
             );
         }
 
-
         document
             .querySelectorAll(
                 ".nav-icon-btn"
             )
-            .forEach(
-                button => {
+            .forEach(button => {
+                const nav =
+                    button.dataset.nav;
 
-                    const nav =
-                        button.dataset.nav;
+                button.classList.toggle(
+                    "text-emerald-700",
+                    nav === viewName
+                );
 
+                button.classList.toggle(
+                    "text-gray-400",
+                    nav !== viewName
+                );
+            });
 
-                    if (
-                        nav === viewName
-                    ) {
-
-                        button.classList.add(
-                            "text-emerald-700"
-                        );
-
-                        button.classList.remove(
-                            "text-gray-400"
-                        );
-
-                    } else {
-
-                        button.classList.remove(
-                            "text-emerald-700"
-                        );
-
-                        button.classList.add(
-                            "text-gray-400"
-                        );
-                    }
-                }
-            );
-
-
-        if (
-            viewName === "camera"
-        ) {
-
+        if (viewName === "camera") {
             App.CameraRenderer
-                ?.clearCard
-                ?.();
+                ?.clearCard?.();
 
             App.CameraEngine
-                ?.init
-                ?.();
+                ?.init?.();
         }
 
-
-        if (
-            viewName === "voice"
-        ) {
-
+        if (viewName === "voice") {
             App.VoiceEngine
-                ?.start
-                ?.();
+                ?.start?.();
         }
     },
 
-
     tickClock() {
-
         const clock =
             document.getElementById(
                 "hero-clock"
             );
 
+        if (!clock) return;
 
-        if (!clock) {
-            return;
-        }
-
-
-        const now =
-            new Date();
-
+        const now = new Date();
 
         clock.textContent =
             now.toLocaleTimeString(
                 [],
                 {
-                    hour: "numeric",
-                    minute: "2-digit"
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
                 }
             );
     }
