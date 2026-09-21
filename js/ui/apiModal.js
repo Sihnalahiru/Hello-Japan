@@ -1,41 +1,34 @@
 window.App = window.App || {};
 
 App.UI = {
-
     updateApiStatus() {
-
-        const heroButton =
+        const button =
             document.getElementById(
                 "api-key-btn-hero"
             );
 
-        const heroStatus =
+        const status =
             document.getElementById(
                 "api-status-hero"
             );
 
-
-        if (heroButton) {
-            heroButton.classList.add(
+        if (button) {
+            button.classList.add(
                 "hidden"
             );
         }
 
-
-        if (heroStatus) {
-            heroStatus.textContent =
-                "AI Secure";
+        if (status) {
+            status.textContent =
+                "AI Connected";
         }
     },
-
 
     toggleApiKeyModal() {
-
         const modal =
             document.getElementById(
                 "apikey-modal"
             );
-
 
         if (modal) {
             modal.classList.add(
@@ -43,62 +36,36 @@ App.UI = {
             );
         }
 
-
         App.Toast?.show?.(
-            "🔐 Gemini AI is securely connected through Cloudflare."
+            "🔐 AI is securely connected through Cloudflare."
         );
     },
-
 
     saveApiKeyModal() {
-
-        const modal =
-            document.getElementById(
-                "apikey-modal"
-            );
-
-
-        if (modal) {
-            modal.classList.add(
-                "hidden"
-            );
-        }
-
-
-        App.Toast?.show?.(
-            "🔐 API keys are managed securely by the server."
-        );
-    },
-
-
-    clearApiKeyModal() {
-
         const input =
             document.getElementById(
                 "gemini-key-input"
             );
 
+        if (input) {
+            input.value = "";
+        }
+
+        this.toggleApiKeyModal();
+    },
+
+    clearApiKeyModal() {
+        const input =
+            document.getElementById(
+                "gemini-key-input"
+            );
 
         if (input) {
             input.value = "";
         }
 
-
-        const modal =
-            document.getElementById(
-                "apikey-modal"
-            );
-
-
-        if (modal) {
-            modal.classList.add(
-                "hidden"
-            );
-        }
-
-
         App.Toast?.show?.(
-            "🔐 Browser API key storage is disabled."
+            "🔐 API key is managed securely on the server."
         );
     }
 };
