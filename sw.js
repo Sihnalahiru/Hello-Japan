@@ -1,211 +1,165 @@
-const CACHE_NAME =
-    "hello-japan-v2";
+window.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-
-const CORE_ASSETS = [
-
-    "./",
-
-    "./index.html",
-
-    "./manifest.json",
-
-    "./css/app.css",
-
-    "./js/config.js",
-
-    "./js/state.js",
-
-    "./js/security/safeRender.js",
-
-    "./js/ai/schemas.js",
-
-    "./js/ai/prompts.js",
-
-    "./js/ai/gemini.js",
-
-    "./js/ui/toast.js",
-
-    "./js/ui/apiModal.js",
-
-    "./js/ui/navigation.js",
-
-    "./js/voice/voiceTTS.js",
-
-    "./js/voice/voiceRenderer.js",
-
-    "./js/voice/voiceAI.js",
-
-    "./js/voice/voiceEngine.js",
-
-    "./js/camera/cameraEngine.js",
-
-    "./js/camera/cameraRenderer.js",
-
-    "./js/camera/cameraOCR.js",
-
-    "./js/app.js"
-];
-
-
-self.addEventListener(
-    "install",
-    event => {
-
-        event.waitUntil(
-
-            caches
-                .open(CACHE_NAME)
-                .then(cache =>
-                    cache.addAll(
-                        CORE_ASSETS
-                    )
-                )
+        console.log(
+            "Hello Japan AI starting..."
         );
 
 
-        self.skipWaiting();
-    }
-);
+        /*
+         * Clock
+         */
+        App.Navigation
+            ?.tickClock
+            ?.();
 
 
-self.addEventListener(
-    "activate",
-    event => {
+        setInterval(
+            () => {
 
-        event.waitUntil(
+                App.Navigation
+                    ?.tickClock
+                    ?.();
 
-            caches
-                .keys()
-                .then(keys => {
-
-                    return Promise.all(
-
-                        keys
-                            .filter(
-                                key =>
-                                    key !==
-                                    CACHE_NAME
-                            )
-                            .map(
-                                key =>
-                                    caches.delete(
-                                        key
-                                    )
-                            )
-                    );
-                })
-                .then(() =>
-                    self.clients.claim()
-                )
+            },
+            1000
         );
-    }
-);
 
 
-self.addEventListener(
-    "fetch",
-    event => {
-
-        const request =
-            event.request;
-
-
-        if (
-            request.method !==
-            "GET"
-        ) {
-
-            return;
-        }
+        /*
+         * Secure AI status
+         */
+        App.UI
+            ?.updateApiStatus
+            ?.();
 
 
-        const url =
-            new URL(
-                request.url
+        /*
+         * Voice TTS initialization
+         */
+        App.VoiceTTS
+            ?.init
+            ?.();
+
+
+        /*
+         * Default speaker
+         */
+        App.VoiceEngine
+            ?.setSpeaker
+            ?.(
+                "ja-JP"
             );
 
 
         /*
-         * Never cache API/Worker requests.
+         * Empty voice UI
          */
+        App.VoiceRenderer
+            ?.clearConversation
+            ?.();
 
+
+        /*
+         * Visibility handling
+         */
+        document.addEventListener(
+            "visibilitychange",
+            () => {
+
+                if (
+                    document.hidden
+                ) {
+
+                    App.VoiceEngine
+                        ?.stop
+                        ?.();
+
+                    App.CameraOCR
+                        ?.cancel
+                        ?.();
+
+                    App.CameraEngine
+                        ?.stop
+                        ?.(
+                            true
+                        );
+
+                    return;
+                }
+
+
+                const view =
+                    App.State.currentActiveView;
+
+
+                if (
+                    view === "voice"
+                ) {
+
+                    App.VoiceEngine
+                        ?.start
+                        ?.();
+                }
+
+
+                if (
+                    view === "camera"
+                ) {
+
+                    App.CameraEngine
+                        ?.init
+                        ?.();
+                }
+            }
+        );
+
+
+        /*
+         * Service Worker
+         */
         if (
-            url.origin ===
-            self.location.origin &&
-            (
-                url.pathname === "/" ||
-                url.pathname.endsWith(".html") ||
-                url.pathname.endsWith(".js") ||
-                url.pathname.endsWith(".css")
-            )
+            "serviceWorker" in navigator
         ) {
 
-            /*
-             * Network first for app files.
-             *
-             * This prevents old broken JS from
-             * surviving deployments.
-             */
+            navigator.serviceWorker
+                .register(
+                    "sw.js"
+                )
+                .then(
+                    registration => {
 
-            event.respondWith(
+                        console.log(
+                            "Service Worker registered:",
+                            registration.scope
+                        );
+                    }
+                )
+                .catch(
+                    error => {
 
-                fetch(request)
-                    .then(response => {
-
-                        if (
-                            response &&
-                            response.ok
-                        ) {
-
-                            const clone =
-                                response.clone();
-
-
-                            caches
-                                .open(
-                                    CACHE_NAME
-                                )
-                                .then(cache =>
-                                    cache.put(
-                                        request,
-                                        clone
-                                    )
-                                );
-                        }
-
-
-                        return response;
-
-                    })
-                    .catch(() =>
-                        caches.match(
-                            request
-                        )
-                    )
-            );
-
-
-            return;
+                        console.warn(
+                            "Service Worker registration failed:",
+                            error
+                        );
+                    }
+                );
         }
 
 
         /*
-         * Other static resources:
-         * cache first.
+         * Start on Home
          */
+        App.Navigation
+            ?.switchView
+            ?.(
+                "hero"
+            );
 
-        event.respondWith(
 
-            caches
-                .match(request)
-                .then(cached => {
-
-                    return (
-                        cached ||
-                        fetch(request)
-                    );
-                })
+        console.log(
+            "Hello Japan AI ready."
         );
     }
 );
