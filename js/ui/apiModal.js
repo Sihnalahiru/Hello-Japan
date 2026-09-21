@@ -4,25 +4,28 @@ App.UI = {
 
     updateApiStatus() {
 
-        const heroBtn =
+        const heroButton =
             document.getElementById(
                 "api-key-btn-hero"
             );
 
+        const heroStatus =
+            document.getElementById(
+                "api-status-hero"
+            );
 
-        if (!heroBtn) {
-            return;
+
+        if (heroButton) {
+            heroButton.classList.add(
+                "hidden"
+            );
         }
 
 
-        /*
-         * Gemini authentication is handled by
-         * Cloudflare Worker.
-         */
-
-        heroBtn.classList.add(
-            "hidden"
-        );
+        if (heroStatus) {
+            heroStatus.textContent =
+                "AI Secure";
+        }
     },
 
 
@@ -34,21 +37,41 @@ App.UI = {
             );
 
 
-        if (!modal) {
-            return;
+        if (modal) {
+            modal.classList.add(
+                "hidden"
+            );
         }
 
 
-        /*
-         * The old API-key input is no longer used.
-         * Keep modal compatibility if old HTML still
-         * contains the element.
-         */
-
-        modal.classList.toggle(
-            "hidden"
+        App.Toast?.show?.(
+            "🔐 Gemini AI is securely connected through Cloudflare."
         );
+    },
 
+
+    saveApiKeyModal() {
+
+        const modal =
+            document.getElementById(
+                "apikey-modal"
+            );
+
+
+        if (modal) {
+            modal.classList.add(
+                "hidden"
+            );
+        }
+
+
+        App.Toast?.show?.(
+            "🔐 API keys are managed securely by the server."
+        );
+    },
+
+
+    clearApiKeyModal() {
 
         const input =
             document.getElementById(
@@ -57,29 +80,8 @@ App.UI = {
 
 
         if (input) {
-
             input.value = "";
-
-            input.setAttribute(
-                "disabled",
-                "disabled"
-            );
-
-            input.placeholder =
-                "Gemini API is securely configured on the server";
         }
-    },
-
-
-    saveApiKeyModal() {
-
-        /*
-         * NEVER save Gemini keys in localStorage.
-         */
-
-        App.Toast?.show?.(
-            "Gemini API is securely handled by the Cloudflare Worker."
-        );
 
 
         const modal =
@@ -88,33 +90,15 @@ App.UI = {
             );
 
 
-        modal?.classList.add(
-            "hidden"
-        );
-    },
-
-
-    clearApiKeyModal() {
-
-        /*
-         * Legacy compatibility only.
-         * No browser API key exists.
-         */
-
-        localStorage.removeItem(
-            "SUHADA_GEMINI_API_KEY"
-        );
-
-
-        App.State.userApiKey =
-            "";
+        if (modal) {
+            modal.classList.add(
+                "hidden"
+            );
+        }
 
 
         App.Toast?.show?.(
-            "Browser API key storage is disabled."
+            "🔐 Browser API key storage is disabled."
         );
-
-
-        this.updateApiStatus();
     }
 };
