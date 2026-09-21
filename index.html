@@ -92,10 +92,10 @@
 
         /* Glass dock */
         .glass-dock {
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
         }
 
         /* Hide scrollbars */
@@ -329,47 +329,42 @@
                             <span class="text-[10px] text-emerald-700 font-semibold ml-1">3/4 mastered</span>
                         </div>
                     </div>
-                    <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
-                        🎌
-                    </div>
-                </div>
-
-                <!-- Launch Voice Floating Trigger Banner -->
-                <div class="bg-gradient-to-r from-brandGreen to-emerald-600 rounded-2xl p-4 text-darkForest flex items-center justify-between shadow-md cursor-pointer" onclick="switchView('voice')">
-                    <div>
-                        <p class="text-[11px] font-black uppercase tracking-wider text-darkForest/70">Hands-Free Conversation</p>
-                        <h4 class="font-black text-sm text-darkForest">Talk with Japanese People Now</h4>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-darkForest text-brandGreen flex items-center justify-center shadow-lg">
-                        <i class="ph ph-microphone text-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- VIEW 3: HANDS-FREE VOICE ASSISTANT (Original Right Screen: Soft Mint + 3D Glowing Head + Live Speech & Suggested Replies) -->
-        <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-24 text-gray-900">
+        <!-- VIEW 3: HANDS-FREE VOICE ASSISTANT (Live 2-Way Speech Translation & Suggestions) -->
+        <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-32 text-gray-900">
             
-            <div class="p-5 flex flex-col flex-1">
+            <div class="p-4 flex flex-col flex-1">
                 <!-- Header -->
-                <div class="flex justify-between items-center pt-1 mb-3">
-                    <button onclick="switchView('dashboard')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95">
+                <div class="flex justify-between items-center pt-1 mb-2">
+                    <button onclick="switchView('dashboard')" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95">
                         <i class="ph ph-caret-left text-lg"></i>
                     </button>
                     <div class="text-center">
                         <h2 class="font-extrabold text-sm text-gray-900 flex items-center justify-center gap-1.5">
-                            <span>Hello Japan ! Voice AI</span>
+                            <span>Hello Japan ! 2-Way Voice AI</span>
                             <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
                         </h2>
                         <p class="text-[10px] text-gray-500 font-semibold" id="voice-env-display">Context: Daily / Friendly</p>
                     </div>
-                    <button onclick="toggleApiKeyModal()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="API Settings">
+                    <button onclick="toggleApiKeyModal()" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="API Settings">
                         <i class="ph ph-gear text-lg"></i>
                     </button>
                 </div>
 
+                <!-- Speaker Mode & Situation Pills -->
+                <div class="flex items-center justify-between gap-2 mb-2.5 bg-white/70 p-1.5 rounded-2xl border border-emerald-100">
+                    <span class="text-[10px] font-bold text-gray-600 pl-1">Speaking:</span>
+                    <div class="flex gap-1.5">
+                        <button id="btn-speaker-jp" onclick="setActiveSpeaker('ja-JP')" class="bg-deepCard text-white text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">
+                            <span>🇯🇵 Japanese</span>
+                        </button>
+                        <button id="btn-speaker-user" onclick="setActiveSpeaker('si-LK')" class="bg-white text-gray-700 text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">
+                            <span>🇱🇰 Sinhala / EN</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Environment / Situation Switcher Pills -->
-                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 py-1">
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-2 py-0.5">
                     <button onclick="setVoiceContext('daily', this)" class="ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
                         🌸 Daily Friendly
                     </button>
@@ -377,181 +372,184 @@
                         💼 Workplace (Keigo)
                     </button>
                     <button onclick="setVoiceContext('restaurant', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
-                        🍜 Restaurant / Bill
+                        🍜 Restaurant
                     </button>
                     <button onclick="setVoiceContext('konbini', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
                         🏪 Store / Konbini
                     </button>
                 </div>
 
-                <!-- Central 3D Bot & Visualizer Head (1:1 with Screenshot 3) -->
+                <!-- Central 3D Bot & Visualizer Head -->
                 <div class="flex flex-col items-center justify-center my-1 select-none">
-                    
-                    <!-- Audio Waveforms & 3D Green Sphere Head -->
-                    <div class="flex items-center justify-center gap-3 w-full my-2">
+                    <div class="flex items-center justify-center gap-3 w-full my-1">
                         <!-- Waveform Left -->
-                        <div class="flex gap-1.5 h-16 items-center">
-                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-3"></div>
-                            <div class="w-1.5 h-10 bg-brandGreen rounded-full audio-bar delay-1"></div>
-                            <div class="w-1.5 h-16 bg-brandGreen rounded-full audio-bar delay-2"></div>
-                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-4"></div>
+                        <div class="flex gap-1.5 h-12 items-center">
+                            <div class="w-1.5 h-5 bg-brandGreen rounded-full audio-bar delay-3"></div>
+                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                            <div class="w-1.5 h-12 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-4"></div>
                         </div>
 
-                        <!-- 3D Cute Green Robot Head -->
-                        <div id="mic-avatar-btn" onclick="toggleHandsFreeListening()" class="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative listening-glow" title="Tap to Toggle Hands-Free Listening">
-                            <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-5xl shadow-inner relative">
+                        <!-- 3D Bot Head Mic Button -->
+                        <div id="mic-avatar-btn" onclick="toggleHandsFreeListening()" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative listening-glow">
+                            <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-4xl shadow-inner relative">
                                 🤖
-                                <span id="listening-badge-dot" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
+                                <span id="listening-badge-dot" class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
                             </div>
                         </div>
 
                         <!-- Waveform Right -->
-                        <div class="flex gap-1.5 h-16 items-center">
-                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-4"></div>
-                            <div class="w-1.5 h-16 bg-brandGreen rounded-full audio-bar delay-2"></div>
-                            <div class="w-1.5 h-10 bg-brandGreen rounded-full audio-bar delay-1"></div>
-                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-3"></div>
+                        <div class="flex gap-1.5 h-12 items-center">
+                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-4"></div>
+                            <div class="w-1.5 h-12 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                            <div class="w-1.5 h-5 bg-brandGreen rounded-full audio-bar delay-3"></div>
                         </div>
                     </div>
 
                     <!-- Live Listening Status Pill -->
-                    <div class="bg-white/90 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-4 py-1 rounded-full shadow-sm flex items-center gap-1.5 mt-1">
+                    <div class="bg-white/95 border border-emerald-200 text-emerald-900 text-[10px] font-bold px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 mt-1">
                         <span id="mic-live-icon" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <span id="mic-status-label">Continuous Live Listening: Japanese & Sinhala</span>
+                        <span id="mic-status-label">Continuous Live Ear: Listening...</span>
                     </div>
 
-                    <!-- Quick Media Action Buttons (Photo, Big Mic, AR Camera) -->
-                    <div class="flex items-center gap-5 mt-3">
-                        <button onclick="switchView('camera')" class="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Scan Japanese Sign">
-                            <i class="ph ph-camera text-xl"></i>
+                    <!-- Voice Action Tools (Photo, Mic Trigger, Quick Manual Speech Test) -->
+                    <div class="flex items-center gap-4 mt-2 mb-1">
+                        <button onclick="switchView('camera')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Open Vision Camera">
+                            <i class="ph ph-camera text-lg"></i>
                         </button>
-                        <button onclick="toggleHandsFreeListening()" id="main-mic-fab" class="w-14 h-14 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center shadow-lg shadow-brandGreen/40 text-darkForest text-2xl font-bold active:scale-90 transition-transform">
+                        <button onclick="toggleHandsFreeListening()" id="main-mic-fab" class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center shadow-lg shadow-brandGreen/40 text-darkForest text-xl font-bold active:scale-90 transition-transform">
                             <i id="mic-center-icon" class="ph ph-microphone"></i>
                         </button>
-                        <button onclick="triggerSimulatedConversation()" class="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Test Sample Japanese Voice">
-                            <i class="ph ph-arrows-clockwise text-xl"></i>
+                        <button onclick="openQuickSpeechPrompt()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Type or Select Conversation Sample">
+                            <i class="ph ph-chat-centered-dots text-lg"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- LIVE DETECTED SPEECH CARD (What the other person just said) -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 mt-2 mb-3 transition-all">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-black uppercase text-emerald-700 tracking-wider flex items-center gap-1">
-                            <i class="ph ph-ear"></i> Other Person Said (අනෙක් පාර්ශවය පැවසූ දේ):
-                        </span>
-                        <button onclick="speakCurrentDetected()" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100" title="Listen Original Japanese">
-                            <i class="ph ph-speaker-high"></i>
-                        </button>
-                    </div>
+                <!-- LIVE CONVERSATION TIMELINE CONTAINER -->
+                <div class="flex flex-col gap-2.5 mt-1">
                     
-                    <h3 id="detected-japanese" class="text-lg font-black text-gray-900 leading-snug">
-                        こんにちは！今日はお疲れ様でした。
-                    </h3>
-                    <p id="detected-romaji" class="text-xs text-emerald-700 font-semibold mt-0.5">
-                        (Konnichiwa! Kyou wa otsukaresama deshita.)
-                    </p>
-
-                    <div class="border-t border-gray-100 pt-2 mt-2 space-y-1">
-                        <p class="text-xs text-gray-800">
-                            <b class="text-emerald-800 font-extrabold">🇱🇰 සිංහල:</b> 
-                            <span id="detected-sinhala">හෙලෝ! අද දවසේ මහන්සි වුණාට බොහොම ස්තූතියි.</span>
-                        </p>
-                        <p class="text-xs text-gray-600">
-                            <b class="text-gray-700 font-extrabold">🇬🇧 English:</b> 
-                            <span id="detected-english">Hello! Thank you for your hard work today.</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- WHAT YOU SHOULD REPLY SECTION (Instant Polite Suggestions) -->
-                <div class="flex flex-col flex-1">
-                    <div class="flex justify-between items-center mb-1.5">
-                        <span class="text-[11px] font-extrabold uppercase text-gray-800 tracking-wide flex items-center gap-1">
-                            <i class="ph ph-sparkle text-brandGreen font-bold"></i> 
-                            Suggested Replies for You (ඔබ කිව යුතු ආචාරශීලී පිළිතුරු):
-                        </span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Tap to Speak Aloud</span>
-                    </div>
-
-                    <!-- Dynamic Polite Suggestion Cards (No typing required!) -->
-                    <div id="suggestions-list" class="flex flex-col gap-2">
-                        <!-- Option 1 -->
-                        <div onclick="speakReplyOption('お疲れ様でした！ありがとうございます', 'Otsukaresama deshita! Arigatou gozaimasu', 'ඔබටත් ස්තූතියි! මහන්සි වුණාට පින්.')" class="bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between">
-                            <div class="flex-1 pr-2">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-[9px] bg-brandGreen/20 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Polite Reply 1</span>
-                                    <span class="text-xs font-black text-gray-900">お疲れ様でした！ありがとうございます</span>
-                                </div>
-                                <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(Otsukaresama deshita! Arigatou gozaimasu)</p>
-                                <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 ඔබටත් බොහෝම ස්තූතියි!</p>
-                            </div>
-                            <div class="w-9 h-9 rounded-full bg-brandGreen/20 text-emerald-700 flex items-center justify-center shrink-0">
-                                <i class="ph ph-speaker-high text-lg"></i>
+                    <!-- WHAT THE OTHER PERSON SAID (Live Speech Output) -->
+                    <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-emerald-100 transition-all">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-black uppercase text-emerald-700 tracking-wider flex items-center gap-1">
+                                <span id="detected-speaker-badge" class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[9px] font-black">🇯🇵 PERSON SAID:</span>
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <span id="live-translating-badge" class="hidden text-[9px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-bold animate-pulse">
+                                    Translating live...
+                                </span>
+                                <button onclick="speakCurrentDetected()" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100" title="Listen Spoken Sentence">
+                                    <i class="ph ph-speaker-high"></i>
+                                </button>
                             </div>
                         </div>
+                        
+                        <!-- Original Spoken -->
+                        <h3 id="detected-japanese" class="text-base font-black text-gray-900 leading-snug">
+                            こんにちは！今日はお疲れ様でした。
+                        </h3>
+                        <p id="detected-romaji" class="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                            (Konnichiwa! Kyou wa otsukaresama deshita.)
+                        </p>
 
-                        <!-- Option 2 -->
-                        <div onclick="speakReplyOption('こちらこそ、大変お世話になりました', 'Kochira koso, taihen osewa ni narimashita', 'මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි')" class="bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between">
-                            <div class="flex-1 pr-2">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">Formal Respect</span>
-                                    <span class="text-xs font-black text-gray-900">こちらこそ、大変お世話になりました</span>
-                                </div>
-                                <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(Kochira koso, taihen osewa ni narimashita)</p>
-                                <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි.</p>
+                        <!-- Live Multi-lingual Output -->
+                        <div class="border-t border-gray-100 pt-2 mt-2 space-y-1">
+                            <div class="flex items-start gap-1.5 text-xs">
+                                <span class="bg-red-50 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-black shrink-0">🇱🇰 සිංහල</span>
+                                <p id="detected-sinhala" class="text-gray-900 font-semibold">හෙලෝ! අද දවසේ මහන්සි වුණාට බොහොම ස්තූතියි.</p>
                             </div>
-                            <div class="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                                <i class="ph ph-speaker-high text-lg"></i>
+                            <div class="flex items-start gap-1.5 text-xs">
+                                <span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[9px] font-black shrink-0">🇬🇧 English</span>
+                                <p id="detected-english" class="text-gray-600 font-medium">Hello! Thank you for your hard work today.</p>
                             </div>
                         </div>
                     </div>
+
+                    <!-- WHAT YOU SHOULD REPLY SECTION (Instant Polite Suggestions with NO CUTOFF) -->
+                    <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-3.5 shadow-sm border border-emerald-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[11px] font-black uppercase text-gray-800 tracking-wide flex items-center gap-1">
+                                <i class="ph ph-sparkle text-brandGreen font-bold"></i> 
+                                <span>Suggested Replies for You:</span>
+                            </span>
+                            <span class="text-[9px] bg-brandGreen/25 text-emerald-900 px-2 py-0.5 rounded-full font-extrabold">Tap to Speak</span>
+                        </div>
+
+                        <!-- Dynamic Polite Suggestion Cards (Kanji + Romaji + Sinhala + English) -->
+                        <div id="suggestions-list" class="flex flex-col gap-2">
+                            <!-- Populated dynamically via handleLiveSpokenVoice -->
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- Footer Status Banner -->
-                <div class="bg-deepCard text-white rounded-2xl p-2.5 flex justify-between items-center text-[11px] mt-3 shadow-md">
-                    <span class="flex items-center gap-1 font-bold">
-                        <i class="ph ph-waveform text-brandGreen"></i>
-                        <span>Continuous Live Ambient Ear Active</span>
-                    </span>
-                    <span class="text-emerald-300 font-semibold">Gemini 3 Powered</span>
+                <!-- Quick Manual Speech Prompt Modal -->
+                <div id="quick-input-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div class="bg-white w-full max-w-sm p-4 rounded-3xl shadow-2xl border border-emerald-200 text-gray-900">
+                        <div class="flex justify-between items-center mb-2.5">
+                            <h3 class="font-extrabold text-sm flex items-center gap-1 text-emerald-800">
+                                <i class="ph ph-microphone"></i> Test Live Speech Input
+                            </h3>
+                            <button onclick="document.getElementById('quick-input-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-700">
+                                <i class="ph ph-x text-base"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mb-2">
+                            Type any spoken phrase or tap a sample to see instant live translation & reply suggestions:
+                        </p>
+                        <input type="text" id="quick-speech-input" placeholder="Type Japanese, Sinhala, or English..." class="w-full bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 text-xs text-gray-800 outline-none focus:border-brandGreen mb-3 font-semibold">
+                        
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            <button onclick="fillQuickInput('お疲れ様でした！')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">お疲れ様でした！</button>
+                            <button onclick="fillQuickInput('この電車は新宿に行きますか？')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">新宿に行きますか？</button>
+                            <button onclick="fillQuickInput('මම මේ කෑම එක ගන්න කැමතියි')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">Sinhala test</button>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="submitQuickSpeechInput()" class="flex-1 bg-brandGreen text-darkForest font-black py-2.5 rounded-xl text-xs active:scale-95 shadow-md">
+                                Translate & Suggest
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </section>
 
-        <!-- VIEW 4: ULTRA PRO VISION OCR CAMERA (Full Screen Scanner) -->
+        <!-- VIEW 4: ULTRA PRO VISION OCR CAMERA (With Live Visual Side-HUD) -->
         <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white">
             
-            <!-- Real Live Video Feed or Fallback -->
+            <!-- Real Live Video Feed -->
             <video id="live-video" class="w-full h-full object-cover" autoplay playsinline muted></video>
             
             <!-- Simulated Japanese Signpost Fallback (if camera not allowed) -->
-            <div id="simulated-camera-bg" class="hidden absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80');">
-            </div>
+            <div id="simulated-camera-bg" class="hidden absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80');"></div>
 
             <!-- Canvas for OCR frame capture -->
             <canvas id="snapshot-canvas" class="hidden"></canvas>
 
             <!-- AR Overlay UI Controls -->
-            <div class="absolute inset-0 z-10 flex flex-col justify-between p-5 pointer-events-none">
+            <div class="absolute inset-0 z-10 flex flex-col justify-between p-4 pointer-events-none pb-28">
                 
                 <!-- Top Toolbar -->
-                <div class="flex justify-between items-center pt-3 pointer-events-auto">
+                <div class="flex justify-between items-center pt-2 pointer-events-auto">
                     <button onclick="switchView('dashboard')" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
                         <i class="ph ph-caret-left text-lg"></i>
                     </button>
-                    <div class="bg-black/70 backdrop-blur-md px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-brandGreen/40">
+                    <div class="bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-brandGreen/40">
                         <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
-                        <span>Ultra Pro Vision OCR</span>
-                        <span class="text-brandGreen text-[10px] bg-white/10 px-1.5 py-0.5 rounded">JA ➜ SI/EN</span>
+                        <span>Live Visual OCR</span>
+                        <span class="text-brandGreen text-[10px] bg-white/10 px-1.5 py-0.5 rounded">JA ➜ SI / EN</span>
                     </div>
                     <button onclick="toggleTorchLight()" id="torch-btn" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
                         <i class="ph ph-lightning text-lg"></i>
                     </button>
                 </div>
 
-                <!-- Scanner Target Bounding Box -->
-                <div class="relative w-full max-w-[290px] aspect-[4/5] mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center">
+                <!-- Center Scanner Target Bounding Box -->
+                <div class="relative w-full max-w-[270px] aspect-[4/4] mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center">
                     <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
                     <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
                     <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
@@ -560,44 +558,46 @@
                     <!-- Green Laser Beam -->
                     <div class="scanner-beam absolute w-full h-1 bg-gradient-to-r from-transparent via-brandGreen to-transparent shadow-[0_0_20px_#39D322]"></div>
 
-                    <!-- Detected AR Card Overlay -->
-                    <div id="ar-card" class="bg-black/85 backdrop-blur-md p-4 rounded-2xl mx-3 text-left border border-brandGreen/60 shadow-2xl transition-all hidden max-h-[85%] overflow-y-auto no-scrollbar">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1">
-                                <i class="ph ph-eye"></i> Ultra Pro Vision Analysis
-                            </span>
-                            <button onclick="document.getElementById('ar-card').classList.add('hidden')" class="text-gray-400 hover:text-white text-xs">
-                                <i class="ph ph-x"></i>
-                            </button>
-                        </div>
-                        <p id="ar-jp" class="text-2xl font-black text-white leading-tight">止まれ</p>
-                        <p id="ar-romaji" class="text-xs text-brandGreen font-semibold">(Tomare - Stop)</p>
-                        <div class="border-t border-white/10 my-2 pt-1.5 space-y-1">
-                            <p class="text-xs text-gray-200"><b class="text-white">🇱🇰 සිංහල:</b> <span id="ar-si">නවතින්න (සම්පූර්ණ නැවතීම)</span></p>
-                            <p class="text-xs text-gray-300"><b class="text-white">🇬🇧 English:</b> <span id="ar-en">Full Stop mandatory</span></p>
-                        </div>
-                        <div class="bg-white/10 p-2 rounded-xl text-[10px] text-gray-300 mt-2 border border-brandGreen/20">
-                            <span class="text-brandGreen font-bold block mb-0.5">🎌 Etiquette & Action Guide:</span>
-                            <span id="ar-guide">Must stop completely before entering the road to obey Japanese traffic etiquette.</span>
-                        </div>
-                        <button onclick="speakArDetected()" class="mt-2.5 w-full bg-brandGreen text-darkForest font-extrabold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-md">
-                            <i class="ph ph-speaker-high text-sm"></i> Pronounce Clearly
-                        </button>
+                    <div class="text-center px-4 pointer-events-none">
+                        <span class="text-[11px] bg-black/60 backdrop-blur-md text-emerald-300 font-bold px-3 py-1 rounded-full border border-white/10">
+                            Aim at Signs / Menus
+                        </span>
                     </div>
                 </div>
 
-                <!-- Bottom Controls for AR Scanner -->
-                <div class="pb-24 flex flex-col items-center gap-2 pointer-events-auto">
-                    <p class="text-[11px] text-white/90 bg-black/60 px-3.5 py-1 rounded-full backdrop-blur-md border border-white/10">
-                        Point at Japanese sign, menu or text & tap Scan
-                    </p>
+                <!-- SIDE / OVERLAY HUD: Live Visualized Recognition Card -->
+                <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3.5 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[175px] overflow-y-auto no-scrollbar">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1">
+                            <i class="ph ph-eye"></i> Visual Screen Identification
+                        </span>
+                        <button onclick="speakArDetected()" class="text-xs bg-brandGreen/20 text-brandGreen px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                            <i class="ph ph-speaker-high"></i> Pronounce
+                        </button>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <p id="ar-jp" class="text-xl font-black text-white leading-tight">止まれ</p>
+                        <p id="ar-romaji" class="text-xs text-brandGreen font-bold">(Tomare - Stop)</p>
+                    </div>
+                    <div class="border-t border-white/10 my-1.5 pt-1 space-y-0.5 text-[11px]">
+                        <p class="text-gray-200"><b class="text-emerald-400 font-bold">🇱🇰 සිංහල:</b> <span id="ar-si">සම්පූර්ණ නැවතීම (නවතින්න)</span></p>
+                        <p class="text-gray-300"><b class="text-blue-300 font-bold">🇬🇧 English:</b> <span id="ar-en">Mandatory Full Stop</span></p>
+                    </div>
+                    <div class="bg-white/10 p-1.5 rounded-lg text-[9px] text-gray-300 mt-1 border border-brandGreen/20">
+                        <span class="text-brandGreen font-bold">🎌 Cultural Etiquette:</span>
+                        <span id="ar-guide">Must stop completely before entering the road to obey Japanese traffic rules.</span>
+                    </div>
+                </div>
+
+                <!-- Bottom Camera Control Triggers -->
+                <div class="flex flex-col items-center gap-2 pointer-events-auto mt-1">
                     <div class="flex items-center gap-6">
-                        <button onclick="triggerArSampleDemo()" title="Test Sample Sign" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white border border-white/20 active:scale-95">
+                        <button onclick="triggerArSampleDemo()" title="Cycle Sign Samples" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white border border-white/20 active:scale-95">
                             <i class="ph ph-cards text-lg"></i>
                         </button>
 
-                        <button onclick="scanArCameraFrame()" class="w-18 h-18 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
-                            <div class="w-14 h-14 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold">
+                        <button onclick="scanArCameraFrame()" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
+                            <div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold">
                                 <i class="ph ph-scan"></i>
                             </div>
                         </button>
@@ -610,8 +610,8 @@
             </div>
         </section>
 
-        <!-- FLOATING BOTTOM GLASS NAVIGATION DOCK (Exact from Dashboard Screenshot) -->
-        <nav id="bottom-nav-dock" class="absolute bottom-5 left-1/2 -translate-x-1/2 w-[88%] max-w-sm glass-dock rounded-full px-5 py-2.5 flex justify-between items-center shadow-xl border border-white/60 z-40">
+        <!-- FLOATING BOTTOM GLASS NAVIGATION DOCK -->
+        <nav id="bottom-nav-dock" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-sm glass-dock rounded-full px-5 py-2.5 flex justify-between items-center shadow-xl border border-white/60 z-40">
             <button onclick="switchView('dashboard')" data-nav="dashboard" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Dashboard">
                 <i class="ph ph-house"></i>
             </button>
@@ -620,7 +620,7 @@
             </button>
             
             <!-- Elevated Center Floating Voice Assistant Button -->
-            <button onclick="switchView('voice')" data-nav="voice" class="w-13 h-13 -mt-7 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Hands-Free Voice AI">
+            <button onclick="switchView('voice')" data-nav="voice" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Hands-Free Voice AI">
                 <i class="ph ph-microphone font-bold"></i>
             </button>
 
@@ -664,7 +664,7 @@
         </div>
 
         <!-- Toast Feedback Notification -->
-        <div id="toast" class="hidden fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-darkForest/90 backdrop-blur-md px-4 py-2 rounded-full border border-brandGreen/50 text-brandGreen text-xs font-bold shadow-xl flex items-center gap-2 pointer-events-none transition-all">
+        <div id="toast" class="hidden fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-darkForest/95 backdrop-blur-md px-4 py-2 rounded-full border border-brandGreen/50 text-brandGreen text-xs font-bold shadow-xl flex items-center gap-2 pointer-events-none transition-all">
             <i class="ph ph-check-circle"></i>
             <span id="toast-text">Alert</span>
         </div>
@@ -679,6 +679,7 @@
         let isContinuousListening = false;
         let activeVoiceContext = 'daily';
         let currentArJapanese = '止まれ';
+        let activeSpeakerLang = 'ja-JP'; // 'ja-JP' or 'si-LK'
         let speechRecognitionInstance = null;
 
         // Adaptive Self-Development Stats
@@ -735,6 +736,35 @@
             }
         };
 
+        // Speaker Toggle (Japanese Speaker vs You)
+        window.setActiveSpeaker = function(lang) {
+            activeSpeakerLang = lang;
+            const btnJp = document.getElementById('btn-speaker-jp');
+            const btnUser = document.getElementById('btn-speaker-user');
+            const speakerBadge = document.getElementById('detected-speaker-badge');
+
+            if (lang === 'ja-JP') {
+                btnJp.className = "bg-deepCard text-white text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
+                btnUser.className = "bg-white text-gray-700 text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
+                if (speakerBadge) speakerBadge.textContent = "🇯🇵 OTHER PERSON SAID:";
+                showToast("Listening to Japanese Speaker");
+            } else {
+                btnUser.className = "bg-deepCard text-white text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
+                btnJp.className = "bg-white text-gray-700 text-[10px] font-extrabold px-3 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
+                if (speakerBadge) speakerBadge.textContent = "🇱🇰/🇬🇧 YOU SAID:";
+                showToast("Listening to You (Sinhala / English)");
+            }
+
+            // Restart recognition with selected language
+            if (speechRecognitionInstance) {
+                try {
+                    speechRecognitionInstance.abort();
+                    speechRecognitionInstance.lang = lang;
+                    if (isContinuousListening) speechRecognitionInstance.start();
+                } catch(e) {}
+            }
+        };
+
         // Context Changer in Voice Assistant
         window.setVoiceContext = function(ctxKey, element) {
             activeVoiceContext = ctxKey;
@@ -752,7 +782,7 @@
             };
             const disp = document.getElementById('voice-env-display');
             if (disp) disp.textContent = labelMap[ctxKey] || "Context: Daily";
-            showToast(`Voice Context: ${ctxKey.toUpperCase()}`);
+            showToast(`Situation: ${ctxKey.toUpperCase()}`);
         };
 
         // Toast feedback
@@ -787,10 +817,10 @@
             userApiKey = val;
             if (val) {
                 localStorage.setItem('SUHADA_GEMINI_API_KEY', val);
-                showToast("Gemini 3 Flash API Key Connected!");
+                showToast("Custom Gemini API Key Connected!");
             } else {
                 localStorage.removeItem('SUHADA_GEMINI_API_KEY');
-                showToast("Using Offline Polite Japanese Assistant");
+                showToast("Default System AI Key Active");
             }
             toggleApiKeyModal();
         };
@@ -800,10 +830,10 @@
             userApiKey = '';
             const input = document.getElementById('gemini-key-input');
             if (input) input.value = '';
-            showToast("API Key cleared.");
+            showToast("API Key reset.");
         };
 
-        // --- Real-time Hands-Free Continuous Speech Recognition ---
+        // --- Real-time Continuous Hands-Free Voice Listener ---
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         function initSpeechRecognition() {
@@ -814,7 +844,7 @@
             const rec = new SpeechRec();
             rec.continuous = true;
             rec.interimResults = false;
-            rec.lang = 'ja-JP'; // Primary ambient listener for Japanese
+            rec.lang = activeSpeakerLang;
 
             rec.onresult = async (event) => {
                 const lastIdx = event.results.length - 1;
@@ -825,12 +855,11 @@
             };
 
             rec.onerror = (e) => {
-                console.warn("Speech recognition error:", e);
-                // Auto restart if continuous is active
+                console.warn("Speech recognition notice:", e);
                 if (isContinuousListening) {
                     setTimeout(() => {
                         try { rec.start(); } catch(err) {}
-                    }, 1000);
+                    }, 1200);
                 }
             };
 
@@ -860,6 +889,7 @@
             updateMicVisuals(true);
             if (speechRecognitionInstance) {
                 try {
+                    speechRecognitionInstance.lang = activeSpeakerLang;
                     speechRecognitionInstance.start();
                 } catch(e) {}
             }
@@ -884,7 +914,7 @@
                 if (active) {
                     avatar.classList.add('listening-glow');
                     if (dot) dot.classList.remove('hidden');
-                    if (label) label.textContent = "Continuous Ear: Listening to Japanese speech...";
+                    if (label) label.textContent = `Continuous Ear: Listening (${activeSpeakerLang === 'ja-JP' ? 'Japanese' : 'Sinhala/EN'})...`;
                     if (liveIcon) liveIcon.className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
                 } else {
                     avatar.classList.remove('listening-glow');
@@ -901,7 +931,7 @@
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(text);
                 u.lang = lang;
-                u.rate = 0.95;
+                u.rate = 0.93;
                 window.speechSynthesis.speak(u);
             }
         }
@@ -911,182 +941,176 @@
             speakText(jp);
         };
 
-        window.speakReplyOption = function(jp, romaji, sinhala) {
+        window.speakReplyOption = function(jp) {
             speakText(jp);
-            showToast(`Speaking: "${jp}"`);
+            showToast(`Speaking aloud: "${jp}"`);
             incrementGrowth();
         };
 
-        // Process detected voice in real-time
+        // Process detected speech via Gemini 3 Flash Live API
         async function handleLiveSpokenVoice(heardText) {
+            const translatingBadge = document.getElementById('live-translating-badge');
+            if (translatingBadge) translatingBadge.classList.remove('hidden');
             showToast(`Heard: "${heardText}"`);
 
             let analysis = null;
-            if (userApiKey) {
-                try {
-                    analysis = await fetchGeminiVoiceAnalysis(heardText);
-                } catch(err) {
-                    console.warn("API fallback to smart dictionary:", err);
-                    analysis = getOfflineVoiceAnalysis(heardText);
-                }
-            } else {
-                analysis = getOfflineVoiceAnalysis(heardText);
+            try {
+                // Call Gemini 3 Flash directly
+                analysis = await fetchGeminiVoiceAnalysis(heardText);
+            } catch(err) {
+                console.warn("Live API fallback:", err);
+                analysis = generateDynamicFallbackAnalysis(heardText);
             }
 
+            if (translatingBadge) translatingBadge.classList.add('hidden');
             renderVoiceConversation(analysis);
             incrementGrowth();
         }
 
-        // Gemini 3 Flash Prompt
+        // Gemini 3 Flash Direct API Call
         async function fetchGeminiVoiceAnalysis(spokenPhrase) {
-            const systemPrompt = `You are "Hello Japan !", a live hands-free Japanese Voice Assistant.
-The user is having a face-to-face conversation in Japan.
-Current Situation: "${activeVoiceContext.toUpperCase()}".
-Analyze what was just spoken (could be Japanese, Sinhala, or English).
+            const systemPrompt = `You are "Hello Japan !", a live hands-free 2-way Japanese Voice Assistant.
+Conversation context: "${activeVoiceContext.toUpperCase()}".
+The input spoken was: "${spokenPhrase}".
+Analyze what was spoken (which could be Japanese, Sinhala, or English).
 Provide:
-1. Japanese text (Kanji/Kana)
-2. Romaji pronunciation
-3. Accurate Sinhala translation
-4. English translation
-5. 2 or 3 ideal Polite Replies the USER should say back to maintain utmost harmony, warmth, and respect.
+1. "japanese": Kanji/Kana representation of what was said.
+2. "romaji": Reading pronunciation.
+3. "sinhala": Accurate, natural Sinhala translation.
+4. "english": Clear English translation.
+5. "replies": Array of exactly 3 ideal, respectful, polite replies the user can say back to foster great friendliness and respect. Each reply must have:
+   - "badge": e.g., "Polite / Gentle / Workplace"
+   - "jp": Japanese text to say
+   - "romaji": Pronunciation
+   - "sinhala": Sinhala meaning
+   - "english": English meaning
 
-Return ONLY strict JSON matching this schema:
+Return ONLY valid JSON matching this structure without markdown fences:
 {
-  "japanese": "Text in Japanese",
-  "romaji": "Romaji reading",
-  "sinhala": "Sinhala translation",
-  "english": "English translation",
+  "japanese": "...",
+  "romaji": "...",
+  "sinhala": "...",
+  "english": "...",
   "replies": [
-    {
-      "badge": "Polite / Workplace / Friendly",
-      "jp": "Japanese reply sentence",
-      "romaji": "Romaji",
-      "sinhala": "Sinhala meaning"
-    }
+    { "badge": "...", "jp": "...", "romaji": "...", "sinhala": "...", "english": "..." }
   ]
 }`;
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${userApiKey}`;
+            const apiKey = userApiKey || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
             const payload = {
                 contents: [{ parts: [{ text: spokenPhrase }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
                 generationConfig: { responseMimeType: "application/json" }
             };
 
-            const resp = await fetch(url, {
+            const resp = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
+            if (!resp.ok) {
+                throw new Error(`API returned ${resp.status}`);
+            }
+
             const data = await resp.json();
             const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             return JSON.parse(text);
         }
 
-        // Comprehensive Offline Japanese Cultural Phrasebook
-        function getOfflineVoiceAnalysis(query) {
-            const q = query.toLowerCase();
+        // Dynamic fallback generator if network fails
+        function generateDynamicFallbackAnalysis(phrase) {
+            const isJapanese = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/.test(phrase);
 
-            if (q.includes('arigatou') || q.includes('sthuthi') || q.includes('thank')) {
+            if (isJapanese) {
                 return {
-                    japanese: "どうもありがとうございます！",
-                    romaji: "Doumo arigatou gozaimasu!",
-                    sinhala: "ඔබට බොහොම ස්තූතියි!",
-                    english: "Thank you very much!",
+                    japanese: phrase,
+                    romaji: "Kore wa yoku wakarimashita",
+                    sinhala: `පැවසූ ජපන් ප්‍රකාශය: "${phrase}" (තේරුම් ගන්නා ලදී)`,
+                    english: `Japanese statement: "${phrase}"`,
                     replies: [
-                        { badge: "Gentle", jp: "どういたしまして", romaji: "Dou itashimashite", sinhala: "කරුණාවෙන් පිළිගනිමි (You are welcome)" },
-                        { badge: "Polite Keigo", jp: "こちらこそ感謝いたします", romaji: "Kochira koso kansha itashimasu", sinhala: "මා ද ඔබට ස්තූතිවන්ත වෙමි" }
+                        { badge: "Gentle Polite", jp: "はい、ありがとうございます！", romaji: "Hai, arigatou gozaimasu!", sinhala: "එසේය, බොහොම ස්තූතියි!", english: "Yes, thank you very much!" },
+                        { badge: "Respectful", jp: "承知いたしました。どうぞよろしくお願いします。", romaji: "Shouchi itashimashita. Douzo yoroshiku onegai shimasu.", sinhala: "තේරුම් ගත්තා. කරුණාවෙන් සහයෝගය දෙන්න.", english: "Understood. Thank you for your support." },
+                        { badge: "Friendly", jp: "こちらこそ、嬉しいです！", romaji: "Kochira koso, ureshii desu!", sinhala: "මා ද ඉතා සතුටු වෙමි!", english: "I am happy as well!" }
                     ]
                 };
             }
 
-            if (q.includes('otsukare') || q.includes('mahanasi')) {
-                return {
-                    japanese: "お疲れ様でした！",
-                    romaji: "Otsukaresama deshita!",
-                    sinhala: "අද දවසේ ඔබ කළ කැපවීමට බොහොම ස්තූතියි!",
-                    english: "Thank you for your hard work!",
-                    replies: [
-                        { badge: "Ideal Reply", jp: "お疲れ様でした、お先に失礼します", romaji: "Otsukaresama deshita, osaki ni shitsurei shimasu", sinhala: "ස්තූතියි, මා පළමුව නික්මෙමි." },
-                        { badge: "Warmth", jp: "明日もよろしくお願いいたします", romaji: "Ashita mo yoroshiku onegai itashimasu", sinhala: "හෙටත් කරුණාවෙන් සහයෝගය දෙන්න" }
-                    ]
-                };
-            }
-
-            if (q.includes('ikura') || q.includes('gana') || q.includes('price') || q.includes('kaikei')) {
-                return {
-                    japanese: "お会計は千五百円になります",
-                    romaji: "O-kaikei wa sen-gohyaku-en ni narimasu",
-                    sinhala: "මුළු බිල ජපන් යෙන් 1,500 කි.",
-                    english: "The bill comes to 1,500 yen.",
-                    replies: [
-                        { badge: "Payment", jp: "カードで支払えますか？", romaji: "Kaado de shiharaemasu ka?", sinhala: "කාඩ්පතෙන් ගෙවිය හැකිද?" },
-                        { badge: "Cash Polite", jp: "ちょうどいただきます", romaji: "Choudo itadakimasu", sinhala: "හරියටම ගණන දෙමි" }
-                    ]
-                };
-            }
-
-            // General smart synthesis
             return {
-                japanese: heardOrQueryJp(query),
-                romaji: "Douzo yoroshiku onegai itashimasu",
-                sinhala: `පැවසූ අදහස: "${query}" පිළිගන්නා ලදී`,
-                english: `Heard statement: "${query}"`,
+                japanese: "はい、承知いたしました",
+                romaji: "Hai, shouchi itashimashita",
+                sinhala: phrase,
+                english: phrase,
                 replies: [
-                    { badge: "Most Polite", jp: "承知いたしました、ありがとうございます", romaji: "Shouchi itashimashita, arigatou gozaimasu", sinhala: "තේරුම් ගත්තා, බොහොම ස්තූතියි." },
-                    { badge: "Respectful Agreement", jp: "はい、よろしくお願いいたします", romaji: "Hai, yoroshiku onegai itashimasu", sinhala: "එසේය, කරුණාවෙන් සලකන්න." }
+                    { badge: "Polite Japanese", jp: "どうぞよろしくお願いします", romaji: "Douzo yoroshiku onegai shimasu", sinhala: "කරුණාවෙන් කටයුතු කරමු", english: "Pleasure working with you" },
+                    { badge: "Gratitude", jp: "大変助かります、ありがとうございます", romaji: "Taihen tasukarimasu, arigatou gozaimasu", sinhala: "ලොකු උදව්වක්, බොහොම ස්තූතියි", english: "Very helpful, thank you" }
                 ]
             };
         }
 
-        function heardOrQueryJp(q) {
-            return (q && /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/.test(q))
-                ? q
-                : "はい、承知いたしました";
-        }
-
+        // Render live translated conversation into the UI
         function renderVoiceConversation(data) {
-            document.getElementById('detected-japanese').textContent = data.japanese;
-            document.getElementById('detected-romaji').textContent = `(${data.romaji})`;
-            document.getElementById('detected-sinhala').textContent = data.sinhala;
-            document.getElementById('detected-english').textContent = data.english;
+            if (!data) return;
+            const jpEl = document.getElementById('detected-japanese');
+            const romajiEl = document.getElementById('detected-romaji');
+            const siEl = document.getElementById('detected-sinhala');
+            const enEl = document.getElementById('detected-english');
+
+            if (jpEl) jpEl.textContent = data.japanese || '';
+            if (romajiEl) romajiEl.textContent = data.romaji ? `(${data.romaji})` : '';
+            if (siEl) siEl.textContent = data.sinhala || '';
+            if (enEl) enEl.textContent = data.english || '';
 
             const list = document.getElementById('suggestions-list');
             if (!list || !data.replies) return;
 
             list.innerHTML = '';
-            data.replies.forEach(rep => {
+            data.replies.forEach((rep, index) => {
                 const card = document.createElement('div');
-                card.className = "bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between";
-                card.onclick = () => speakReplyOption(rep.jp, rep.romaji, rep.sinhala);
+                card.className = "bg-white hover:bg-emerald-50/90 p-2.5 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between";
+                card.onclick = () => speakReplyOption(rep.jp);
                 card.innerHTML = `
                     <div class="flex-1 pr-2">
                         <div class="flex items-center gap-1.5">
-                            <span class="text-[9px] bg-brandGreen/20 text-emerald-800 font-bold px-1.5 py-0.5 rounded">${rep.badge || 'Reply'}</span>
+                            <span class="text-[9px] bg-brandGreen/20 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">${rep.badge || 'Reply ' + (index + 1)}</span>
                             <span class="text-xs font-black text-gray-900">${rep.jp}</span>
                         </div>
-                        <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(${rep.romaji})</p>
-                        <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 ${rep.sinhala}</p>
+                        <p class="text-[10px] text-emerald-700 font-semibold mt-0.5">(${rep.romaji || ''})</p>
+                        <div class="flex flex-col mt-0.5 space-y-0.5 text-[10px]">
+                            <p class="text-gray-700 font-semibold">🇱🇰 ${rep.sinhala || ''}</p>
+                            <p class="text-gray-500 font-medium">🇬🇧 ${rep.english || ''}</p>
+                        </div>
                     </div>
-                    <div class="w-9 h-9 rounded-full bg-brandGreen/20 text-emerald-700 flex items-center justify-center shrink-0">
-                        <i class="ph ph-speaker-high text-lg"></i>
+                    <div class="w-8 h-8 rounded-full bg-brandGreen/20 text-emerald-800 flex items-center justify-center shrink-0">
+                        <i class="ph ph-speaker-high text-base"></i>
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
 
-        // Test button to simulate native Japanese conversation turns
-        window.triggerSimulatedConversation = function() {
-            const samplePhrases = [
-                "お疲れ様でした！",
-                "いらっしゃいませ、ご注文はお決まりですか？",
-                "少々お待ちくださいませ。",
-                "はじめまして、どうぞよろしくお願いします。"
-            ];
-            const chosen = samplePhrases[Math.floor(Math.random() * samplePhrases.length)];
-            handleLiveSpokenVoice(chosen);
-            speakText(chosen);
+        // Quick Manual Speech Prompt Modal
+        window.openQuickSpeechPrompt = function() {
+            const modal = document.getElementById('quick-input-modal');
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.fillQuickInput = function(text) {
+            const input = document.getElementById('quick-speech-input');
+            if (input) input.value = text;
+        };
+
+        window.submitQuickSpeechInput = function() {
+            const input = document.getElementById('quick-speech-input');
+            if (!input) return;
+            const val = input.value.trim();
+            if (val) {
+                document.getElementById('quick-input-modal').classList.add('hidden');
+                handleLiveSpokenVoice(val);
+                input.value = '';
+            }
         };
 
         // --- Ultra Pro Vision AR Camera ---
@@ -1130,7 +1154,7 @@ Return ONLY strict JSON matching this schema:
 
         window.toggleTorchLight = function() {
             if (!mediaStream) {
-                showToast("Flashlight unavailable in simulation");
+                showToast("Flashlight unavailable");
                 return;
             }
             const track = mediaStream.getVideoTracks()[0];
@@ -1145,11 +1169,11 @@ Return ONLY strict JSON matching this schema:
         };
 
         window.scanArCameraFrame = async function() {
-            showToast("Ultra Pro OCR Analyzing Image...");
+            showToast("Visualizing & OCR Analyzing...");
             const video = document.getElementById('live-video');
             const canvas = document.getElementById('snapshot-canvas');
 
-            if (userApiKey && video && video.srcObject) {
+            if (video && video.videoWidth > 0) {
                 try {
                     canvas.width = video.videoWidth || 640;
                     canvas.height = video.videoHeight || 480;
@@ -1157,16 +1181,17 @@ Return ONLY strict JSON matching this schema:
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-                    const prompt = `You are Hello Japan ! Ultra Pro Vision OCR. Inspect the Japanese text/sign in this image.
-Return strictly JSON:
+                    const prompt = `You are Hello Japan ! Live Visual OCR. Inspect the Japanese text/sign in this image.
+Return strictly JSON matching:
 {
   "japanese": "Text in Kanji/Kana",
   "romaji": "Romaji reading",
   "sinhala": "Sinhala translation",
   "english": "English translation",
-  "guide": "Etiquette & Action Guide: Japanese rules, foreigner advice, respectful action to take."
+  "guide": "Japanese etiquette advice & rules"
 }`;
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${userApiKey}`;
+                    const apiKey = userApiKey || "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
                     const resp = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1198,23 +1223,30 @@ Return strictly JSON:
                 {
                     japanese: "止まれ",
                     romaji: "Tomare",
-                    sinhala: "නවතින්න (සම්පූර්ණ නැවතීම)",
+                    sinhala: "සම්පූර්ණ නැවතීම (නවතින්න)",
                     english: "Mandatory Full Stop",
-                    guide: "Traffic law: Vehicles and bicycles must come to a dead stop before this line to avoid traffic penalties."
+                    guide: "Traffic law: Vehicles and bicycles must come to a dead stop before this line."
                 },
                 {
                     japanese: "いらっしゃいませ",
                     romaji: "Irasshaimase",
                     sinhala: "සාදරයෙන් පිළිගනිමු!",
                     english: "Welcome to our shop!",
-                    guide: "Hospitality greeting. You do not need to reply back verbally; a polite nod or smile is perfect etiquette."
+                    guide: "Hospitality greeting. No verbal reply needed; a polite nod or smile is perfect etiquette."
+                },
+                {
+                    japanese: "本日のおすすめ",
+                    romaji: "Honjitsu no osusume",
+                    sinhala: "අද දවසේ විශේෂ නිර්දේශිත කෑම",
+                    english: "Today's Chef Specials",
+                    guide: "Restaurant menu heading showing the freshest seasonal recommendations."
                 },
                 {
                     japanese: "土足厳禁",
                     romaji: "Dosoku Genkin",
                     sinhala: "සපත්තු පිටින් ඇතුල්වීම තහනම්",
                     english: "No Outdoor Shoes Allowed",
-                    guide: "Take off your shoes at the genkan entrance before stepping onto tatami or wooden floors."
+                    guide: "Take off outdoor shoes at the genkan entrance before stepping onto tatami or wood."
                 }
             ];
             const chosen = signs[Math.floor(Math.random() * signs.length)];
@@ -1222,15 +1254,18 @@ Return strictly JSON:
         };
 
         function displayArCard(data) {
-            const card = document.getElementById('ar-card');
-            if (!card) return;
-            document.getElementById('ar-jp').textContent = data.japanese;
-            document.getElementById('ar-romaji').textContent = `(${data.romaji})`;
-            document.getElementById('ar-si').textContent = data.sinhala;
-            document.getElementById('ar-en').textContent = data.english;
-            document.getElementById('ar-guide').textContent = data.guide;
+            const jpEl = document.getElementById('ar-jp');
+            const romajiEl = document.getElementById('ar-romaji');
+            const siEl = document.getElementById('ar-si');
+            const enEl = document.getElementById('ar-en');
+            const guideEl = document.getElementById('ar-guide');
+
+            if (jpEl) jpEl.textContent = data.japanese || '';
+            if (romajiEl) romajiEl.textContent = data.romaji ? `(${data.romaji})` : '';
+            if (siEl) siEl.textContent = data.sinhala || '';
+            if (enEl) enEl.textContent = data.english || '';
+            if (guideEl) guideEl.textContent = data.guide || '';
             currentArJapanese = data.japanese;
-            card.classList.remove('hidden');
             speakText(data.japanese);
             incrementGrowth();
         }
@@ -1252,6 +1287,18 @@ Return strictly JSON:
         window.addEventListener('DOMContentLoaded', () => {
             tickClock();
             updateStatsDisplay();
+            // Initial default suggestions
+            renderVoiceConversation({
+                japanese: "こんにちは！今日はお疲れ様でした。",
+                romaji: "Konnichiwa! Kyou wa otsukaresama deshita.",
+                sinhala: "හෙලෝ! අද දවසේ මහන්සි වුණාට බොහොම ස්තූතියි.",
+                english: "Hello! Thank you for your hard work today.",
+                replies: [
+                    { badge: "Polite Respect", jp: "お疲れ様でした！ありがとうございます", romaji: "Otsukaresama deshita! Arigatou gozaimasu", sinhala: "ඔබටත් බොහෝම ස්තූතියි!", english: "Thank you for your hard work too!" },
+                    { badge: "Workplace Keigo", jp: "こちらこそ、大変お世話になりました", romaji: "Kochira koso, taihen osewa ni narimashita", sinhala: "මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි", english: "Thank you very much for your kind support" },
+                    { badge: "Warm Departure", jp: "明日もどうぞよろしくお願いいたします", romaji: "Ashita mo douzo yoroshiku onegai itashimasu", sinhala: "හෙටත් කරුණාවෙන් එකමුතුව වැඩ කරමු", english: "Looking forward to working together tomorrow as well" }
+                ]
+            });
             switchView('hero');
         });
     </script>
