@@ -18,9 +18,9 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
-     * CREATE SPEECH RECOGNITION
-     * ==========================================
+     * =========================================================
+     * CREATE RECOGNITION
+     * =========================================================
      */
 
     init() {
@@ -50,9 +50,9 @@ App.VoiceEngine = {
 
 
         /*
-         * ======================================
-         * ON START
-         * ======================================
+         * -----------------------------------------------------
+         * START
+         * -----------------------------------------------------
          */
 
         rec.onstart = () => {
@@ -62,14 +62,7 @@ App.VoiceEngine = {
             this.isStopping = false;
 
 
-            /*
-             * If TTS is currently speaking,
-             * recognition should not become active.
-             */
-
-            if (
-                this.isPausedForSpeech
-            ) {
+            if (this.isPausedForSpeech) {
 
                 try {
                     rec.stop();
@@ -91,36 +84,24 @@ App.VoiceEngine = {
                     "function"
             ) {
 
-                App.VoiceRenderer.updateMicVisuals(
-                    true
-                );
+                App.VoiceRenderer.updateMicVisuals(true);
             }
         };
 
 
         /*
-         * ======================================
-         * ON RESULT
-         * ======================================
+         * -----------------------------------------------------
+         * RESULT
+         * -----------------------------------------------------
          */
 
-        rec.onresult = async (event) => {
+        rec.onresult = async event => {
 
-            /*
-             * Never process speech while TTS
-             * pause mode is active.
-             */
-
-            if (
-                this.isPausedForSpeech
-            ) {
+            if (this.isPausedForSpeech) {
                 return;
             }
 
-
-            if (
-                !App.State.isContinuousListening
-            ) {
+            if (!App.State.isContinuousListening) {
                 return;
             }
 
@@ -153,10 +134,6 @@ App.VoiceEngine = {
                 }
 
 
-                /*
-                 * Duplicate transcript protection.
-                 */
-
                 const now =
                     Date.now();
 
@@ -181,14 +158,9 @@ App.VoiceEngine = {
                 App.State.lastTranscriptTime =
                     now;
 
-
                 App.State.currentVoiceTranscript =
                     transcript;
 
-
-                /*
-                 * AI processing state.
-                 */
 
                 App.State.currentVoiceState =
                     App.State.VoiceState.PROCESSING;
@@ -213,7 +185,6 @@ App.VoiceEngine = {
                         );
                     }
 
-
                 } catch (error) {
 
                     console.error(
@@ -236,12 +207,12 @@ App.VoiceEngine = {
 
 
         /*
-         * ======================================
-         * ON ERROR
-         * ======================================
+         * -----------------------------------------------------
+         * ERROR
+         * -----------------------------------------------------
          */
 
-        rec.onerror = (event) => {
+        rec.onerror = event => {
 
             const error =
                 event?.error || "unknown";
@@ -253,23 +224,10 @@ App.VoiceEngine = {
             );
 
 
-            /*
-             * During AI speech, browser recognition
-             * errors are expected and should not
-             * trigger another restart.
-             */
-
-            if (
-                this.isPausedForSpeech
-            ) {
+            if (this.isPausedForSpeech) {
                 return;
             }
 
-
-            /*
-             * Permission errors are permanent
-             * until user changes browser permission.
-             */
 
             if (
                 error === "not-allowed" ||
@@ -285,37 +243,15 @@ App.VoiceEngine = {
                     App.State.VoiceState.IDLE;
 
 
-                if (
-                    App.VoiceRenderer &&
-                    typeof App.VoiceRenderer.updateMicVisuals ===
-                        "function"
-                ) {
+                App.VoiceRenderer?.updateMicVisuals?.(false);
 
-                    App.VoiceRenderer.updateMicVisuals(
-                        false
-                    );
-                }
-
-
-                if (
-                    App.Toast &&
-                    typeof App.Toast.show ===
-                        "function"
-                ) {
-
-                    App.Toast.show(
-                        "Microphone permission denied."
-                    );
-                }
-
+                App.Toast?.show?.(
+                    "Microphone permission denied."
+                );
 
                 return;
             }
 
-
-            /*
-             * Temporary browser errors.
-             */
 
             if (
                 error === "aborted" ||
@@ -335,30 +271,23 @@ App.VoiceEngine = {
                     );
                 }
 
-
                 return;
             }
 
-
-            /*
-             * Unknown temporary error.
-             */
 
             if (
                 App.State.isContinuousListening
             ) {
 
-                this.scheduleRestart(
-                    1000
-                );
+                this.scheduleRestart(1000);
             }
         };
 
 
         /*
-         * ======================================
-         * ON END
-         * ======================================
+         * -----------------------------------------------------
+         * END
+         * -----------------------------------------------------
          */
 
         rec.onend = () => {
@@ -368,15 +297,7 @@ App.VoiceEngine = {
             this.isStopping = false;
 
 
-            /*
-             * TTS deliberately stopped recognition.
-             *
-             * DO NOT restart here.
-             */
-
-            if (
-                this.isPausedForSpeech
-            ) {
+            if (this.isPausedForSpeech) {
 
                 App.State.currentVoiceState =
                     App.State.VoiceState.IDLE;
@@ -385,45 +306,22 @@ App.VoiceEngine = {
             }
 
 
-            /*
-             * User deliberately stopped.
-             */
-
-            if (
-                !App.State.isContinuousListening
-            ) {
+            if (!App.State.isContinuousListening) {
 
                 App.State.currentVoiceState =
                     App.State.VoiceState.IDLE;
 
-
-                if (
-                    App.VoiceRenderer &&
-                    typeof App.VoiceRenderer.updateMicVisuals ===
-                        "function"
-                ) {
-
-                    App.VoiceRenderer.updateMicVisuals(
-                        false
-                    );
-                }
-
+                App.VoiceRenderer?.updateMicVisuals?.(false);
 
                 return;
             }
 
-
-            /*
-             * Browser ended recognition naturally.
-             */
 
             App.State.currentVoiceState =
                 App.State.VoiceState.IDLE;
 
 
-            this.scheduleRestart(
-                350
-            );
+            this.scheduleRestart(350);
         };
 
 
@@ -432,9 +330,9 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
-     * RESTART TIMER
-     * ==========================================
+     * =========================================================
+     * RESTART
+     * =========================================================
      */
 
     scheduleRestart(delayMs = 400) {
@@ -442,16 +340,12 @@ App.VoiceEngine = {
         this.cancelRestart();
 
 
-        if (
-            !App.State.isContinuousListening
-        ) {
+        if (!App.State.isContinuousListening) {
             return;
         }
 
 
-        if (
-            this.isPausedForSpeech
-        ) {
+        if (this.isPausedForSpeech) {
             return;
         }
 
@@ -459,20 +353,15 @@ App.VoiceEngine = {
         this.speechRestartTimer =
             setTimeout(() => {
 
-                this.speechRestartTimer =
-                    null;
+                this.speechRestartTimer = null;
 
 
-                if (
-                    !App.State.isContinuousListening
-                ) {
+                if (!App.State.isContinuousListening) {
                     return;
                 }
 
 
-                if (
-                    this.isPausedForSpeech
-                ) {
+                if (this.isPausedForSpeech) {
                     return;
                 }
 
@@ -481,6 +370,7 @@ App.VoiceEngine = {
                     App.State.currentVoiceState !==
                     App.State.VoiceState.IDLE
                 ) {
+
                     return;
                 }
 
@@ -491,17 +381,9 @@ App.VoiceEngine = {
     },
 
 
-    /*
-     * ==========================================
-     * CANCEL RESTART
-     * ==========================================
-     */
-
     cancelRestart() {
 
-        if (
-            this.speechRestartTimer
-        ) {
+        if (this.speechRestartTimer) {
 
             clearTimeout(
                 this.speechRestartTimer
@@ -514,30 +396,24 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
+     * =========================================================
      * START RECOGNITION
-     * ==========================================
+     * =========================================================
      */
 
     startRecognition() {
 
-        if (
-            !App.State.isContinuousListening
-        ) {
+        if (!App.State.isContinuousListening) {
             return;
         }
 
 
-        if (
-            this.isPausedForSpeech
-        ) {
+        if (this.isPausedForSpeech) {
             return;
         }
 
 
-        if (
-            this.isStarting
-        ) {
+        if (this.isStarting) {
             return;
         }
 
@@ -548,21 +424,18 @@ App.VoiceEngine = {
             App.State.currentVoiceState ===
                 App.State.VoiceState.STARTING
         ) {
+
             return;
         }
 
 
-        if (
-            !this.speechRecognitionInstance
-        ) {
+        if (!this.speechRecognitionInstance) {
 
             this.speechRecognitionInstance =
                 this.init();
 
 
-            if (
-                !this.speechRecognitionInstance
-            ) {
+            if (!this.speechRecognitionInstance) {
 
                 App.State.isContinuousListening =
                     false;
@@ -570,30 +443,11 @@ App.VoiceEngine = {
                 App.State.currentVoiceState =
                     App.State.VoiceState.IDLE;
 
+                App.VoiceRenderer?.updateMicVisuals?.(false);
 
-                if (
-                    App.VoiceRenderer &&
-                    typeof App.VoiceRenderer.updateMicVisuals ===
-                        "function"
-                ) {
-
-                    App.VoiceRenderer.updateMicVisuals(
-                        false
-                    );
-                }
-
-
-                if (
-                    App.Toast &&
-                    typeof App.Toast.show ===
-                        "function"
-                ) {
-
-                    App.Toast.show(
-                        "Voice Recognition is not supported by this browser."
-                    );
-                }
-
+                App.Toast?.show?.(
+                    "Voice Recognition is not supported by this browser."
+                );
 
                 return;
             }
@@ -623,12 +477,10 @@ App.VoiceEngine = {
 
             this.isStarting = false;
 
-
             console.warn(
                 "Speech recognition start failed:",
                 error
             );
-
 
             App.State.currentVoiceState =
                 App.State.VoiceState.IDLE;
@@ -639,30 +491,21 @@ App.VoiceEngine = {
                 !this.isPausedForSpeech
             ) {
 
-                this.scheduleRestart(
-                    700
-                );
+                this.scheduleRestart(700);
             }
         }
     },
 
 
     /*
-     * ==========================================
-     * PUBLIC START
-     * ==========================================
+     * =========================================================
+     * START
+     * =========================================================
      */
 
     start() {
 
-        /*
-         * If TTS is currently speaking, remember
-         * that listening should continue afterwards.
-         */
-
-        if (
-            this.isPausedForSpeech
-        ) {
+        if (this.isPausedForSpeech) {
 
             this.shouldResumeAfterSpeech =
                 true;
@@ -687,6 +530,7 @@ App.VoiceEngine = {
             App.State.currentVoiceState ===
                 App.State.VoiceState.STARTING
         ) {
+
             return;
         }
 
@@ -696,29 +540,20 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
-     * PAUSE FOR AI TTS
-     * ==========================================
-     *
-     * IMPORTANT:
-     *
-     * This is NOT a user stop.
-     *
-     * We preserve isContinuousListening = true.
+     * =========================================================
+     * PAUSE WHILE AI SPEAKS
+     * =========================================================
      */
 
     pauseForSpeech() {
 
-        if (
-            !App.State.isContinuousListening
-        ) {
+        if (!App.State.isContinuousListening) {
             return;
         }
 
 
         this.isPausedForSpeech =
             true;
-
 
         this.shouldResumeAfterSpeech =
             true;
@@ -731,53 +566,36 @@ App.VoiceEngine = {
             this.speechRecognitionInstance;
 
 
-        if (
-            recognition
-        ) {
+        if (recognition) {
 
             try {
-
                 recognition.stop();
-
             } catch (error) {
-
-                /* recognition already stopped */
+                /* already stopped */
             }
         }
 
 
-        this.isStarting =
-            false;
+        this.isStarting = false;
 
 
         App.State.currentVoiceState =
             App.State.VoiceState.IDLE;
 
 
-        if (
-            App.VoiceRenderer &&
-            typeof App.VoiceRenderer.updateMicVisuals ===
-                "function"
-        ) {
-
-            App.VoiceRenderer.updateMicVisuals(
-                false
-            );
-        }
+        App.VoiceRenderer?.updateMicVisuals?.(false);
     },
 
 
     /*
-     * ==========================================
-     * RESUME AFTER AI TTS
-     * ==========================================
+     * =========================================================
+     * RESUME AFTER TTS
+     * =========================================================
      */
 
     resumeAfterSpeech() {
 
-        if (
-            !this.shouldResumeAfterSpeech
-        ) {
+        if (!this.shouldResumeAfterSpeech) {
 
             this.isPausedForSpeech =
                 false;
@@ -789,22 +607,20 @@ App.VoiceEngine = {
         this.isPausedForSpeech =
             false;
 
-
         this.shouldResumeAfterSpeech =
             false;
 
 
-        if (
-            !App.State.isContinuousListening
-        ) {
+        if (!App.State.isContinuousListening) {
             return;
         }
 
 
         if (
             App.State.currentActiveView !==
-                "voice"
+            "voice"
         ) {
+
             return;
         }
 
@@ -826,12 +642,9 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
-     * PUBLIC STOP
-     * ==========================================
-     *
-     * This means USER deliberately stopped
-     * the assistant.
+     * =========================================================
+     * STOP COMPLETELY
+     * =========================================================
      */
 
     stop() {
@@ -840,9 +653,11 @@ App.VoiceEngine = {
             false;
 
 
+        App.State.voiceRequestId++;
+
+
         this.shouldResumeAfterSpeech =
             false;
-
 
         this.isPausedForSpeech =
             false;
@@ -853,7 +668,6 @@ App.VoiceEngine = {
 
         this.isStopping =
             true;
-
 
         this.isStarting =
             false;
@@ -867,16 +681,11 @@ App.VoiceEngine = {
             this.speechRecognitionInstance;
 
 
-        if (
-            recognition
-        ) {
+        if (recognition) {
 
             try {
-
                 recognition.stop();
-
             } catch (error) {
-
                 /* already stopped */
             }
         }
@@ -884,29 +693,14 @@ App.VoiceEngine = {
 
         if (
             App.VoiceTTS &&
-            typeof App.VoiceTTS.stop ===
-                "function"
+            typeof App.VoiceTTS.stop === "function"
         ) {
-
-            /*
-             * Only stop TTS when the USER
-             * deliberately stops the assistant.
-             */
 
             App.VoiceTTS.stop();
         }
 
 
-        if (
-            App.VoiceRenderer &&
-            typeof App.VoiceRenderer.updateMicVisuals ===
-                "function"
-        ) {
-
-            App.VoiceRenderer.updateMicVisuals(
-                false
-            );
-        }
+        App.VoiceRenderer?.updateMicVisuals?.(false);
 
 
         App.State.currentVoiceState =
@@ -919,54 +713,36 @@ App.VoiceEngine = {
 
 
     /*
-     * ==========================================
-     * TOGGLE LISTENING
-     * ==========================================
+     * =========================================================
+     * USER TOGGLE
+     * =========================================================
      */
 
     toggleListening() {
 
-        if (
-            App.State.isContinuousListening
-        ) {
+        if (App.State.isContinuousListening) {
 
             this.stop();
 
-
-            if (
-                App.Toast &&
-                typeof App.Toast.show ===
-                    "function"
-            ) {
-
-                App.Toast.show(
-                    "Voice Listening Paused"
-                );
-            }
+            App.Toast?.show?.(
+                "Voice Listening Paused"
+            );
 
         } else {
 
             this.start();
 
-
-            if (
-                App.Toast &&
-                typeof App.Toast.show ===
-                    "function"
-            ) {
-
-                App.Toast.show(
-                    "Hands-Free Listening Started..."
-                );
-            }
+            App.Toast?.show?.(
+                "Hands-Free Listening Started..."
+            );
         }
     },
 
 
     /*
-     * ==========================================
-     * SPEAKER LANGUAGE
-     * ==========================================
+     * =========================================================
+     * SPEAKER
+     * =========================================================
      */
 
     setSpeaker(lang) {
@@ -975,6 +751,7 @@ App.VoiceEngine = {
             typeof lang !== "string" ||
             !lang.trim()
         ) {
+
             return;
         }
 
@@ -983,10 +760,7 @@ App.VoiceEngine = {
             App.State.isContinuousListening;
 
 
-        if (
-            wasListening
-        ) {
-
+        if (wasListening) {
             this.stop();
         }
 
@@ -996,22 +770,13 @@ App.VoiceEngine = {
 
 
         const btnJp =
-            document.getElementById(
-                "btn-speaker-jp"
-            );
-
+            document.getElementById("btn-speaker-jp");
 
         const btnSi =
-            document.getElementById(
-                "btn-speaker-si"
-            );
-
+            document.getElementById("btn-speaker-si");
 
         const btnEn =
-            document.getElementById(
-                "btn-speaker-en"
-            );
-
+            document.getElementById("btn-speaker-en");
 
         const badge =
             document.getElementById(
@@ -1031,97 +796,90 @@ App.VoiceEngine = {
             .forEach(button => {
 
                 if (button) {
-
                     button.className =
                         normalClass;
                 }
             });
 
 
-        if (
-            lang === "ja-JP"
-        ) {
+        if (lang === "ja-JP") {
 
-            if (btnJp) {
+            btnJp?.classList.remove(
+                "bg-white",
+                "text-gray-700"
+            );
 
-                btnJp.className =
-                    activeClass;
-            }
-
+            btnJp?.classList.add(
+                "bg-deepCard",
+                "text-white"
+            );
 
             if (badge) {
-
                 badge.textContent =
                     "🇯🇵 JAPANESE SPOKEN:";
             }
 
-        } else if (
-            lang === "si-LK"
-        ) {
+        } else if (lang === "si-LK") {
 
-            if (btnSi) {
+            btnSi?.classList.remove(
+                "bg-white",
+                "text-gray-700"
+            );
 
-                btnSi.className =
-                    activeClass;
-            }
-
+            btnSi?.classList.add(
+                "bg-deepCard",
+                "text-white"
+            );
 
             if (badge) {
-
                 badge.textContent =
                     "🇱🇰 SINHALA SPOKEN:";
             }
 
         } else {
 
-            if (btnEn) {
+            btnEn?.classList.remove(
+                "bg-white",
+                "text-gray-700"
+            );
 
-                btnEn.className =
-                    activeClass;
-            }
-
+            btnEn?.classList.add(
+                "bg-deepCard",
+                "text-white"
+            );
 
             if (badge) {
-
                 badge.textContent =
                     "🇬🇧 ENGLISH SPOKEN:";
             }
         }
 
 
-        if (
-            this.speechRecognitionInstance
-        ) {
+        if (this.speechRecognitionInstance) {
 
             this.speechRecognitionInstance.lang =
                 lang;
         }
 
 
-        if (
-            wasListening
-        ) {
+        if (wasListening) {
 
             setTimeout(() => {
-
                 this.start();
-
             }, 500);
         }
     },
 
 
     /*
-     * ==========================================
-     * VOICE CONTEXT
-     * ==========================================
+     * =========================================================
+     * CONTEXT
+     * =========================================================
      */
 
     setContext(key, element) {
 
-        if (
-            typeof key !== "string"
-        ) {
+        if (typeof key !== "string") {
             return;
         }
 
@@ -1139,24 +897,15 @@ App.VoiceEngine = {
             });
 
 
-        if (
-            element
-        ) {
+        if (element) {
 
             element.className =
                 "ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
         }
 
 
-        if (
-            App.Toast &&
-            typeof App.Toast.show ===
-                "function"
-        ) {
-
-            App.Toast.show(
-                `Situation: ${key.toUpperCase()}`
-            );
-        }
+        App.Toast?.show?.(
+            `Situation: ${key.toUpperCase()}`
+        );
     }
 };
