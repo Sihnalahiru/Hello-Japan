@@ -1022,30 +1022,79 @@ Return ONLY valid JSON matching this structure without markdown fences:
 
         // Dynamic fallback generator if network fails
         function generateDynamicFallbackAnalysis(phrase) {
+            const clean = phrase.toLowerCase().trim();
             const isJapanese = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/.test(phrase);
 
-            if (isJapanese) {
+            // 1. Workplace Keigo Context
+            if (activeVoiceContext === 'workplace' || phrase.includes('お疲れ') || phrase.includes('otsukare')) {
                 return {
-                    japanese: phrase,
-                    romaji: "Kore wa yoku wakarimashita",
-                    sinhala: `පැවසූ ජපන් ප්‍රකාශය: "${phrase}" (තේරුම් ගන්නා ලදී)`,
-                    english: `Japanese statement: "${phrase}"`,
+                    japanese: phrase || "お疲れ様でした",
+                    romaji: "Otsukaresama deshita",
+                    sinhala: "අද දවසේ ඔබේ මහන්සියට බොහොමත්ම ස්තූතියි.",
+                    english: "Thank you very much for your hard work today.",
                     replies: [
-                        { badge: "Gentle Polite", jp: "はい、ありがとうございます！", romaji: "Hai, arigatou gozaimasu!", sinhala: "එසේය, බොහොම ස්තූතියි!", english: "Yes, thank you very much!" },
-                        { badge: "Respectful", jp: "承知いたしました。どうぞよろしくお願いします。", romaji: "Shouchi itashimashita. Douzo yoroshiku onegai shimasu.", sinhala: "තේරුම් ගත්තා. කරුණාවෙන් සහයෝගය දෙන්න.", english: "Understood. Thank you for your support." },
-                        { badge: "Friendly", jp: "こちらこそ、嬉しいです！", romaji: "Kochira koso, ureshii desu!", sinhala: "මා ද ඉතා සතුටු වෙමි!", english: "I am happy as well!" }
+                        { badge: "Polite Respect (丁寧)", jp: "お疲れ様でした！明日もよろしくお願いします。", romaji: "Otsukaresama deshita! Ashita mo yoroshiku onegaishimasu.", sinhala: "ඔබටත් ස්තූතියි! හෙටත් එකමුතුව වැඩ කරමු.", english: "Thank you! Looking forward to working tomorrow too." },
+                        { badge: "Humble Keigo (謙譲語)", jp: "こちらこそ、本日は大変お世話になりました。", romaji: "Kochira koso, honjitsu wa taihen osewa ni narimashita.", sinhala: "මා හට අද දැක්වූ උදව්වට බොහෝමත්ම ස්තූතියි.", english: "It is I who am grateful for your kind help today." },
+                        { badge: "Leaving Office", jp: "お先に失礼いたします。", romaji: "Osaki ni shitsurei itashimasu.", sinhala: "මම කලින් පිටත් වීමට අවසර ඉල්ලනවා.", english: "Excuse me for leaving before you." }
                     ]
                 };
             }
 
+            // 2. Store / Konbini Context
+            if (activeVoiceContext === 'konbini' || phrase.includes('袋') || phrase.includes('レジ') || phrase.includes('温め')) {
+                return {
+                    japanese: phrase || "袋はお分けしますか？",
+                    romaji: "Fukuro wa owake shimasu ka?",
+                    sinhala: "බෑග් වෙන වෙනම දමන්න අවශ්‍යද?",
+                    english: "Would you like separate shopping bags?",
+                    replies: [
+                        { badge: "Polite Decline", jp: "大丈夫です、一つにまとめてください。", romaji: "Daijoubu desu, hitotsu ni matomete kudasai.", sinhala: "කමක් නෑ, එක බෑග් එකකට දාන්න.", english: "It's fine, please put them together in one." },
+                        { badge: "Bags Needed", jp: "はい、お願いします。", romaji: "Hai, onegaishimasu.", sinhala: "ඔව්, කරුණාකර බෑගයක් දෙන්න.", english: "Yes, please." },
+                        { badge: "No Bag Needed", jp: "袋は結構です。ありがとうございます。", romaji: "Fukuro wa kekkou desu. Arigatou gozaimasu.", sinhala: "බෑගයක් අවශ්‍ය නෑ. බොහොම ස්තූතියි.", english: "No bag needed, thank you." }
+                    ]
+                };
+            }
+
+            // 3. Restaurant Context
+            if (activeVoiceContext === 'restaurant' || phrase.includes('注文') || phrase.includes('お会計')) {
+                return {
+                    japanese: phrase || "ご注文はお決まりですか？",
+                    romaji: "Gochuumon wa okimari desu ka?",
+                    sinhala: "ඔබගේ ඇණවුම තෝරාගත්තාද?",
+                    english: "Are you ready to order?",
+                    replies: [
+                        { badge: "Chef's Recommendation", jp: "本日のおすすめは何ですか？", romaji: "Honjitsu no osusume wa nan desu ka?", sinhala: "අද දවසේ විශේෂ නිර්දේශිත කෑම මොනවාද?", english: "What do you recommend today?" },
+                        { badge: "Need Moment", jp: "もう少し時間をいただけますか？", romaji: "Mou sukoshi jikan o itadakemasu ka?", sinhala: "තව සුළු වෙලාවක් ලබාදිය හැකිද?", english: "Could you give us a little more time?" },
+                        { badge: "Ready to Order", jp: "これをお願いします。", romaji: "Kore o onegaishimasu.", sinhala: "කරුණාකර මට මේ කෑම එක දෙන්න.", english: "This one, please." }
+                    ]
+                };
+            }
+
+            // 4. Sinhala / English Direct Translations to Japanese
+            if (!isJapanese) {
+                return {
+                    japanese: "はい、よく分かりました。ありがとうございます。",
+                    romaji: "Hai, yoku wakarimashita. Arigatou gozaimasu.",
+                    sinhala: phrase,
+                    english: phrase,
+                    replies: [
+                        { badge: "Polite Greeting", jp: "はじめまして、どうぞよろしくお願いいたします。", romaji: "Hajimemashite, douzo yoroshiku onegai itashimasu.", sinhala: "හඳුනාගැනීමට ලැබීම සතුටක්, කරුණාවෙන් සහයෝගය දෙන්න.", english: "Nice to meet you, please treat me well." },
+                        { badge: "Heartfelt Thanks", jp: "心から感謝申し上げます。", romaji: "Kokoro kara kansha moushiagemasu.", sinhala: "හදවතින්ම ස්තූතිවන්ත වෙමි.", english: "I thank you from the bottom of my heart." },
+                        { badge: "Agree Respectfully", jp: "おっしゃる通りです。賛成です。", romaji: "Ossharu toori desu. Sansei desu.", sinhala: "ඔබ පැවසූ දේ නිවැරදියි. මම එකඟයි.", english: "Exactly as you say. I agree." }
+                    ]
+                };
+            }
+
+            // 5. Default General Japanese Conversational Fallback
             return {
-                japanese: "はい、承知いたしました",
-                romaji: "Hai, shouchi itashimashita",
-                sinhala: phrase,
-                english: phrase,
+                japanese: phrase,
+                romaji: "Kore wa taisetsu na ohanashi desu",
+                sinhala: `ජපන් පාර්ශවය පැවසුවේ: "${phrase}"`,
+                english: `Spoken sentence: "${phrase}"`,
                 replies: [
-                    { badge: "Polite Japanese", jp: "どうぞよろしくお願いします", romaji: "Douzo yoroshiku onegai shimasu", sinhala: "කරුණාවෙන් කටයුතු කරමු", english: "Pleasure working with you" },
-                    { badge: "Gratitude", jp: "大変助かります、ありがとうございます", romaji: "Taihen tasukarimasu, arigatou gozaimasu", sinhala: "ලොකු උදව්වක්, බොහොම ස්තූතියි", english: "Very helpful, thank you" }
+                    { badge: "Polite Agreement", jp: "はい、承知いたしました！", romaji: "Hai, shouchi itashimashita!", sinhala: "එසේය, මට හොඳින් තේරුම් ගියා!", english: "Yes, fully understood!" },
+                    { badge: "Gratitude", jp: "ご親切にありがとうございます。", romaji: "Goshinsetsu ni arigatou gozaimasu.", sinhala: "ඔබගේ කරුණාවන්තකමට බොහොම ස්තූතියි.", english: "Thank you very much for your kindness." },
+                    { badge: "Polite Query", jp: "恐れ入りますが、もう一度お願いできますか？", romaji: "Osoreirimasu ga, mou ichido onegai dekimasu ka?", sinhala: "සමාවෙන්න, කරුණාකර එය නැවත පැවසිය හැකිද?", english: "Pardon me, could you please say that once more?" }
                 ]
             };
         }
