@@ -4,18 +4,51 @@ App.Navigation = {
 
     switchView(viewName) {
 
+        const validViews = [
+            "hero",
+            "camera",
+            "voice"
+        ];
+
+
+        if (
+            !validViews.includes(
+                viewName
+            )
+        ) {
+            return;
+        }
+
+
         const previousView =
             App.State.currentActiveView;
 
 
         if (
-            previousView === viewName
+            previousView === "camera" &&
+            viewName !== "camera"
         ) {
 
-            /*
-             * Avoid repeatedly starting camera/voice.
-             */
-            return;
+            App.CameraOCR
+                ?.cancel
+                ?.();
+
+            App.CameraEngine
+                ?.stop
+                ?.(
+                    true
+                );
+        }
+
+
+        if (
+            previousView === "voice" &&
+            viewName !== "voice"
+        ) {
+
+            App.VoiceEngine
+                ?.stop
+                ?.();
         }
 
 
@@ -23,49 +56,19 @@ App.Navigation = {
             viewName;
 
 
-        /*
-         * STOP CAMERA
-         */
-
-        if (
-            previousView === "camera" &&
-            viewName !== "camera"
-        ) {
-
-            App.CameraEngine?.stop?.(false);
-        }
-
-
-        /*
-         * STOP VOICE
-         */
-
-        if (
-            previousView === "voice" &&
-            viewName !== "voice"
-        ) {
-
-            App.VoiceEngine?.stop?.();
-        }
-
-
-        /*
-         * HIDE ALL SCREENS
-         */
-
         document
-            .querySelectorAll(".screen-view")
-            .forEach(view => {
+            .querySelectorAll(
+                ".screen-view"
+            )
+            .forEach(
+                view => {
 
-                view.classList.remove(
-                    "active"
-                );
-            });
+                    view.classList.remove(
+                        "active"
+                    );
+                }
+            );
 
-
-        /*
-         * SHOW TARGET
-         */
 
         const target =
             document.getElementById(
@@ -81,71 +84,69 @@ App.Navigation = {
         }
 
 
-        /*
-         * BOTTOM NAV
-         */
-
         document
-            .querySelectorAll(".nav-icon-btn")
-            .forEach(button => {
+            .querySelectorAll(
+                ".nav-icon-btn"
+            )
+            .forEach(
+                button => {
 
-                const active =
-                    button.dataset.nav ===
-                    viewName;
-
-
-                button.classList.toggle(
-                    "text-emerald-700",
-                    active
-                );
+                    const nav =
+                        button.dataset.nav;
 
 
-                button.classList.toggle(
-                    "text-gray-400",
-                    !active
-                );
-            });
+                    if (
+                        nav === viewName
+                    ) {
+
+                        button.classList.add(
+                            "text-emerald-700"
+                        );
+
+                        button.classList.remove(
+                            "text-gray-400"
+                        );
+
+                    } else {
+
+                        button.classList.remove(
+                            "text-emerald-700"
+                        );
+
+                        button.classList.add(
+                            "text-gray-400"
+                        );
+                    }
+                }
+            );
 
 
-        /*
-         * CAMERA
-         */
+        if (
+            viewName === "camera"
+        ) {
 
-        if (viewName === "camera") {
+            App.CameraRenderer
+                ?.clearCard
+                ?.();
 
-            App.CameraRenderer?.clearCard?.();
-
-            App.CameraEngine?.init?.();
+            App.CameraEngine
+                ?.init
+                ?.();
         }
 
 
-        /*
-         * VOICE
-         */
+        if (
+            viewName === "voice"
+        ) {
 
-        if (viewName === "voice") {
-
-            App.VoiceEngine?.start?.();
+            App.VoiceEngine
+                ?.start
+                ?.();
         }
     },
 
 
     tickClock() {
-
-        const now =
-            new Date();
-
-
-        const timeStr =
-            now.toLocaleTimeString(
-                [],
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                }
-            );
-
 
         const clock =
             document.getElementById(
@@ -153,10 +154,22 @@ App.Navigation = {
             );
 
 
-        if (clock) {
-
-            clock.textContent =
-                timeStr;
+        if (!clock) {
+            return;
         }
+
+
+        const now =
+            new Date();
+
+
+        clock.textContent =
+            now.toLocaleTimeString(
+                [],
+                {
+                    hour: "numeric",
+                    minute: "2-digit"
+                }
+            );
     }
 };
