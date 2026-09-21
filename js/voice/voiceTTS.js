@@ -11,29 +11,22 @@ App.VoiceTTS = {
     voicesReady: false,
 
 
-    /*
-     * ==========================================
-     * INITIALIZE VOICES
-     * ==========================================
-     */
-
     init() {
 
         if (!("speechSynthesis" in window)) {
             return false;
         }
 
+
         this.loadVoices();
 
-        if (
-            typeof window.speechSynthesis.onvoiceschanged !==
-            "undefined"
-        ) {
 
-            window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged =
+            () => {
+
                 this.loadVoices();
             };
-        }
+
 
         return true;
     },
@@ -45,28 +38,27 @@ App.VoiceTTS = {
             return;
         }
 
+
         const voices =
             window.speechSynthesis.getVoices();
+
 
         if (
             !Array.isArray(voices) ||
             voices.length === 0
         ) {
+
             return;
         }
+
 
         this.voiceCache =
             voices.slice();
 
-        this.voicesReady = true;
+        this.voicesReady =
+            true;
     },
 
-
-    /*
-     * ==========================================
-     * FIND JAPANESE VOICE
-     * ==========================================
-     */
 
     findJapaneseVoice() {
 
@@ -78,63 +70,51 @@ App.VoiceTTS = {
             this.loadVoices();
         }
 
+
         const voices =
             this.voiceCache || [];
+
 
         if (!voices.length) {
             return null;
         }
 
 
-        /*
-         * Prefer Japanese voices.
-         */
-
-        const japaneseVoice =
+        const exact =
             voices.find(voice => {
 
                 const lang =
-                    typeof voice.lang === "string"
-                        ? voice.lang
-                            .toLowerCase()
-                            .replace("_", "-")
-                        : "";
+                    String(voice.lang || "")
+                        .toLowerCase()
+                        .replace("_", "-");
 
                 return lang === "ja-jp";
             });
 
 
-        if (japaneseVoice) {
-            return japaneseVoice;
+        if (exact) {
+            return exact;
         }
 
 
-        /*
-         * Fallback to any Japanese locale.
-         */
-
-        const japaneseFallback =
+        return (
             voices.find(voice => {
 
                 const lang =
-                    typeof voice.lang === "string"
-                        ? voice.lang
-                            .toLowerCase()
-                            .replace("_", "-")
-                        : "";
+                    String(voice.lang || "")
+                        .toLowerCase()
+                        .replace("_", "-");
 
                 return lang.startsWith("ja");
-            });
-
-
-        return japaneseFallback || null;
+            }) || null
+        );
     },
 
 
     /*
-     * ==========================================
-     * SPEAK JAPANESE
-     * ==========================================
+     * =========================================================
+     * SPEAK
+     * =========================================================
      */
 
     speakText(text, options = {}) {
@@ -143,24 +123,16 @@ App.VoiceTTS = {
             typeof text !== "string" ||
             !text.trim()
         ) {
+
             return false;
         }
 
 
-        if (
-            !("speechSynthesis" in window)
-        ) {
+        if (!("speechSynthesis" in window)) {
 
-            if (
-                App.Toast &&
-                typeof App.Toast.show ===
-                    "function"
-            ) {
-
-                App.Toast.show(
-                    "Japanese speech is not supported by this browser."
-                );
-            }
+            App.Toast?.show?.(
+                "Japanese speech is not supported by this browser."
+            );
 
             return false;
         }
@@ -171,7 +143,7 @@ App.VoiceTTS = {
 
 
         /*
-         * Stop previous speech.
+         * Cancel previous TTS.
          */
 
         try {
@@ -188,27 +160,19 @@ App.VoiceTTS = {
 
 
         /*
-         * Stop recognition while AI is speaking.
-         *
-         * This is important because otherwise
-         * SpeechRecognition may hear the AI's own
-         * voice and create another request.
+         * Pause microphone BEFORE speaking.
          */
 
         if (
             App.VoiceEngine &&
             App.State?.isContinuousListening &&
-            typeof App.VoiceEngine.stop ===
+            typeof App.VoiceEngine.pauseForSpeech ===
                 "function"
         ) {
 
-            App.VoiceEngine.stop();
+            App.VoiceEngine.pauseForSpeech();
         }
 
-
-        /*
-         * Make sure voices are loaded.
-         */
 
         this.loadVoices();
 
@@ -219,13 +183,8 @@ App.VoiceTTS = {
             );
 
 
-        /*
-         * Japanese voice.
-         */
-
         utterance.lang =
-            options.lang ||
-            "ja-JP";
+            options.lang || "ja-JP";
 
 
         const japaneseVoice =
@@ -238,10 +197,6 @@ App.VoiceTTS = {
                 japaneseVoice;
         }
 
-
-        /*
-         * Natural Japanese speaking speed.
-         */
 
         const rate =
             Number.isFinite(options.rate)
@@ -274,40 +229,21 @@ App.VoiceTTS = {
         this.currentUtterance =
             utterance;
 
-
         this.isSpeaking =
             true;
 
-
-        /*
-         * ==========================================
-         * SPEECH START
-         * ==========================================
-         */
 
         utterance.onstart = () => {
 
             this.isSpeaking =
                 true;
 
-            if (
-                App.VoiceRenderer &&
-                typeof App.VoiceRenderer.updateMicVisuals ===
-                    "function"
-            ) {
 
-                App.VoiceRenderer.updateMicVisuals(
-                    false
-                );
-            }
+            App.VoiceRenderer?.updateMicVisuals?.(
+                false
+            );
         };
 
-
-        /*
-         * ==========================================
-         * SPEECH END
-         * ==========================================
-         */
 
         utterance.onend = () => {
 
@@ -319,42 +255,12 @@ App.VoiceTTS = {
 
 
             /*
-             * Restart hands-free listening after
-             * AI finishes speaking.
+             * Resume microphone after AI speech.
              */
 
-            if (
-                App.State &&
-                App.State.currentActiveView ===
-                    "voice" &&
-                App.State.isContinuousListening &&
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.start ===
-                    "function"
-            ) {
-
-                setTimeout(() => {
-
-                    if (
-                        App.State.currentActiveView ===
-                            "voice" &&
-                        App.State.isContinuousListening &&
-                        !this.isSpeaking
-                    ) {
-
-                        App.VoiceEngine.start();
-                    }
-
-                }, 350);
-            }
+            App.VoiceEngine?.resumeAfterSpeech?.();
         };
 
-
-        /*
-         * ==========================================
-         * SPEECH ERROR
-         * ==========================================
-         */
 
         utterance.onerror = event => {
 
@@ -372,42 +278,13 @@ App.VoiceTTS = {
 
 
             /*
-             * Restart listening if the assistant
-             * was operating in hands-free mode.
+             * Even after TTS error,
+             * resume voice conversation.
              */
 
-            if (
-                App.State &&
-                App.State.currentActiveView ===
-                    "voice" &&
-                App.State.isContinuousListening &&
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.start ===
-                    "function"
-            ) {
-
-                setTimeout(() => {
-
-                    if (
-                        App.State.currentActiveView ===
-                            "voice" &&
-                        App.State.isContinuousListening &&
-                        !this.isSpeaking
-                    ) {
-
-                        App.VoiceEngine.start();
-                    }
-
-                }, 500);
-            }
+            App.VoiceEngine?.resumeAfterSpeech?.();
         };
 
-
-        /*
-         * ==========================================
-         * START SPEECH
-         * ==========================================
-         */
 
         try {
 
@@ -425,10 +302,14 @@ App.VoiceTTS = {
             this.currentUtterance =
                 null;
 
+
             console.error(
                 "Speech synthesis start failed:",
                 error
             );
+
+
+            App.VoiceEngine?.resumeAfterSpeech?.();
 
             return false;
         }
@@ -436,9 +317,9 @@ App.VoiceTTS = {
 
 
     /*
-     * ==========================================
-     * STOP SPEAKING
-     * ==========================================
+     * =========================================================
+     * MANUAL STOP
+     * =========================================================
      */
 
     stop() {
@@ -450,9 +331,7 @@ App.VoiceTTS = {
             null;
 
 
-        if (
-            "speechSynthesis" in window
-        ) {
+        if ("speechSynthesis" in window) {
 
             try {
 
@@ -470,11 +349,9 @@ App.VoiceTTS = {
 
 
     /*
-     * ==========================================
-     * SPEAK CURRENT DETECTED JAPANESE
-     * ==========================================
-     *
-     * Used by the Camera screen.
+     * =========================================================
+     * SPEAK CURRENT DETECTED
+     * =========================================================
      */
 
     speakCurrentDetected() {
@@ -487,16 +364,9 @@ App.VoiceTTS = {
 
         if (!element) {
 
-            if (
-                App.Toast &&
-                typeof App.Toast.show ===
-                    "function"
-            ) {
-
-                App.Toast.show(
-                    "No detected Japanese text."
-                );
-            }
+            App.Toast?.show?.(
+                "No detected Japanese text."
+            );
 
             return false;
         }
@@ -508,21 +378,14 @@ App.VoiceTTS = {
 
         if (
             !japanese ||
-            japanese.includes("⚠️") ||
             japanese.includes("Speak when") ||
-            japanese.includes("Your Japanese")
+            japanese.includes("Your Japanese") ||
+            japanese.includes("No Japanese")
         ) {
 
-            if (
-                App.Toast &&
-                typeof App.Toast.show ===
-                    "function"
-            ) {
-
-                App.Toast.show(
-                    "No Japanese speech result available yet."
-                );
-            }
+            App.Toast?.show?.(
+                "No Japanese speech result available yet."
+            );
 
             return false;
         }
@@ -535,9 +398,9 @@ App.VoiceTTS = {
 
 
     /*
-     * ==========================================
+     * =========================================================
      * SPEAK SUGGESTED REPLY
-     * ==========================================
+     * =========================================================
      */
 
     speakReplyOption(jp) {
@@ -546,6 +409,7 @@ App.VoiceTTS = {
             typeof jp !== "string" ||
             !jp.trim()
         ) {
+
             return false;
         }
 
@@ -560,14 +424,9 @@ App.VoiceTTS = {
             );
 
 
-        if (
-            spoken &&
-            App.Toast &&
-            typeof App.Toast.show ===
-                "function"
-        ) {
+        if (spoken) {
 
-            App.Toast.show(
+            App.Toast?.show?.(
                 `Speaking: "${cleanText}"`
             );
         }
@@ -578,15 +437,10 @@ App.VoiceTTS = {
 };
 
 
-/*
- * Initialize after page load.
- */
-
 window.addEventListener(
     "DOMContentLoaded",
     () => {
 
         App.VoiceTTS.init();
-
     }
 );
