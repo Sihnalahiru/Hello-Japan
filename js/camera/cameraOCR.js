@@ -4,6 +4,8 @@ App.CameraOCR = {
 
     isScanning: false,
 
+    scanRequestId: 0,
+
 
     async scanFrame() {
 
@@ -41,15 +43,34 @@ App.CameraOCR = {
         ) {
 
             this.showStatus(
-                "Camera is not ready. Please wait a moment and try again."
+                "Camera is not ready. Please wait a moment."
             );
 
             return;
         }
 
 
+        const requestId =
+            ++this.scanRequestId;
+
+
         this.isScanning =
             true;
+
+
+        const button =
+            document.getElementById(
+                "camera-scan-button"
+            );
+
+
+        if (button) {
+            button.disabled =
+                true;
+
+            button.style.opacity =
+                "0.55";
+        }
 
 
         this.showStatus(
@@ -72,11 +93,15 @@ App.CameraOCR = {
 
 
             if (
-                width > maxDimension ||
-                height > maxDimension
+                width >
+                    maxDimension ||
+                height >
+                    maxDimension
             ) {
 
-                if (width >= height) {
+                if (
+                    width >= height
+                ) {
 
                     height =
                         Math.round(
@@ -124,7 +149,6 @@ App.CameraOCR = {
 
 
             if (!context) {
-
                 throw new Error(
                     "CANVAS_CONTEXT_UNAVAILABLE"
                 );
@@ -152,7 +176,6 @@ App.CameraOCR = {
 
 
             if (!base64Data) {
-
                 throw new Error(
                     "IMAGE_CAPTURE_FAILED"
                 );
@@ -164,7 +187,6 @@ App.CameraOCR = {
 
 
             if (!prompt) {
-
                 throw new Error(
                     "VISION_PROMPT_UNAVAILABLE"
                 );
@@ -178,32 +200,49 @@ App.CameraOCR = {
                         contents: [
                             {
                                 parts: [
+
                                     {
                                         text: prompt
                                     },
+
                                     {
                                         inlineData: {
                                             mimeType:
                                                 "image/jpeg",
+
                                             data:
                                                 base64Data
                                         }
                                     }
+
                                 ]
                             }
                         ]
                     },
 
                     App.Config?.OCR_TIMEOUT_MS ||
-                        18000
+                    18000,
+
+                    App.Schemas?.VISION_RESPONSE_SCHEMA ||
+                    null
                 );
 
 
             if (
-                !result ||
-                typeof result !== "object" ||
-                Array.isArray(result)
+                requestId !==
+                this.scanRequestId
             ) {
+                return;
+            }
+
+
+            const validated =
+                this.validateResult(
+                    result
+                );
+
+
+            if (!validated) {
 
                 throw new Error(
                     "INVALID_VISION_RESULT"
@@ -211,75 +250,56 @@ App.CameraOCR = {
             }
 
 
-            const finalResult = {
-
-                japanese:
-                    typeof result.japanese === "string"
-                        ? result.japanese.trim()
-                        : "",
-
-                romaji:
-                    typeof result.romaji === "string"
-                        ? result.romaji.trim()
-                        : "",
-
-                sinhala:
-                    typeof result.sinhala === "string"
-                        ? result.sinhala.trim()
-                        : "",
-
-                english:
-                    typeof result.english === "string"
-                        ? result.english.trim()
-                        : "",
-
-                guide:
-                    typeof result.guide === "string"
-                        ? result.guide.trim()
-                        : ""
-            };
-
-
-            if (!finalResult.japanese) {
-
-                this.clearResult();
-
-
-                this.showStatus(
-                    "No Japanese text detected. Point the camera at a Japanese sign, menu, label, or notice and scan again."
-                );
-
-
-                return;
-            }
-
-
-            if (
-                !App.CameraRenderer ||
-                typeof App.CameraRenderer.displayCard !==
-                    "function"
-            ) {
-
-                throw new Error(
-                    "CAMERA_RENDERER_UNAVAILABLE"
-                );
-            }
-
-
-            App.CameraRenderer.displayCard(
-                finalResult,
+            App.CameraRenderer?.displayCard?.(
+                validated,
                 false
             );
 
 
-            this.showStatus(
-                "✅ Japanese text detected."
+            if (
+                validated.japanese
+            ) {
+
+                this.showStatus(
+                    "✅ Japanese text detected."
+                );
+
+            } else {
+
+                this.showStatus(
+                    "No readable Japanese text detected."
+                );
+            }
+
+
+            setTimeout(
+                () => {
+
+                    if (
+                        requestId ===
+                        this.scanRequestId
+                    ) {
+
+                        this.hideStatus();
+                    }
+
+                },
+                1800
             );
+
 
         } catch (error) {
 
+            if (
+                requestId !==
+                this.scanRequestId
+            ) {
+                return;
+            }
+
+
             console.error(
-                "Camera Vision Error:",
+                "Camera OCR error:",
                 error
             );
 
@@ -292,7 +312,7 @@ App.CameraOCR = {
             if (code === "TIMEOUT") {
 
                 this.showStatus(
-                    "⏱️ Vision AI timed out. Please scan again."
+                    "⏱️ Vision AI timed out. Try again."
                 );
 
             } else if (
@@ -300,16 +320,7 @@ App.CameraOCR = {
             ) {
 
                 this.showStatus(
-                    "⚠️ Gemini request limit reached. Please try again later."
-                );
-
-            } else if (
-                code ===
-                "SERVER_CONFIGURATION_ERROR"
-            ) {
-
-                this.showStatus(
-                    "⚠️ Gemini API is not configured on Cloudflare Worker."
+                    "⚠️ AI limit reached. Try again shortly."
                 );
 
             } else if (
@@ -317,60 +328,130 @@ App.CameraOCR = {
             ) {
 
                 this.showStatus(
-                    "⚠️ Gemini rejected the camera request."
-                );
-
-            } else if (
-                code ===
-                "CAMERA_RENDERER_UNAVAILABLE"
-            ) {
-
-                this.showStatus(
-                    "⚠️ Camera result renderer is unavailable."
+                    "⚠️ Vision request was rejected."
                 );
 
             } else {
 
                 this.showStatus(
-                    "❌ Vision AI scan failed. Please try again."
+                    "❌ Camera scan failed. Try again."
                 );
             }
 
         } finally {
 
-            this.isScanning =
+            if (
+                requestId ===
+                this.scanRequestId
+            ) {
+
+                this.isScanning =
+                    false;
+
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.style.opacity =
+                        "";
+                }
+            }
+        }
+    },
+
+
+    validateResult(data) {
+
+        if (
+            !data ||
+            typeof data !== "object" ||
+            Array.isArray(data)
+        ) {
+            return null;
+        }
+
+
+        return {
+
+            japanese:
+                typeof data.japanese === "string"
+                    ? data.japanese.trim()
+                    : "",
+
+            romaji:
+                typeof data.romaji === "string"
+                    ? data.romaji.trim()
+                    : "",
+
+            sinhala:
+                typeof data.sinhala === "string"
+                    ? data.sinhala.trim()
+                    : "",
+
+            english:
+                typeof data.english === "string"
+                    ? data.english.trim()
+                    : "",
+
+            guide:
+                typeof data.guide === "string"
+                    ? data.guide.trim()
+                    : ""
+        };
+    },
+
+
+    cancel() {
+
+        ++this.scanRequestId;
+
+        this.isScanning =
+            false;
+
+
+        const button =
+            document.getElementById(
+                "camera-scan-button"
+            );
+
+
+        if (button) {
+
+            button.disabled =
                 false;
+
+            button.style.opacity =
+                "";
         }
     },
 
 
     showStatus(message) {
 
-        const status =
-            document.getElementById(
-                "camera-status"
+        if (
+            App.CameraEngine &&
+            typeof App.CameraEngine.showStatus ===
+                "function"
+        ) {
+
+            App.CameraEngine.showStatus(
+                message
             );
 
-
-        if (status) {
-
-            status.textContent =
-                message;
-
-            status.classList.remove(
-                "hidden"
-            );
+            return;
         }
 
 
-        App.CameraEngine?.showStatus?.(
+        App.Toast?.show?.(
             message
         );
     },
 
 
-    clearResult() {
+    hideStatus() {
 
-        App.CameraRenderer?.clearCard?.();
+        App.CameraEngine?.hideStatus?.();
     }
 };
