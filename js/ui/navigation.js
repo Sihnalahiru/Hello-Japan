@@ -1,22 +1,25 @@
 window.App = window.App || {};
 
 App.Navigation = {
+
     switchView(viewName) {
+
         const validViews = [
             "hero",
             "camera",
             "voice"
         ];
 
-        if (
-            !validViews.includes(viewName)
-        ) {
+        if (!validViews.includes(viewName)) {
             return;
         }
 
         const previous =
             App.State.currentActiveView;
 
+        /*
+         * Stop previous voice session
+         */
         if (
             previous === "voice" &&
             viewName !== "voice"
@@ -24,6 +27,9 @@ App.Navigation = {
             App.VoiceEngine?.stop?.();
         }
 
+        /*
+         * Stop previous camera session
+         */
         if (
             previous === "camera" &&
             viewName !== "camera"
@@ -35,14 +41,13 @@ App.Navigation = {
         App.State.currentActiveView =
             viewName;
 
+        /*
+         * Change visible screen
+         */
         document
-            .querySelectorAll(
-                ".screen-view"
-            )
+            .querySelectorAll(".screen-view")
             .forEach(view => {
-                view.classList.remove(
-                    "active"
-                );
+                view.classList.remove("active");
             });
 
         const target =
@@ -51,16 +56,16 @@ App.Navigation = {
             );
 
         if (target) {
-            target.classList.add(
-                "active"
-            );
+            target.classList.add("active");
         }
 
+        /*
+         * Update bottom navigation
+         */
         document
-            .querySelectorAll(
-                ".nav-icon-btn"
-            )
+            .querySelectorAll(".nav-icon-btn")
             .forEach(button => {
+
                 const nav =
                     button.dataset.nav;
 
@@ -75,7 +80,14 @@ App.Navigation = {
                 );
             });
 
+        /*
+         * CAMERA
+         *
+         * Camera starts only when the
+         * camera screen is selected.
+         */
         if (viewName === "camera") {
+
             App.CameraRenderer
                 ?.clearCard?.();
 
@@ -83,19 +95,39 @@ App.Navigation = {
                 ?.init?.();
         }
 
+        /*
+         * VOICE
+         *
+         * IMPORTANT:
+         * Do NOT automatically start speech
+         * recognition here.
+         *
+         * User must press the microphone.
+         * This is safer for iOS Safari.
+         */
         if (viewName === "voice") {
-            App.VoiceEngine
-                ?.start?.();
+
+            App.VoiceRenderer
+                ?.clearConversation?.();
+
+            App.VoiceRenderer
+                ?.setListeningState?.(
+                    false,
+                    "Tap microphone to start."
+                );
         }
     },
 
     tickClock() {
+
         const clock =
             document.getElementById(
                 "hero-clock"
             );
 
-        if (!clock) return;
+        if (!clock) {
+            return;
+        }
 
         const now = new Date();
 
