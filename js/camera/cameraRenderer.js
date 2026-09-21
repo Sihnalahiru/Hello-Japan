@@ -5,6 +5,7 @@ App.CameraRenderer = {
     displayCard(data, autoSpeak = false) {
 
         const result = {
+
             japanese:
                 typeof data?.japanese === "string"
                     ? data.japanese.trim()
@@ -31,6 +32,7 @@ App.CameraRenderer = {
                     : ""
         };
 
+
         const jp =
             document.getElementById("ar-jp");
 
@@ -46,60 +48,64 @@ App.CameraRenderer = {
         const guide =
             document.getElementById("ar-guide");
 
+
         if (jp) {
+
             jp.textContent =
                 result.japanese ||
                 "No Japanese text detected";
         }
 
+
         if (romaji) {
+
             romaji.textContent =
                 result.romaji
                     ? `(${result.romaji})`
                     : "";
         }
 
+
         if (sinhala) {
+
             sinhala.textContent =
                 result.sinhala ||
                 "සිංහල තේරුම මෙහි පෙන්වයි.";
         }
 
+
         if (english) {
+
             english.textContent =
                 result.english ||
                 "English meaning will appear here.";
         }
 
+
         if (guide) {
+
             guide.textContent =
                 result.guide ||
                 "Point the camera at Japanese text and scan again.";
         }
 
-        /*
-         * IMPORTANT:
-         * Save ONLY the real AI result.
-         * Never insert demo/fallback Japanese such as 止まれ.
-         */
+
         App.State.currentArJapanese =
             result.japanese;
 
-        App.State.currentCameraResult = {
-            ...result
-        };
 
-        /*
-         * Optional automatic speech.
-         * Normally Camera OCR calls this with false.
-         */
+        App.State.currentCameraResult =
+            {
+                ...result
+            };
+
+
         if (
             autoSpeak &&
-            result.japanese &&
-            App.VoiceTTS &&
-            typeof App.VoiceTTS.speakText === "function"
+            result.japanese
         ) {
-            App.VoiceTTS.speakText(
+
+            App.VoiceTTS?.speakText?.(
                 result.japanese
             );
         }
@@ -123,34 +129,48 @@ App.CameraRenderer = {
         const guide =
             document.getElementById("ar-guide");
 
+
         if (jp) {
+
             jp.textContent =
                 "Ready to scan";
         }
 
+
         if (romaji) {
+
             romaji.textContent =
                 "Point camera at Japanese text";
         }
 
+
         if (sinhala) {
+
             sinhala.textContent =
                 "Japanese text එකක් camera එකට පෙන්වන්න.";
         }
 
+
         if (english) {
+
             english.textContent =
                 "Point the camera at Japanese text and press Scan.";
         }
 
+
         if (guide) {
+
             guide.textContent =
                 "Try a Japanese sign, hotel notice, menu, label, or workplace instruction.";
         }
 
-        App.State.currentArJapanese = "";
+
+        App.State.currentArJapanese =
+            "";
+
 
         App.State.currentCameraResult = {
+
             japanese: "",
             romaji: "",
             sinhala: "",
@@ -165,26 +185,24 @@ App.CameraRenderer = {
         const japanese =
             App.State.currentArJapanese;
 
+
         if (
             !japanese ||
             typeof japanese !== "string"
         ) {
 
-            if (
-                App.Toast &&
-                typeof App.Toast.show === "function"
-            ) {
-                App.Toast.show(
-                    "No Japanese text detected yet."
-                );
-            }
+            App.Toast?.show?.(
+                "No Japanese text detected yet."
+            );
 
             return;
         }
 
+
         if (
             App.VoiceTTS &&
-            typeof App.VoiceTTS.speakText === "function"
+            typeof App.VoiceTTS.speakText ===
+                "function"
         ) {
 
             App.VoiceTTS.speakText(
@@ -193,14 +211,9 @@ App.CameraRenderer = {
 
         } else {
 
-            if (
-                App.Toast &&
-                typeof App.Toast.show === "function"
-            ) {
-                App.Toast.show(
-                    "Japanese voice engine is unavailable."
-                );
-            }
+            App.Toast?.show?.(
+                "Japanese voice engine is unavailable."
+            );
         }
     }
 };
