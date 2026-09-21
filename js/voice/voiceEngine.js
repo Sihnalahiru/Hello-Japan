@@ -14,183 +14,164 @@ App.VoiceEngine = {
 
     shouldResumeAfterSpeech: false,
 
-    sessionId: 0,
-
-
-    /*
-     * =========================================================
-     * CREATE RECOGNITION
-     * =========================================================
-     */
 
     init() {
 
-        const SpeechRec =
+        const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
 
-        if (!SpeechRec) {
+        if (!SpeechRecognition) {
             return null;
         }
 
 
-        const rec =
-            new SpeechRec();
+        const recognition =
+            new SpeechRecognition();
 
 
-        rec.continuous = true;
+        recognition.continuous =
+            true;
 
-        rec.interimResults = false;
+        recognition.interimResults =
+            false;
 
-        rec.maxAlternatives = 1;
+        recognition.maxAlternatives =
+            1;
 
-        rec.lang =
+        recognition.lang =
             App.State.activeSpeakerLang;
 
 
-        /*
-         * -----------------------------------------------------
-         * START
-         * -----------------------------------------------------
-         */
+        recognition.onstart =
+            () => {
 
-        rec.onstart = () => {
+                this.isStarting =
+                    false;
 
-            this.isStarting = false;
-
-            this.isStopping = false;
-
-
-            if (this.isPausedForSpeech) {
-
-                try {
-                    rec.stop();
-                } catch (error) {
-                    /* already stopping */
-                }
-
-                return;
-            }
-
-
-            App.State.currentVoiceState =
-                App.State.VoiceState.LISTENING;
-
-
-            if (
-                App.VoiceRenderer &&
-                typeof App.VoiceRenderer.updateMicVisuals ===
-                    "function"
-            ) {
-
-                App.VoiceRenderer.updateMicVisuals(true);
-            }
-        };
-
-
-        /*
-         * -----------------------------------------------------
-         * RESULT
-         * -----------------------------------------------------
-         */
-
-        rec.onresult = async event => {
-
-            if (this.isPausedForSpeech) {
-                return;
-            }
-
-            if (!App.State.isContinuousListening) {
-                return;
-            }
-
-
-            for (
-                let i = event.resultIndex;
-                i < event.results.length;
-                i++
-            ) {
-
-                const result =
-                    event.results[i];
+                this.isStopping =
+                    false;
 
 
                 if (
-                    !result ||
-                    !result.isFinal
+                    this.isPausedForSpeech
                 ) {
-                    continue;
+
+                    try {
+                        recognition.stop();
+                    } catch {}
+
+                    return;
                 }
-
-
-                const transcript =
-                    result[0]?.transcript
-                        ?.trim();
-
-
-                if (!transcript) {
-                    continue;
-                }
-
-
-                const now =
-                    Date.now();
-
-
-                const duplicate =
-                    transcript ===
-                        App.State.lastTranscript &&
-                    (
-                        now -
-                        App.State.lastTranscriptTime
-                    ) < 2500;
-
-
-                if (duplicate) {
-                    continue;
-                }
-
-
-                App.State.lastTranscript =
-                    transcript;
-
-                App.State.lastTranscriptTime =
-                    now;
-
-                App.State.currentVoiceTranscript =
-                    transcript;
 
 
                 App.State.currentVoiceState =
-                    App.State.VoiceState.PROCESSING;
+                    App.State.VoiceState.LISTENING;
 
 
-                try {
+                App.VoiceRenderer
+                    ?.updateMicVisuals
+                    ?.(
+                        true
+                    );
+            };
+
+
+        recognition.onresult =
+            async event => {
+
+                if (
+                    this.isPausedForSpeech
+                ) {
+                    return;
+                }
+
+                if (
+                    !App.State.isContinuousListening
+                ) {
+                    return;
+                }
+
+
+                for (
+                    let i =
+                        event.resultIndex;
+
+                    i <
+                    event.results.length;
+
+                    i++
+                ) {
+
+                    const result =
+                        event.results[i];
+
 
                     if (
-                        App.VoiceAI &&
-                        typeof App.VoiceAI.handleSpokenVoice ===
-                            "function"
+                        !result ||
+                        !result.isFinal
                     ) {
-
-                        await App.VoiceAI.handleSpokenVoice(
-                            transcript
-                        );
-
-                    } else {
-
-                        throw new Error(
-                            "VOICE_AI_UNAVAILABLE"
-                        );
+                        continue;
                     }
 
-                } catch (error) {
 
-                    console.error(
-                        "Voice AI processing error:",
-                        error
-                    );
+                    const transcript =
+                        result?.[0]?.transcript
+                            ?.trim();
+
+
+                    if (!transcript) {
+                        continue;
+                    }
+
+
+                    const now =
+                        Date.now();
+
+
+                    const duplicate =
+                        transcript ===
+                            App.State.lastTranscript &&
+                        now -
+                            App.State.lastTranscriptTime <
+                            2500;
+
+
+                    if (duplicate) {
+                        continue;
+                    }
+
+
+                    App.State.lastTranscript =
+                        transcript;
+
+                    App.State.lastTranscriptTime =
+                        now;
+
+                    App.State.currentVoiceTranscript =
+                        transcript;
+
+
+                    App.State.currentVoiceState =
+                        App.State.VoiceState.PROCESSING;
+
+
+                    try {
+
+                        await App.VoiceAI
+                            ?.handleSpokenVoice
+                            ?.(
+                                transcript
+                            );
+
+                    } catch (error) {
+
+                        console.error(
+                            "Voice processing error:",
+                            error
+                        );
+                    }
 
 
                     if (
@@ -202,218 +183,156 @@ App.VoiceEngine = {
                             App.State.VoiceState.LISTENING;
                     }
                 }
-            }
-        };
+            };
 
 
-        /*
-         * -----------------------------------------------------
-         * ERROR
-         * -----------------------------------------------------
-         */
+        recognition.onerror =
+            event => {
 
-        rec.onerror = event => {
-
-            const error =
-                event?.error || "unknown";
+                const error =
+                    event?.error ||
+                    "unknown";
 
 
-            console.warn(
-                "Speech recognition error:",
-                error
-            );
-
-
-            if (this.isPausedForSpeech) {
-                return;
-            }
-
-
-            if (
-                error === "not-allowed" ||
-                error === "service-not-allowed"
-            ) {
-
-                App.State.isContinuousListening =
-                    false;
-
-                this.cancelRestart();
-
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
-
-
-                App.VoiceRenderer?.updateMicVisuals?.(false);
-
-                App.Toast?.show?.(
-                    "Microphone permission denied."
+                console.warn(
+                    "Speech recognition:",
+                    error
                 );
 
-                return;
-            }
+
+                if (
+                    this.isPausedForSpeech
+                ) {
+                    return;
+                }
 
 
-            if (
-                error === "aborted" ||
-                error === "no-speech" ||
-                error === "audio-capture" ||
-                error === "network"
-            ) {
+                if (
+                    error === "not-allowed" ||
+                    error ===
+                        "service-not-allowed"
+                ) {
+
+                    App.State.isContinuousListening =
+                        false;
+
+                    this.cancelRestart();
+
+
+                    App.State.currentVoiceState =
+                        App.State.VoiceState.IDLE;
+
+
+                    App.VoiceRenderer
+                        ?.updateMicVisuals
+                        ?.(
+                            false
+                        );
+
+
+                    App.Toast?.show?.(
+                        "🎤 Microphone permission was denied."
+                    );
+
+
+                    return;
+                }
+
+
+                if (
+                    error === "aborted" ||
+                    error === "no-speech" ||
+                    error === "audio-capture" ||
+                    error === "network"
+                ) {
+
+                    if (
+                        App.State.isContinuousListening
+                    ) {
+
+                        this.scheduleRestart(
+                            error ===
+                                "no-speech"
+                                ? 400
+                                : 800
+                        );
+                    }
+
+                    return;
+                }
+
 
                 if (
                     App.State.isContinuousListening
                 ) {
 
                     this.scheduleRestart(
-                        error === "no-speech"
-                            ? 400
-                            : 800
+                        1000
                     );
                 }
-
-                return;
-            }
+            };
 
 
-            if (
-                App.State.isContinuousListening
-            ) {
+        recognition.onend =
+            () => {
 
-                this.scheduleRestart(1000);
-            }
-        };
+                this.isStarting =
+                    false;
 
-
-        /*
-         * -----------------------------------------------------
-         * END
-         * -----------------------------------------------------
-         */
-
-        rec.onend = () => {
-
-            this.isStarting = false;
-
-            this.isStopping = false;
+                this.isStopping =
+                    false;
 
 
-            if (this.isPausedForSpeech) {
+                if (
+                    this.isPausedForSpeech
+                ) {
 
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
+                    App.State.currentVoiceState =
+                        App.State.VoiceState.IDLE;
 
-                return;
-            }
-
-
-            if (!App.State.isContinuousListening) {
-
-                App.State.currentVoiceState =
-                    App.State.VoiceState.IDLE;
-
-                App.VoiceRenderer?.updateMicVisuals?.(false);
-
-                return;
-            }
-
-
-            App.State.currentVoiceState =
-                App.State.VoiceState.IDLE;
-
-
-            this.scheduleRestart(350);
-        };
-
-
-        return rec;
-    },
-
-
-    /*
-     * =========================================================
-     * RESTART
-     * =========================================================
-     */
-
-    scheduleRestart(delayMs = 400) {
-
-        this.cancelRestart();
-
-
-        if (!App.State.isContinuousListening) {
-            return;
-        }
-
-
-        if (this.isPausedForSpeech) {
-            return;
-        }
-
-
-        this.speechRestartTimer =
-            setTimeout(() => {
-
-                this.speechRestartTimer = null;
-
-
-                if (!App.State.isContinuousListening) {
-                    return;
-                }
-
-
-                if (this.isPausedForSpeech) {
                     return;
                 }
 
 
                 if (
-                    App.State.currentVoiceState !==
-                    App.State.VoiceState.IDLE
+                    !App.State.isContinuousListening
                 ) {
+
+                    App.State.currentVoiceState =
+                        App.State.VoiceState.IDLE;
+
+
+                    App.VoiceRenderer
+                        ?.updateMicVisuals
+                        ?.(
+                            false
+                        );
 
                     return;
                 }
 
 
-                this.startRecognition();
+                App.State.currentVoiceState =
+                    App.State.VoiceState.IDLE;
 
-            }, delayMs);
+
+                this.scheduleRestart(
+                    350
+                );
+            };
+
+
+        return recognition;
     },
 
-
-    cancelRestart() {
-
-        if (this.speechRestartTimer) {
-
-            clearTimeout(
-                this.speechRestartTimer
-            );
-
-            this.speechRestartTimer =
-                null;
-        }
-    },
-
-
-    /*
-     * =========================================================
-     * START RECOGNITION
-     * =========================================================
-     */
 
     startRecognition() {
 
-        if (!App.State.isContinuousListening) {
-            return;
-        }
-
-
-        if (this.isPausedForSpeech) {
-            return;
-        }
-
-
-        if (this.isStarting) {
+        if (
+            !App.State.isContinuousListening ||
+            this.isPausedForSpeech ||
+            this.isStarting
+        ) {
             return;
         }
 
@@ -424,7 +343,6 @@ App.VoiceEngine = {
             App.State.currentVoiceState ===
                 App.State.VoiceState.STARTING
         ) {
-
             return;
         }
 
@@ -435,7 +353,9 @@ App.VoiceEngine = {
                 this.init();
 
 
-            if (!this.speechRecognitionInstance) {
+            if (
+                !this.speechRecognitionInstance
+            ) {
 
                 App.State.isContinuousListening =
                     false;
@@ -443,26 +363,30 @@ App.VoiceEngine = {
                 App.State.currentVoiceState =
                     App.State.VoiceState.IDLE;
 
-                App.VoiceRenderer?.updateMicVisuals?.(false);
+
+                App.VoiceRenderer
+                    ?.updateMicVisuals
+                    ?.(
+                        false
+                    );
+
 
                 App.Toast?.show?.(
-                    "Voice Recognition is not supported by this browser."
+                    "Voice recognition is not supported by this browser."
                 );
+
 
                 return;
             }
         }
 
 
-        const recognition =
-            this.speechRecognitionInstance;
-
-
-        recognition.lang =
+        this.speechRecognitionInstance.lang =
             App.State.activeSpeakerLang;
 
 
-        this.isStarting = true;
+        this.isStarting =
+            true;
 
 
         App.State.currentVoiceState =
@@ -471,83 +395,60 @@ App.VoiceEngine = {
 
         try {
 
-            recognition.start();
+            this.speechRecognitionInstance.start();
 
         } catch (error) {
 
-            this.isStarting = false;
+            this.isStarting =
+                false;
+
 
             console.warn(
-                "Speech recognition start failed:",
+                "Recognition start:",
                 error
             );
+
 
             App.State.currentVoiceState =
                 App.State.VoiceState.IDLE;
 
 
-            if (
-                App.State.isContinuousListening &&
-                !this.isPausedForSpeech
-            ) {
-
-                this.scheduleRestart(700);
-            }
+            this.scheduleRestart(
+                700
+            );
         }
     },
 
 
-    /*
-     * =========================================================
-     * START
-     * =========================================================
-     */
-
     start() {
-
-        if (this.isPausedForSpeech) {
-
-            this.shouldResumeAfterSpeech =
-                true;
-
-            App.State.isContinuousListening =
-                true;
-
-            return;
-        }
-
 
         App.State.isContinuousListening =
             true;
 
 
-        this.cancelRestart();
-
-
         if (
-            App.State.currentVoiceState ===
-                App.State.VoiceState.LISTENING ||
-            App.State.currentVoiceState ===
-                App.State.VoiceState.STARTING
+            this.isPausedForSpeech
         ) {
+
+            this.shouldResumeAfterSpeech =
+                true;
 
             return;
         }
+
+
+        this.cancelRestart();
 
 
         this.startRecognition();
     },
 
 
-    /*
-     * =========================================================
-     * PAUSE WHILE AI SPEAKS
-     * =========================================================
-     */
-
     pauseForSpeech() {
 
-        if (!App.State.isContinuousListening) {
+        if (
+            !App.State.isContinuousListening
+        ) {
             return;
         }
 
@@ -562,40 +463,37 @@ App.VoiceEngine = {
         this.cancelRestart();
 
 
-        const recognition =
-            this.speechRecognitionInstance;
-
-
-        if (recognition) {
+        if (
+            this.speechRecognitionInstance
+        ) {
 
             try {
-                recognition.stop();
-            } catch (error) {
-                /* already stopped */
-            }
+                this.speechRecognitionInstance.stop();
+            } catch {}
         }
 
 
-        this.isStarting = false;
+        this.isStarting =
+            false;
 
 
         App.State.currentVoiceState =
             App.State.VoiceState.IDLE;
 
 
-        App.VoiceRenderer?.updateMicVisuals?.(false);
+        App.VoiceRenderer
+            ?.updateMicVisuals
+            ?.(
+                false
+            );
     },
 
 
-    /*
-     * =========================================================
-     * RESUME AFTER TTS
-     * =========================================================
-     */
-
     resumeAfterSpeech() {
 
-        if (!this.shouldResumeAfterSpeech) {
+        if (
+            !this.shouldResumeAfterSpeech
+        ) {
 
             this.isPausedForSpeech =
                 false;
@@ -611,7 +509,9 @@ App.VoiceEngine = {
             false;
 
 
-        if (!App.State.isContinuousListening) {
+        if (
+            !App.State.isContinuousListening
+        ) {
             return;
         }
 
@@ -620,41 +520,33 @@ App.VoiceEngine = {
             App.State.currentActiveView !==
             "voice"
         ) {
-
             return;
         }
 
 
-        setTimeout(() => {
+        setTimeout(
+            () => {
 
-            if (
-                App.State.isContinuousListening &&
-                !this.isPausedForSpeech &&
-                App.State.currentActiveView ===
-                    "voice"
-            ) {
+                if (
+                    App.State.isContinuousListening &&
+                    !this.isPausedForSpeech &&
+                    App.State.currentActiveView ===
+                        "voice"
+                ) {
 
-                this.start();
-            }
+                    this.start();
+                }
 
-        }, 350);
+            },
+            400
+        );
     },
 
-
-    /*
-     * =========================================================
-     * STOP COMPLETELY
-     * =========================================================
-     */
 
     stop() {
 
         App.State.isContinuousListening =
             false;
-
-
-        App.State.voiceRequestId++;
-
 
         this.shouldResumeAfterSpeech =
             false;
@@ -677,30 +569,26 @@ App.VoiceEngine = {
             App.State.VoiceState.STOPPING;
 
 
-        const recognition =
-            this.speechRecognitionInstance;
-
-
-        if (recognition) {
-
-            try {
-                recognition.stop();
-            } catch (error) {
-                /* already stopped */
-            }
-        }
-
-
         if (
-            App.VoiceTTS &&
-            typeof App.VoiceTTS.stop === "function"
+            this.speechRecognitionInstance
         ) {
 
-            App.VoiceTTS.stop();
+            try {
+                this.speechRecognitionInstance.stop();
+            } catch {}
         }
 
 
-        App.VoiceRenderer?.updateMicVisuals?.(false);
+        App.VoiceTTS
+            ?.stop
+            ?.();
+
+
+        App.VoiceRenderer
+            ?.updateMicVisuals
+            ?.(
+                false
+            );
 
 
         App.State.currentVoiceState =
@@ -712,15 +600,11 @@ App.VoiceEngine = {
     },
 
 
-    /*
-     * =========================================================
-     * USER TOGGLE
-     * =========================================================
-     */
-
     toggleListening() {
 
-        if (App.State.isContinuousListening) {
+        if (
+            App.State.isContinuousListening
+        ) {
 
             this.stop();
 
@@ -733,17 +617,74 @@ App.VoiceEngine = {
             this.start();
 
             App.Toast?.show?.(
-                "Hands-Free Listening Started..."
+                "🎙️ Hands-Free Listening Started"
             );
         }
     },
 
 
-    /*
-     * =========================================================
-     * SPEAKER
-     * =========================================================
-     */
+    scheduleRestart(
+        delayMs = 400
+    ) {
+
+        this.cancelRestart();
+
+
+        if (
+            !App.State.isContinuousListening ||
+            this.isPausedForSpeech
+        ) {
+            return;
+        }
+
+
+        this.speechRestartTimer =
+            setTimeout(
+                () => {
+
+                    this.speechRestartTimer =
+                        null;
+
+
+                    if (
+                        !App.State.isContinuousListening ||
+                        this.isPausedForSpeech
+                    ) {
+                        return;
+                    }
+
+
+                    if (
+                        App.State.currentVoiceState !==
+                        App.State.VoiceState.IDLE
+                    ) {
+                        return;
+                    }
+
+
+                    this.startRecognition();
+
+                },
+                delayMs
+            );
+    },
+
+
+    cancelRestart() {
+
+        if (
+            this.speechRestartTimer
+        ) {
+
+            clearTimeout(
+                this.speechRestartTimer
+            );
+
+            this.speechRestartTimer =
+                null;
+        }
+    },
+
 
     setSpeaker(lang) {
 
@@ -751,7 +692,6 @@ App.VoiceEngine = {
             typeof lang !== "string" ||
             !lang.trim()
         ) {
-
             return;
         }
 
@@ -770,13 +710,19 @@ App.VoiceEngine = {
 
 
         const btnJp =
-            document.getElementById("btn-speaker-jp");
+            document.getElementById(
+                "btn-speaker-jp"
+            );
 
         const btnSi =
-            document.getElementById("btn-speaker-si");
+            document.getElementById(
+                "btn-speaker-si"
+            );
 
         const btnEn =
-            document.getElementById("btn-speaker-en");
+            document.getElementById(
+                "btn-speaker-en"
+            );
 
         const badge =
             document.getElementById(
@@ -792,70 +738,66 @@ App.VoiceEngine = {
             "bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
 
 
-        [btnJp, btnSi, btnEn]
-            .forEach(button => {
+        [
+            btnJp,
+            btnSi,
+            btnEn
+        ].forEach(
+            button => {
 
                 if (button) {
                     button.className =
                         normalClass;
                 }
-            });
+            }
+        );
 
 
-        if (lang === "ja-JP") {
+        if (
+            lang === "ja-JP"
+        ) {
 
-            btnJp?.classList.remove(
-                "bg-white",
-                "text-gray-700"
-            );
-
-            btnJp?.classList.add(
-                "bg-deepCard",
-                "text-white"
-            );
-
-            if (badge) {
-                badge.textContent =
-                    "🇯🇵 JAPANESE SPOKEN:";
+            if (btnJp) {
+                btnJp.className =
+                    activeClass;
             }
 
-        } else if (lang === "si-LK") {
+            if (badge) {
+                badge.textContent =
+                    "🎙️ YOUR JAPANESE SPEECH";
+            }
 
-            btnSi?.classList.remove(
-                "bg-white",
-                "text-gray-700"
-            );
+        } else if (
+            lang === "si-LK"
+        ) {
 
-            btnSi?.classList.add(
-                "bg-deepCard",
-                "text-white"
-            );
+            if (btnSi) {
+                btnSi.className =
+                    activeClass;
+            }
 
             if (badge) {
                 badge.textContent =
-                    "🇱🇰 SINHALA SPOKEN:";
+                    "🎙️ YOUR SINHALA SPEECH";
             }
 
         } else {
 
-            btnEn?.classList.remove(
-                "bg-white",
-                "text-gray-700"
-            );
-
-            btnEn?.classList.add(
-                "bg-deepCard",
-                "text-white"
-            );
+            if (btnEn) {
+                btnEn.className =
+                    activeClass;
+            }
 
             if (badge) {
                 badge.textContent =
-                    "🇬🇧 ENGLISH SPOKEN:";
+                    "🎙️ YOUR ENGLISH SPEECH";
             }
         }
 
 
-        if (this.speechRecognitionInstance) {
+        if (
+            this.speechRecognitionInstance
+        ) {
 
             this.speechRecognitionInstance.lang =
                 lang;
@@ -864,22 +806,24 @@ App.VoiceEngine = {
 
         if (wasListening) {
 
-            setTimeout(() => {
-                this.start();
-            }, 500);
+            setTimeout(
+                () => {
+                    this.start();
+                },
+                500
+            );
         }
     },
 
 
-    /*
-     * =========================================================
-     * CONTEXT
-     * =========================================================
-     */
+    setContext(
+        key,
+        element
+    ) {
 
-    setContext(key, element) {
-
-        if (typeof key !== "string") {
+        if (
+            typeof key !== "string"
+        ) {
             return;
         }
 
@@ -889,12 +833,16 @@ App.VoiceEngine = {
 
 
         document
-            .querySelectorAll(".ctx-pill")
-            .forEach(button => {
+            .querySelectorAll(
+                ".ctx-pill"
+            )
+            .forEach(
+                button => {
 
-                button.className =
-                    "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
-            });
+                    button.className =
+                        "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
+                }
+            );
 
 
         if (element) {
@@ -904,8 +852,24 @@ App.VoiceEngine = {
         }
 
 
-        App.Toast?.show?.(
-            `Situation: ${key.toUpperCase()}`
-        );
+        const env =
+            document.getElementById(
+                "voice-env-display"
+            );
+
+
+        const labels = {
+            daily: "Context: Daily / Friendly",
+            workplace: "Context: Workplace / Keigo",
+            restaurant: "Context: Restaurant",
+            konbini: "Context: Store / Konbini"
+        };
+
+
+        if (env) {
+            env.textContent =
+                labels[key] ||
+                `Context: ${key}`;
+        }
     }
 };
