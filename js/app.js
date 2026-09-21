@@ -7,16 +7,13 @@ window.addEventListener('DOMContentLoaded', () => {
     App.UI.updateApiStatus();
     App.VoiceEngine.setSpeaker('ja-JP');
 
-    // Default Starting Conversation Render
+    // FIX: Show Clean IDLE State on Load (No fake pre-loaded speech)
     App.VoiceRenderer.renderConversation({
-        japanese: "こんにちは！今日はお疲れ様でした。",
-        romaji: "Konnichiwa! Kyou wa otsukaresama deshita.",
-        sinhala: "හෙලෝ! අද දවසේ මහන්සි වුණාට බොහොම ස්තූතියි.",
-        english: "Hello! Thank you for your hard work today.",
-        replies: [
-            { badge: "Polite Respect", jp: "お疲れ様でした！ありがとうございます", romaji: "Otsukaresama deshita! Arigatou gozaimasu", sinhala: "ඔබටත් බොහෝම ස්තූතියි!", english: "Thank you for your hard work too!" },
-            { badge: "Workplace Keigo", jp: "こちらこそ、大変お世話になりました", romaji: "Kochira koso, taihen osewa ni narimashita", sinhala: "මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි", english: "Thank you very much for your kind support" }
-        ]
+        japanese: "🎤 සවන්දෙමින් පවතී...",
+        romaji: "Listening for Japanese / Sinhala speech...",
+        sinhala: "කතා කරන්න හෝ Mic එක මත Tap කරන්න",
+        english: "Start speaking or tap mic to generate live replies",
+        replies: [] // Empty replies list until someone speaks
     });
 
     // Visibility Listener
