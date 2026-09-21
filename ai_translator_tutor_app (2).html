@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hello Japan ! - Real-time Voice Assistant & Vision OCR</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkForest: '#08170B',
+                        mintLight: '#D9F5DC',
+                        mintBg: '#EDF8EE',
+                        brandGreen: '#39D322',
+                        brandNeon: '#20E300',
+                        deepCard: '#1C4D26',
+                        tilePurple: '#9353D3',
+                        tileYellow: '#FACC15',
+                        tileBlue: '#38BDF8',
+                        tilePink: '#EC4899',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Noto Sans JP', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #060E08;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* 3D Soft Floating Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-7px) rotate(1deg); }
+        }
+        .animate-float {
+            animation: floatSlow 3.2s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+            animation: floatSlow 3.8s ease-in-out infinite 1s;
+        }
+
+        /* Continuous Sound Wave Equalizer */
+        @keyframes wavePulse {
+            0%, 100% { transform: scaleY(0.25); opacity: 0.45; }
+            50% { transform: scaleY(1.35); opacity: 1; }
+        }
+        .audio-bar {
+            animation: wavePulse 1.1s ease-in-out infinite;
+            transform-origin: center;
+        }
+        .delay-1 { animation-delay: 0.12s; }
+        .delay-2 { animation-delay: 0.28s; }
+        .delay-3 { animation-delay: 0.44s; }
+        .delay-4 { animation-delay: 0.6s; }
+
+        /* Pulse glow for hands-free mic */
+        @keyframes haloPulse {
+            0% { box-shadow: 0 0 0 0 rgba(57, 211, 34, 0.6); }
+            70% { box-shadow: 0 0 0 18px rgba(57, 211, 34, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(57, 211, 34, 0); }
+        }
+        .listening-glow {
+            animation: haloPulse 1.8s infinite;
+        }
+
+        /* AR Scanner beam */
+        @keyframes scanBeam {
+            0% { top: 6%; opacity: 0; }
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { top: 92%; opacity: 0; }
+        }
+        .scanner-beam {
+            animation: scanBeam 2.4s ease-in-out infinite;
+        }
+
+        /* Glass dock */
+        .glass-dock {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        /* Hide scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .screen-view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.22s ease;
+        }
+        .screen-view.active {
+            display: flex;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="w-full h-screen overflow-hidden flex justify-center items-center bg-[#071109]">
+
+    <!-- Phone Shell Device Container -->
+    <main class="w-full max-w-md h-full md:h-[94vh] md:max-h-[890px] relative flex flex-col overflow-hidden shadow-2xl md:rounded-[48px] md:border-[8px] md:border-[#102414] bg-white">
+
+        <!-- VIEW 1: HERO BENTO (Original Dark Green Bento Screen from Screenshot) -->
+        <section id="view-hero" class="screen-view active flex-col flex-1 h-full w-full bg-darkForest p-5 relative overflow-y-auto no-scrollbar text-white">
+            
+            <!-- Status Bar -->
+            <div class="flex justify-between items-center text-xs text-white/80 mb-5 px-1 font-semibold">
+                <span id="hero-clock">9:41</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleApiKeyModal()" class="flex items-center gap-1 text-[10px] bg-white/10 hover:bg-brandGreen/20 px-2.5 py-0.5 rounded-full border border-white/20 text-brandGreen">
+                        <i class="ph ph-key"></i> <span id="api-status-hero">API Key</span>
+                    </button>
+                    <div class="flex items-center gap-1">
+                        <i class="ph ph-cell-signal-full text-sm"></i>
+                        <i class="ph ph-wifi-high text-sm"></i>
+                        <i class="ph ph-battery-charging text-brandGreen text-base"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bento Grid - 1:1 Match with Provided Image -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                
+                <!-- Main Feature Card (Left Column - Green) -->
+                <div class="bg-brandGreen rounded-[30px] p-4 flex flex-col justify-between h-[270px] relative overflow-hidden shadow-lg cursor-pointer" onclick="switchView('dashboard')">
+                    <div>
+                        <div class="inline-block bg-black/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white mb-2">
+                            AI 💡
+                        </div>
+                        <h2 class="text-[23px] font-black text-white leading-tight">Learn More<br/>Smarter</h2>
+                    </div>
+                    
+                    <!-- 3D Character Illustration Avatar -->
+                    <div class="relative mx-auto flex items-center justify-center animate-float">
+                        <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-6xl shadow-inner">
+                            🧑‍🎓
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column Bento Stack -->
+                <div class="flex flex-col gap-2.5 h-[270px]">
+                    <!-- Purple Robot Assistant Tile -->
+                    <div class="bg-tilePurple rounded-[26px] flex-1 p-3 flex flex-col justify-center items-center relative overflow-hidden shadow-md cursor-pointer" onclick="switchView('voice')">
+                        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent)]"></div>
+                        <div class="text-5xl animate-float-delayed">🤖</div>
+                    </div>
+
+                    <!-- Target & Stats Split -->
+                    <div class="grid grid-cols-2 gap-2 h-16">
+                        <div class="bg-tileYellow rounded-2xl flex items-center justify-center text-2xl shadow-sm cursor-pointer" onclick="switchView('dashboard')">
+                            🎯
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-end justify-center p-2 gap-1 shadow-sm">
+                            <div class="w-1.5 h-3 bg-white rounded-t-sm"></div>
+                            <div class="w-1.5 h-6 bg-yellow-300 rounded-t-sm"></div>
+                            <div class="w-1.5 h-4 bg-orange-400 rounded-t-sm"></div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards & Learning Pills -->
+                    <div class="grid grid-cols-2 gap-2 h-11">
+                        <div class="bg-tileBlue rounded-xl flex items-center justify-center text-[10px] font-bold text-slate-900 shadow-sm">
+                            🏆 Rewards
+                        </div>
+                        <div class="bg-tilePink rounded-xl flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+                            Learning
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Content -->
+            <div class="text-center px-1 mt-auto pb-3">
+                <h1 class="text-2xl font-extrabold mb-1.5 text-white leading-tight">
+                    Hello Japan !<br/><span class="text-brandGreen text-xl font-bold">Hands-Free Japanese Voice AI</span>
+                </h1>
+                <p class="text-xs text-gray-300 mb-5 px-2 leading-relaxed">
+                    Instantly understands Japanese speech, translates in real-time, and tells you the exact polite reply to build deep relationships.
+                </p>
+
+                <div class="flex flex-col gap-2.5">
+                    <button onclick="switchView('voice')" class="w-full bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-3.5 rounded-full shadow-[0_0_25px_rgba(57,211,34,0.45)] transition-all active:scale-95 text-sm flex items-center justify-center gap-2">
+                        <i class="ph ph-microphone text-lg"></i>
+                        <span>Start Voice Assistant</span>
+                    </button>
+                    <button onclick="switchView('dashboard')" class="w-full bg-transparent border border-white/25 hover:border-brandGreen text-white font-bold py-3.5 rounded-full transition-colors text-xs">
+                        Open Daily Learning Dashboard
+                    </button>
+                </div>
+            </div>
+            <div class="w-32 h-1 bg-white/20 rounded-full mx-auto mt-2"></div>
+        </section>
+
+        <!-- VIEW 2: DASHBOARD (Original Middle Screen from Screenshot: Soft Mint Theme) -->
+        <section id="view-dashboard" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D8F5DB] via-[#EEF9F0] to-[#F5FCF6] relative overflow-y-auto no-scrollbar pb-28 text-gray-900">
+            
+            <div class="p-5">
+                <!-- Status Bar -->
+                <div class="flex justify-between items-center text-xs text-gray-600 mb-4 font-semibold">
+                    <span>9:41</span>
+                    <div class="flex items-center gap-1.5 text-gray-700">
+                        <i class="ph ph-cell-signal-full"></i>
+                        <i class="ph ph-wifi-high"></i>
+                        <i class="ph ph-battery-charging text-emerald-600 text-sm"></i>
+                    </div>
+                </div>
+
+                <!-- User Profile Header -->
+                <div class="flex justify-between items-center mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-yellow-400 rounded-full flex items-center justify-center text-2xl border-2 border-white shadow-sm">
+                            🧑‍🎓
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-gray-500 font-semibold leading-none">Good Morning 🇱🇰 🇯🇵</p>
+                            <p class="font-extrabold text-sm text-gray-900 mt-0.5">Hello Japan ! Learner</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <div class="bg-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-sm text-orange-500">
+                            <span>🔥</span> <span id="dash-streak">26 Days</span>
+                        </div>
+                        <button onclick="toggleApiKeyModal()" class="bg-white w-9 h-9 rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600">
+                            <i class="ph ph-gear text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Continue Learning Banner (Deep Forest Green) -->
+                <div class="bg-deepCard rounded-[26px] p-5 text-white mb-5 relative overflow-hidden shadow-lg">
+                    <div class="relative z-10 max-w-[70%]">
+                        <h3 class="font-bold text-sm mb-0.5">Continue Learning</h3>
+                        <p class="text-[11px] text-emerald-200 mb-3.5 leading-tight">Daily tasks you should complete to master Japanese respect</p>
+                        <div class="flex gap-2">
+                            <span class="bg-brandGreen text-darkForest text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1">
+                                ✓ 5 Done
+                            </span>
+                            <span class="bg-rose-500/80 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                                × 2 Missed
+                            </span>
+                        </div>
+                    </div>
+                    <div class="absolute -right-2 -bottom-2 text-7xl animate-float select-none">
+                        📖
+                    </div>
+                </div>
+
+                <!-- Stats Dual Cards -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    
+                    <!-- Left Card: Basic Japanese Keigo -->
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-emerald-100">
+                        <div class="bg-amber-100/90 text-[10px] font-extrabold px-3 py-2 text-amber-900 flex justify-between items-center">
+                            <span>Polite Keigo (丁寧語)</span>
+                            <i class="ph ph-sparkle text-amber-600"></i>
+                        </div>
+                        <div class="p-3">
+                            <p class="text-2xl font-black text-gray-900" id="dash-phrases-stat">14/32</p>
+                            <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 mb-2.5 overflow-hidden">
+                                <div class="w-1/2 bg-brandGreen h-full rounded-full"></div>
+                            </div>
+                            <div class="text-[10px] text-gray-500 leading-tight flex items-center gap-1">
+                                <span>⏱️ 12 Hr left</span> • <span class="font-semibold text-emerald-700">Level 3</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Card: AI Voice Assistant Status -->
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-emerald-100 cursor-pointer" onclick="switchView('voice')">
+                        <div class="bg-purple-100 text-[10px] font-extrabold px-3 py-2 text-purple-900 flex justify-between items-center">
+                            <span>Voice Assistant</span>
+                            <span class="w-2 h-2 rounded-full bg-brandGreen animate-ping"></span>
+                        </div>
+                        <div class="p-3 flex flex-col justify-between">
+                            <p class="text-xl font-black text-gray-900">Unlimited</p>
+                            <p class="text-[10px] text-gray-500">Live Voice Ready</p>
+                            <!-- Mini equalizer bars -->
+                            <div class="flex items-center gap-1 h-6 justify-center mt-1">
+                                <div class="w-1 h-3 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                                <div class="w-1 h-5 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                                <div class="w-1 h-4 bg-brandGreen rounded-full audio-bar delay-3"></div>
+                                <div class="w-1 h-6 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                                <div class="w-1 h-3 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Situational Quick Etiquette Cards -->
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-sm text-gray-900">Active Japanese Situations</h3>
+                    <span class="text-xs text-emerald-700 font-semibold cursor-pointer" onclick="switchView('voice')">Practice Voice</span>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-emerald-100 flex items-center gap-4 mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-[11px]">🏢</div>
+                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Workplace Etiquette</span>
+                        </div>
+                        <h4 class="font-black text-sm text-gray-900 mb-0.5">お疲れ様です (Otsukaresama desu)</h4>
+                        <p class="text-[11px] text-gray-500 mb-2">Greeting colleagues & bosses with appreciation</p>
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex gap-0.5">
+                                <div class="w-1.5 h-2 bg-brandGreen rounded-full"></div>
+                                <div class="w-1.5 h-2 bg-brandGreen rounded-full"></div>
+                                <div class="w-1.5 h-2 bg-brandGreen rounded-full"></div>
+                                <div class="w-1.5 h-2 bg-gray-200 rounded-full"></div>
+                            </div>
+                            <span class="text-[10px] text-emerald-700 font-semibold ml-1">3/4 mastered</span>
+                        </div>
+                    </div>
+                    <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                        🎌
+                    </div>
+                </div>
+
+                <!-- Launch Voice Floating Trigger Banner -->
+                <div class="bg-gradient-to-r from-brandGreen to-emerald-600 rounded-2xl p-4 text-darkForest flex items-center justify-between shadow-md cursor-pointer" onclick="switchView('voice')">
+                    <div>
+                        <p class="text-[11px] font-black uppercase tracking-wider text-darkForest/70">Hands-Free Conversation</p>
+                        <h4 class="font-black text-sm text-darkForest">Talk with Japanese People Now</h4>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-darkForest text-brandGreen flex items-center justify-center shadow-lg">
+                        <i class="ph ph-microphone text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: HANDS-FREE VOICE ASSISTANT (Original Right Screen: Soft Mint + 3D Glowing Head + Live Speech & Suggested Replies) -->
+        <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-24 text-gray-900">
+            
+            <div class="p-5 flex flex-col flex-1">
+                <!-- Header -->
+                <div class="flex justify-between items-center pt-1 mb-3">
+                    <button onclick="switchView('dashboard')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95">
+                        <i class="ph ph-caret-left text-lg"></i>
+                    </button>
+                    <div class="text-center">
+                        <h2 class="font-extrabold text-sm text-gray-900 flex items-center justify-center gap-1.5">
+                            <span>Hello Japan ! Voice AI</span>
+                            <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
+                        </h2>
+                        <p class="text-[10px] text-gray-500 font-semibold" id="voice-env-display">Context: Daily / Friendly</p>
+                    </div>
+                    <button onclick="toggleApiKeyModal()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="API Settings">
+                        <i class="ph ph-gear text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Environment / Situation Switcher Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 py-1">
+                    <button onclick="setVoiceContext('daily', this)" class="ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        🌸 Daily Friendly
+                    </button>
+                    <button onclick="setVoiceContext('workplace', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        💼 Workplace (Keigo)
+                    </button>
+                    <button onclick="setVoiceContext('restaurant', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        🍜 Restaurant / Bill
+                    </button>
+                    <button onclick="setVoiceContext('konbini', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        🏪 Store / Konbini
+                    </button>
+                </div>
+
+                <!-- Central 3D Bot & Visualizer Head (1:1 with Screenshot 3) -->
+                <div class="flex flex-col items-center justify-center my-1 select-none">
+                    
+                    <!-- Audio Waveforms & 3D Green Sphere Head -->
+                    <div class="flex items-center justify-center gap-3 w-full my-2">
+                        <!-- Waveform Left -->
+                        <div class="flex gap-1.5 h-16 items-center">
+                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-3"></div>
+                            <div class="w-1.5 h-10 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                            <div class="w-1.5 h-16 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-4"></div>
+                        </div>
+
+                        <!-- 3D Cute Green Robot Head -->
+                        <div id="mic-avatar-btn" onclick="toggleHandsFreeListening()" class="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative listening-glow" title="Tap to Toggle Hands-Free Listening">
+                            <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-5xl shadow-inner relative">
+                                🤖
+                                <span id="listening-badge-dot" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
+                            </div>
+                        </div>
+
+                        <!-- Waveform Right -->
+                        <div class="flex gap-1.5 h-16 items-center">
+                            <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-4"></div>
+                            <div class="w-1.5 h-16 bg-brandGreen rounded-full audio-bar delay-2"></div>
+                            <div class="w-1.5 h-10 bg-brandGreen rounded-full audio-bar delay-1"></div>
+                            <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Live Listening Status Pill -->
+                    <div class="bg-white/90 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-4 py-1 rounded-full shadow-sm flex items-center gap-1.5 mt-1">
+                        <span id="mic-live-icon" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span id="mic-status-label">Continuous Live Listening: Japanese & Sinhala</span>
+                    </div>
+
+                    <!-- Quick Media Action Buttons (Photo, Big Mic, AR Camera) -->
+                    <div class="flex items-center gap-5 mt-3">
+                        <button onclick="switchView('camera')" class="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Scan Japanese Sign">
+                            <i class="ph ph-camera text-xl"></i>
+                        </button>
+                        <button onclick="toggleHandsFreeListening()" id="main-mic-fab" class="w-14 h-14 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center shadow-lg shadow-brandGreen/40 text-darkForest text-2xl font-bold active:scale-90 transition-transform">
+                            <i id="mic-center-icon" class="ph ph-microphone"></i>
+                        </button>
+                        <button onclick="triggerSimulatedConversation()" class="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Test Sample Japanese Voice">
+                            <i class="ph ph-arrows-clockwise text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE DETECTED SPEECH CARD (What the other person just said) -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 mt-2 mb-3 transition-all">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-black uppercase text-emerald-700 tracking-wider flex items-center gap-1">
+                            <i class="ph ph-ear"></i> Other Person Said (අනෙක් පාර්ශවය පැවසූ දේ):
+                        </span>
+                        <button onclick="speakCurrentDetected()" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100" title="Listen Original Japanese">
+                            <i class="ph ph-speaker-high"></i>
+                        </button>
+                    </div>
+                    
+                    <h3 id="detected-japanese" class="text-lg font-black text-gray-900 leading-snug">
+                        こんにちは！今日はお疲れ様でした。
+                    </h3>
+                    <p id="detected-romaji" class="text-xs text-emerald-700 font-semibold mt-0.5">
+                        (Konnichiwa! Kyou wa otsukaresama deshita.)
+                    </p>
+
+                    <div class="border-t border-gray-100 pt-2 mt-2 space-y-1">
+                        <p class="text-xs text-gray-800">
+                            <b class="text-emerald-800 font-extrabold">🇱🇰 සිංහල:</b> 
+                            <span id="detected-sinhala">හෙලෝ! අද දවසේ මහන්සි වුණාට බොහොම ස්තූතියි.</span>
+                        </p>
+                        <p class="text-xs text-gray-600">
+                            <b class="text-gray-700 font-extrabold">🇬🇧 English:</b> 
+                            <span id="detected-english">Hello! Thank you for your hard work today.</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- WHAT YOU SHOULD REPLY SECTION (Instant Polite Suggestions) -->
+                <div class="flex flex-col flex-1">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[11px] font-extrabold uppercase text-gray-800 tracking-wide flex items-center gap-1">
+                            <i class="ph ph-sparkle text-brandGreen font-bold"></i> 
+                            Suggested Replies for You (ඔබ කිව යුතු ආචාරශීලී පිළිතුරු):
+                        </span>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Tap to Speak Aloud</span>
+                    </div>
+
+                    <!-- Dynamic Polite Suggestion Cards (No typing required!) -->
+                    <div id="suggestions-list" class="flex flex-col gap-2">
+                        <!-- Option 1 -->
+                        <div onclick="speakReplyOption('お疲れ様でした！ありがとうございます', 'Otsukaresama deshita! Arigatou gozaimasu', 'ඔබටත් ස්තූතියි! මහන්සි වුණාට පින්.')" class="bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between">
+                            <div class="flex-1 pr-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] bg-brandGreen/20 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Polite Reply 1</span>
+                                    <span class="text-xs font-black text-gray-900">お疲れ様でした！ありがとうございます</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(Otsukaresama deshita! Arigatou gozaimasu)</p>
+                                <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 ඔබටත් බොහෝම ස්තූතියි!</p>
+                            </div>
+                            <div class="w-9 h-9 rounded-full bg-brandGreen/20 text-emerald-700 flex items-center justify-center shrink-0">
+                                <i class="ph ph-speaker-high text-lg"></i>
+                            </div>
+                        </div>
+
+                        <!-- Option 2 -->
+                        <div onclick="speakReplyOption('こちらこそ、大変お世話になりました', 'Kochira koso, taihen osewa ni narimashita', 'මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි')" class="bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between">
+                            <div class="flex-1 pr-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">Formal Respect</span>
+                                    <span class="text-xs font-black text-gray-900">こちらこそ、大変お世話になりました</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(Kochira koso, taihen osewa ni narimashita)</p>
+                                <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 මා කෙරෙහි දැක්වූ උදව්වට බොහොම ස්තූතියි.</p>
+                            </div>
+                            <div class="w-9 h-9 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                <i class="ph ph-speaker-high text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Status Banner -->
+                <div class="bg-deepCard text-white rounded-2xl p-2.5 flex justify-between items-center text-[11px] mt-3 shadow-md">
+                    <span class="flex items-center gap-1 font-bold">
+                        <i class="ph ph-waveform text-brandGreen"></i>
+                        <span>Continuous Live Ambient Ear Active</span>
+                    </span>
+                    <span class="text-emerald-300 font-semibold">Gemini 3 Powered</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: ULTRA PRO VISION OCR CAMERA (Full Screen Scanner) -->
+        <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white">
+            
+            <!-- Real Live Video Feed or Fallback -->
+            <video id="live-video" class="w-full h-full object-cover" autoplay playsinline muted></video>
+            
+            <!-- Simulated Japanese Signpost Fallback (if camera not allowed) -->
+            <div id="simulated-camera-bg" class="hidden absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80');">
+            </div>
+
+            <!-- Canvas for OCR frame capture -->
+            <canvas id="snapshot-canvas" class="hidden"></canvas>
+
+            <!-- AR Overlay UI Controls -->
+            <div class="absolute inset-0 z-10 flex flex-col justify-between p-5 pointer-events-none">
+                
+                <!-- Top Toolbar -->
+                <div class="flex justify-between items-center pt-3 pointer-events-auto">
+                    <button onclick="switchView('dashboard')" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
+                        <i class="ph ph-caret-left text-lg"></i>
+                    </button>
+                    <div class="bg-black/70 backdrop-blur-md px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-brandGreen/40">
+                        <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
+                        <span>Ultra Pro Vision OCR</span>
+                        <span class="text-brandGreen text-[10px] bg-white/10 px-1.5 py-0.5 rounded">JA ➜ SI/EN</span>
+                    </div>
+                    <button onclick="toggleTorchLight()" id="torch-btn" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
+                        <i class="ph ph-lightning text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Scanner Target Bounding Box -->
+                <div class="relative w-full max-w-[290px] aspect-[4/5] mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center">
+                    <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
+                    <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
+                    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
+                    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brandGreen rounded-br-2xl"></div>
+
+                    <!-- Green Laser Beam -->
+                    <div class="scanner-beam absolute w-full h-1 bg-gradient-to-r from-transparent via-brandGreen to-transparent shadow-[0_0_20px_#39D322]"></div>
+
+                    <!-- Detected AR Card Overlay -->
+                    <div id="ar-card" class="bg-black/85 backdrop-blur-md p-4 rounded-2xl mx-3 text-left border border-brandGreen/60 shadow-2xl transition-all hidden max-h-[85%] overflow-y-auto no-scrollbar">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1">
+                                <i class="ph ph-eye"></i> Ultra Pro Vision Analysis
+                            </span>
+                            <button onclick="document.getElementById('ar-card').classList.add('hidden')" class="text-gray-400 hover:text-white text-xs">
+                                <i class="ph ph-x"></i>
+                            </button>
+                        </div>
+                        <p id="ar-jp" class="text-2xl font-black text-white leading-tight">止まれ</p>
+                        <p id="ar-romaji" class="text-xs text-brandGreen font-semibold">(Tomare - Stop)</p>
+                        <div class="border-t border-white/10 my-2 pt-1.5 space-y-1">
+                            <p class="text-xs text-gray-200"><b class="text-white">🇱🇰 සිංහල:</b> <span id="ar-si">නවතින්න (සම්පූර්ණ නැවතීම)</span></p>
+                            <p class="text-xs text-gray-300"><b class="text-white">🇬🇧 English:</b> <span id="ar-en">Full Stop mandatory</span></p>
+                        </div>
+                        <div class="bg-white/10 p-2 rounded-xl text-[10px] text-gray-300 mt-2 border border-brandGreen/20">
+                            <span class="text-brandGreen font-bold block mb-0.5">🎌 Etiquette & Action Guide:</span>
+                            <span id="ar-guide">Must stop completely before entering the road to obey Japanese traffic etiquette.</span>
+                        </div>
+                        <button onclick="speakArDetected()" class="mt-2.5 w-full bg-brandGreen text-darkForest font-extrabold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-md">
+                            <i class="ph ph-speaker-high text-sm"></i> Pronounce Clearly
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottom Controls for AR Scanner -->
+                <div class="pb-24 flex flex-col items-center gap-2 pointer-events-auto">
+                    <p class="text-[11px] text-white/90 bg-black/60 px-3.5 py-1 rounded-full backdrop-blur-md border border-white/10">
+                        Point at Japanese sign, menu or text & tap Scan
+                    </p>
+                    <div class="flex items-center gap-6">
+                        <button onclick="triggerArSampleDemo()" title="Test Sample Sign" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white border border-white/20 active:scale-95">
+                            <i class="ph ph-cards text-lg"></i>
+                        </button>
+
+                        <button onclick="scanArCameraFrame()" class="w-18 h-18 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
+                            <div class="w-14 h-14 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold">
+                                <i class="ph ph-scan"></i>
+                            </div>
+                        </button>
+
+                        <button onclick="toggleCameraFacing()" title="Flip Camera" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-xs font-bold text-white border border-white/20 active:scale-95">
+                            <i class="ph ph-arrows-clockwise text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FLOATING BOTTOM GLASS NAVIGATION DOCK (Exact from Dashboard Screenshot) -->
+        <nav id="bottom-nav-dock" class="absolute bottom-5 left-1/2 -translate-x-1/2 w-[88%] max-w-sm glass-dock rounded-full px-5 py-2.5 flex justify-between items-center shadow-xl border border-white/60 z-40">
+            <button onclick="switchView('dashboard')" data-nav="dashboard" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Dashboard">
+                <i class="ph ph-house"></i>
+            </button>
+            <button onclick="switchView('hero')" data-nav="hero" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Hero Bento">
+                <i class="ph ph-squares-four"></i>
+            </button>
+            
+            <!-- Elevated Center Floating Voice Assistant Button -->
+            <button onclick="switchView('voice')" data-nav="voice" class="w-13 h-13 -mt-7 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Hands-Free Voice AI">
+                <i class="ph ph-microphone font-bold"></i>
+            </button>
+
+            <button onclick="switchView('camera')" data-nav="camera" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Ultra Pro Vision OCR">
+                <i class="ph ph-camera"></i>
+            </button>
+            <button onclick="toggleApiKeyModal()" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="API Settings">
+                <i class="ph ph-gear"></i>
+            </button>
+        </nav>
+
+        <!-- API KEY SETTINGS MODAL -->
+        <div id="apikey-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div class="bg-[#0B1C0E] w-full max-w-sm p-5 rounded-3xl border border-brandGreen/40 shadow-2xl relative text-white">
+                <button onclick="toggleApiKeyModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+                <div class="flex items-center gap-2.5 mb-3">
+                    <div class="w-9 h-9 rounded-full bg-brandGreen/20 flex items-center justify-center text-brandGreen">
+                        <i class="ph ph-key text-lg font-bold"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Gemini API Key</h3>
+                        <p class="text-[10px] text-gray-400">Enables live Gemini 3 Flash translations & OCR</p>
+                    </div>
+                </div>
+                <input type="password" id="gemini-key-input" placeholder="Paste Gemini API key (AIza...)"
+                       class="w-full bg-black/60 border border-brandGreen/30 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-500 outline-none focus:border-brandGreen mb-3">
+                <p class="text-[10px] text-gray-400 leading-relaxed mb-4">
+                    Your key is saved in browser storage. If left empty, <b>Hello Japan !</b> runs offline using its polite situational speech dictionary.
+                </p>
+                <div class="flex gap-2">
+                    <button onclick="saveApiKeyModal()" class="flex-1 bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-md">
+                        Save Key
+                    </button>
+                    <button onclick="clearApiKeyModal()" class="px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold py-2.5 rounded-xl text-xs transition-all">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Feedback Notification -->
+        <div id="toast" class="hidden fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-darkForest/90 backdrop-blur-md px-4 py-2 rounded-full border border-brandGreen/50 text-brandGreen text-xs font-bold shadow-xl flex items-center gap-2 pointer-events-none transition-all">
+            <i class="ph ph-check-circle"></i>
+            <span id="toast-text">Alert</span>
+        </div>
+    </main>
+
+    <script>
+        // --- State Management ---
+        let currentActiveView = 'hero';
+        let userApiKey = localStorage.getItem('SUHADA_GEMINI_API_KEY') || '';
+        let mediaStream = null;
+        let useFacingMode = 'environment';
+        let isContinuousListening = false;
+        let activeVoiceContext = 'daily';
+        let currentArJapanese = '止まれ';
+        let speechRecognitionInstance = null;
+
+        // Adaptive Self-Development Stats
+        let stats = JSON.parse(localStorage.getItem('HELLO_JAPAN_STATS') || JSON.stringify({
+            phrases: 14,
+            streak: 26,
+            confidence: 88
+        }));
+
+        function updateStatsDisplay() {
+            const streakHero = document.getElementById('dash-streak');
+            const phrasesStat = document.getElementById('dash-phrases-stat');
+            if (streakHero) streakHero.textContent = `${stats.streak} Days`;
+            if (phrasesStat) phrasesStat.textContent = `${stats.phrases}/32`;
+        }
+
+        function incrementGrowth() {
+            stats.phrases += 1;
+            stats.confidence = Math.min(99, stats.confidence + 1);
+            localStorage.setItem('HELLO_JAPAN_STATS', JSON.stringify(stats));
+            updateStatsDisplay();
+        }
+
+        // View Navigation Switcher
+        window.switchView = function(viewName) {
+            currentActiveView = viewName;
+            document.querySelectorAll('.screen-view').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(`view-${viewName}`);
+            if (target) target.classList.add('active');
+
+            // Update bottom navigation icons
+            document.querySelectorAll('.nav-icon-btn').forEach(btn => {
+                if (btn.dataset.nav === viewName) {
+                    btn.classList.add('text-emerald-700');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('text-emerald-700');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+
+            // Camera lifecycle
+            if (viewName === 'camera') {
+                initLiveCamera();
+            } else {
+                stopLiveCamera();
+            }
+
+            // Auto activate continuous listening in voice screen
+            if (viewName === 'voice') {
+                startContinuousListening();
+            } else {
+                stopContinuousListening();
+            }
+        };
+
+        // Context Changer in Voice Assistant
+        window.setVoiceContext = function(ctxKey, element) {
+            activeVoiceContext = ctxKey;
+            document.querySelectorAll('.ctx-pill').forEach(pill => {
+                pill.className = "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
+            });
+            if (element) {
+                element.className = "ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
+            }
+            const labelMap = {
+                daily: "Context: Daily / Friendly",
+                workplace: "Context: Workplace Keigo (敬語)",
+                restaurant: "Context: Restaurant / Izakaya",
+                konbini: "Context: Store / Konbini"
+            };
+            const disp = document.getElementById('voice-env-display');
+            if (disp) disp.textContent = labelMap[ctxKey] || "Context: Daily";
+            showToast(`Voice Context: ${ctxKey.toUpperCase()}`);
+        };
+
+        // Toast feedback
+        let toastTimer = null;
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast');
+            const text = document.getElementById('toast-text');
+            if (!toast || !text) return;
+            text.textContent = message;
+            toast.classList.remove('hidden');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
+        };
+
+        // API Key Modal Controls
+        window.toggleApiKeyModal = function() {
+            const modal = document.getElementById('apikey-modal');
+            const input = document.getElementById('gemini-key-input');
+            if (!modal) return;
+            if (modal.classList.contains('hidden')) {
+                if (input) input.value = userApiKey;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        };
+
+        window.saveApiKeyModal = function() {
+            const input = document.getElementById('gemini-key-input');
+            if (!input) return;
+            const val = input.value.trim();
+            userApiKey = val;
+            if (val) {
+                localStorage.setItem('SUHADA_GEMINI_API_KEY', val);
+                showToast("Gemini 3 Flash API Key Connected!");
+            } else {
+                localStorage.removeItem('SUHADA_GEMINI_API_KEY');
+                showToast("Using Offline Polite Japanese Assistant");
+            }
+            toggleApiKeyModal();
+        };
+
+        window.clearApiKeyModal = function() {
+            localStorage.removeItem('SUHADA_GEMINI_API_KEY');
+            userApiKey = '';
+            const input = document.getElementById('gemini-key-input');
+            if (input) input.value = '';
+            showToast("API Key cleared.");
+        };
+
+        // --- Real-time Hands-Free Continuous Speech Recognition ---
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function initSpeechRecognition() {
+            if (!SpeechRec) {
+                console.warn("Web Speech API not supported in this browser.");
+                return null;
+            }
+            const rec = new SpeechRec();
+            rec.continuous = true;
+            rec.interimResults = false;
+            rec.lang = 'ja-JP'; // Primary ambient listener for Japanese
+
+            rec.onresult = async (event) => {
+                const lastIdx = event.results.length - 1;
+                const transcript = event.results[lastIdx][0].transcript.trim();
+                if (transcript) {
+                    await handleLiveSpokenVoice(transcript);
+                }
+            };
+
+            rec.onerror = (e) => {
+                console.warn("Speech recognition error:", e);
+                // Auto restart if continuous is active
+                if (isContinuousListening) {
+                    setTimeout(() => {
+                        try { rec.start(); } catch(err) {}
+                    }, 1000);
+                }
+            };
+
+            rec.onend = () => {
+                if (isContinuousListening) {
+                    try { rec.start(); } catch(e) {}
+                }
+            };
+
+            return rec;
+        }
+
+        speechRecognitionInstance = initSpeechRecognition();
+
+        window.toggleHandsFreeListening = function() {
+            if (isContinuousListening) {
+                stopContinuousListening();
+                showToast("Voice Listening Paused");
+            } else {
+                startContinuousListening();
+                showToast("Hands-Free Ear Listening...");
+            }
+        };
+
+        function startContinuousListening() {
+            isContinuousListening = true;
+            updateMicVisuals(true);
+            if (speechRecognitionInstance) {
+                try {
+                    speechRecognitionInstance.start();
+                } catch(e) {}
+            }
+        }
+
+        function stopContinuousListening() {
+            isContinuousListening = false;
+            updateMicVisuals(false);
+            if (speechRecognitionInstance) {
+                try {
+                    speechRecognitionInstance.stop();
+                } catch(e) {}
+            }
+        }
+
+        function updateMicVisuals(active) {
+            const avatar = document.getElementById('mic-avatar-btn');
+            const dot = document.getElementById('listening-badge-dot');
+            const label = document.getElementById('mic-status-label');
+            const liveIcon = document.getElementById('mic-live-icon');
+            if (avatar) {
+                if (active) {
+                    avatar.classList.add('listening-glow');
+                    if (dot) dot.classList.remove('hidden');
+                    if (label) label.textContent = "Continuous Ear: Listening to Japanese speech...";
+                    if (liveIcon) liveIcon.className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+                } else {
+                    avatar.classList.remove('listening-glow');
+                    if (dot) dot.classList.add('hidden');
+                    if (label) label.textContent = "Listening Paused • Tap to Activate";
+                    if (liveIcon) liveIcon.className = "w-2 h-2 rounded-full bg-gray-400";
+                }
+            }
+        }
+
+        // Native Text to Speech
+        function speakText(text, lang = 'ja-JP') {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        window.speakCurrentDetected = function() {
+            const jp = document.getElementById('detected-japanese').textContent;
+            speakText(jp);
+        };
+
+        window.speakReplyOption = function(jp, romaji, sinhala) {
+            speakText(jp);
+            showToast(`Speaking: "${jp}"`);
+            incrementGrowth();
+        };
+
+        // Process detected voice in real-time
+        async function handleLiveSpokenVoice(heardText) {
+            showToast(`Heard: "${heardText}"`);
+
+            let analysis = null;
+            if (userApiKey) {
+                try {
+                    analysis = await fetchGeminiVoiceAnalysis(heardText);
+                } catch(err) {
+                    console.warn("API fallback to smart dictionary:", err);
+                    analysis = getOfflineVoiceAnalysis(heardText);
+                }
+            } else {
+                analysis = getOfflineVoiceAnalysis(heardText);
+            }
+
+            renderVoiceConversation(analysis);
+            incrementGrowth();
+        }
+
+        // Gemini 3 Flash Prompt
+        async function fetchGeminiVoiceAnalysis(spokenPhrase) {
+            const systemPrompt = `You are "Hello Japan !", a live hands-free Japanese Voice Assistant.
+The user is having a face-to-face conversation in Japan.
+Current Situation: "${activeVoiceContext.toUpperCase()}".
+Analyze what was just spoken (could be Japanese, Sinhala, or English).
+Provide:
+1. Japanese text (Kanji/Kana)
+2. Romaji pronunciation
+3. Accurate Sinhala translation
+4. English translation
+5. 2 or 3 ideal Polite Replies the USER should say back to maintain utmost harmony, warmth, and respect.
+
+Return ONLY strict JSON matching this schema:
+{
+  "japanese": "Text in Japanese",
+  "romaji": "Romaji reading",
+  "sinhala": "Sinhala translation",
+  "english": "English translation",
+  "replies": [
+    {
+      "badge": "Polite / Workplace / Friendly",
+      "jp": "Japanese reply sentence",
+      "romaji": "Romaji",
+      "sinhala": "Sinhala meaning"
+    }
+  ]
+}`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${userApiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: spokenPhrase }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            return JSON.parse(text);
+        }
+
+        // Comprehensive Offline Japanese Cultural Phrasebook
+        function getOfflineVoiceAnalysis(query) {
+            const q = query.toLowerCase();
+
+            if (q.includes('arigatou') || q.includes('sthuthi') || q.includes('thank')) {
+                return {
+                    japanese: "どうもありがとうございます！",
+                    romaji: "Doumo arigatou gozaimasu!",
+                    sinhala: "ඔබට බොහොම ස්තූතියි!",
+                    english: "Thank you very much!",
+                    replies: [
+                        { badge: "Gentle", jp: "どういたしまして", romaji: "Dou itashimashite", sinhala: "කරුණාවෙන් පිළිගනිමි (You are welcome)" },
+                        { badge: "Polite Keigo", jp: "こちらこそ感謝いたします", romaji: "Kochira koso kansha itashimasu", sinhala: "මා ද ඔබට ස්තූතිවන්ත වෙමි" }
+                    ]
+                };
+            }
+
+            if (q.includes('otsukare') || q.includes('mahanasi')) {
+                return {
+                    japanese: "お疲れ様でした！",
+                    romaji: "Otsukaresama deshita!",
+                    sinhala: "අද දවසේ ඔබ කළ කැපවීමට බොහොම ස්තූතියි!",
+                    english: "Thank you for your hard work!",
+                    replies: [
+                        { badge: "Ideal Reply", jp: "お疲れ様でした、お先に失礼します", romaji: "Otsukaresama deshita, osaki ni shitsurei shimasu", sinhala: "ස්තූතියි, මා පළමුව නික්මෙමි." },
+                        { badge: "Warmth", jp: "明日もよろしくお願いいたします", romaji: "Ashita mo yoroshiku onegai itashimasu", sinhala: "හෙටත් කරුණාවෙන් සහයෝගය දෙන්න" }
+                    ]
+                };
+            }
+
+            if (q.includes('ikura') || q.includes('gana') || q.includes('price') || q.includes('kaikei')) {
+                return {
+                    japanese: "お会計は千五百円になります",
+                    romaji: "O-kaikei wa sen-gohyaku-en ni narimasu",
+                    sinhala: "මුළු බිල ජපන් යෙන් 1,500 කි.",
+                    english: "The bill comes to 1,500 yen.",
+                    replies: [
+                        { badge: "Payment", jp: "カードで支払えますか？", romaji: "Kaado de shiharaemasu ka?", sinhala: "කාඩ්පතෙන් ගෙවිය හැකිද?" },
+                        { badge: "Cash Polite", jp: "ちょうどいただきます", romaji: "Choudo itadakimasu", sinhala: "හරියටම ගණන දෙමි" }
+                    ]
+                };
+            }
+
+            // General smart synthesis
+            return {
+                japanese: heardOrQueryJp(query),
+                romaji: "Douzo yoroshiku onegai itashimasu",
+                sinhala: `පැවසූ අදහස: "${query}" පිළිගන්නා ලදී`,
+                english: `Heard statement: "${query}"`,
+                replies: [
+                    { badge: "Most Polite", jp: "承知いたしました、ありがとうございます", romaji: "Shouchi itashimashita, arigatou gozaimasu", sinhala: "තේරුම් ගත්තා, බොහොම ස්තූතියි." },
+                    { badge: "Respectful Agreement", jp: "はい、よろしくお願いいたします", romaji: "Hai, yoroshiku onegai itashimasu", sinhala: "එසේය, කරුණාවෙන් සලකන්න." }
+                ]
+            };
+        }
+
+        function heardOrQueryJp(q) {
+            return (q && /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF]/.test(q))
+                ? q
+                : "はい、承知いたしました";
+        }
+
+        function renderVoiceConversation(data) {
+            document.getElementById('detected-japanese').textContent = data.japanese;
+            document.getElementById('detected-romaji').textContent = `(${data.romaji})`;
+            document.getElementById('detected-sinhala').textContent = data.sinhala;
+            document.getElementById('detected-english').textContent = data.english;
+
+            const list = document.getElementById('suggestions-list');
+            if (!list || !data.replies) return;
+
+            list.innerHTML = '';
+            data.replies.forEach(rep => {
+                const card = document.createElement('div');
+                card.className = "bg-white hover:bg-emerald-50/80 p-3 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between";
+                card.onclick = () => speakReplyOption(rep.jp, rep.romaji, rep.sinhala);
+                card.innerHTML = `
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[9px] bg-brandGreen/20 text-emerald-800 font-bold px-1.5 py-0.5 rounded">${rep.badge || 'Reply'}</span>
+                            <span class="text-xs font-black text-gray-900">${rep.jp}</span>
+                        </div>
+                        <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">(${rep.romaji})</p>
+                        <p class="text-[10px] text-gray-600 mt-0.5">🇱🇰 ${rep.sinhala}</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-full bg-brandGreen/20 text-emerald-700 flex items-center justify-center shrink-0">
+                        <i class="ph ph-speaker-high text-lg"></i>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // Test button to simulate native Japanese conversation turns
+        window.triggerSimulatedConversation = function() {
+            const samplePhrases = [
+                "お疲れ様でした！",
+                "いらっしゃいませ、ご注文はお決まりですか？",
+                "少々お待ちくださいませ。",
+                "はじめまして、どうぞよろしくお願いします。"
+            ];
+            const chosen = samplePhrases[Math.floor(Math.random() * samplePhrases.length)];
+            handleLiveSpokenVoice(chosen);
+            speakText(chosen);
+        };
+
+        // --- Ultra Pro Vision AR Camera ---
+        async function initLiveCamera() {
+            const video = document.getElementById('live-video');
+            const fallback = document.getElementById('simulated-camera-bg');
+            if (!video) return;
+
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    mediaStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: useFacingMode }
+                    });
+                    video.srcObject = mediaStream;
+                    video.play();
+                    if (fallback) fallback.classList.add('hidden');
+                } else {
+                    throw new Error("Camera API not available");
+                }
+            } catch (err) {
+                console.warn("Camera fallback applied:", err);
+                if (fallback) fallback.classList.remove('hidden');
+            }
+        }
+
+        function stopLiveCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+            const video = document.getElementById('live-video');
+            if (video) video.srcObject = null;
+        }
+
+        window.toggleCameraFacing = function() {
+            useFacingMode = (useFacingMode === 'environment') ? 'user' : 'environment';
+            stopLiveCamera();
+            initLiveCamera();
+            showToast(`Camera: ${useFacingMode}`);
+        };
+
+        window.toggleTorchLight = function() {
+            if (!mediaStream) {
+                showToast("Flashlight unavailable in simulation");
+                return;
+            }
+            const track = mediaStream.getVideoTracks()[0];
+            const cap = track.getCapabilities ? track.getCapabilities() : {};
+            if (cap.torch) {
+                const cur = track.getConstraints().torch || false;
+                track.applyConstraints({ advanced: [{ torch: !cur }] });
+                showToast(`Torch ${!cur ? 'ON' : 'OFF'}`);
+            } else {
+                showToast("Torch not supported on this device");
+            }
+        };
+
+        window.scanArCameraFrame = async function() {
+            showToast("Ultra Pro OCR Analyzing Image...");
+            const video = document.getElementById('live-video');
+            const canvas = document.getElementById('snapshot-canvas');
+
+            if (userApiKey && video && video.srcObject) {
+                try {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+                    const prompt = `You are Hello Japan ! Ultra Pro Vision OCR. Inspect the Japanese text/sign in this image.
+Return strictly JSON:
+{
+  "japanese": "Text in Kanji/Kana",
+  "romaji": "Romaji reading",
+  "sinhala": "Sinhala translation",
+  "english": "English translation",
+  "guide": "Etiquette & Action Guide: Japanese rules, foreigner advice, respectful action to take."
+}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${userApiKey}`;
+                    const resp = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    const d = await resp.json();
+                    const text = d?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        displayArCard(JSON.parse(text));
+                        return;
+                    }
+                } catch(e) {
+                    console.warn("Vision OCR error, triggering sample:", e);
+                }
+            }
+            triggerArSampleDemo();
+        };
+
+        window.triggerArSampleDemo = function() {
+            const signs = [
+                {
+                    japanese: "止まれ",
+                    romaji: "Tomare",
+                    sinhala: "නවතින්න (සම්පූර්ණ නැවතීම)",
+                    english: "Mandatory Full Stop",
+                    guide: "Traffic law: Vehicles and bicycles must come to a dead stop before this line to avoid traffic penalties."
+                },
+                {
+                    japanese: "いらっしゃいませ",
+                    romaji: "Irasshaimase",
+                    sinhala: "සාදරයෙන් පිළිගනිමු!",
+                    english: "Welcome to our shop!",
+                    guide: "Hospitality greeting. You do not need to reply back verbally; a polite nod or smile is perfect etiquette."
+                },
+                {
+                    japanese: "土足厳禁",
+                    romaji: "Dosoku Genkin",
+                    sinhala: "සපත්තු පිටින් ඇතුල්වීම තහනම්",
+                    english: "No Outdoor Shoes Allowed",
+                    guide: "Take off your shoes at the genkan entrance before stepping onto tatami or wooden floors."
+                }
+            ];
+            const chosen = signs[Math.floor(Math.random() * signs.length)];
+            displayArCard(chosen);
+        };
+
+        function displayArCard(data) {
+            const card = document.getElementById('ar-card');
+            if (!card) return;
+            document.getElementById('ar-jp').textContent = data.japanese;
+            document.getElementById('ar-romaji').textContent = `(${data.romaji})`;
+            document.getElementById('ar-si').textContent = data.sinhala;
+            document.getElementById('ar-en').textContent = data.english;
+            document.getElementById('ar-guide').textContent = data.guide;
+            currentArJapanese = data.japanese;
+            card.classList.remove('hidden');
+            speakText(data.japanese);
+            incrementGrowth();
+        }
+
+        window.speakArDetected = function() {
+            if (currentArJapanese) speakText(currentArJapanese);
+        };
+
+        // System clock
+        function tickClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            const c1 = document.getElementById('hero-clock');
+            if (c1) c1.textContent = timeStr;
+        }
+        setInterval(tickClock, 1000);
+
+        // Window startup
+        window.addEventListener('DOMContentLoaded', () => {
+            tickClock();
+            updateStatsDisplay();
+            switchView('hero');
+        });
+    </script>
+</body>
+</html>
