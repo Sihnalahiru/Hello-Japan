@@ -1,14 +1,12 @@
 window.App = window.App || {};
 
 App.Gemini = {
-
     async callContent(
         payload,
-        timeoutMs = App.Config.DEFAULT_TIMEOUT_MS,
+        timeoutMs = App.Config?.DEFAULT_TIMEOUT_MS || 12000,
         schema = null
     ) {
-
-        const url = App.Config.WORKER_ENDPOINT;
+        const url = App.Config?.WORKER_ENDPOINT;
 
         if (!url) {
             throw new Error("WORKER_ENDPOINT_MISSING");
@@ -25,10 +23,8 @@ App.Gemini = {
         }, timeoutMs);
 
         try {
-
             const requestPayload = {
                 ...payload,
-
                 generationConfig: {
                     ...(payload.generationConfig || {}),
                     responseMimeType: "application/json"
@@ -41,32 +37,22 @@ App.Gemini = {
 
             const response = await fetch(url, {
                 method: "POST",
-
                 headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Cache-Control": "no-cache"
+                    "Content-Type": "application/json"
                 },
-
-                cache: "no-store",
-
                 body: JSON.stringify(requestPayload),
-
                 signal: controller.signal
             });
 
-            const responseText = await response.text();
+            const text = await response.text();
 
             if (!response.ok) {
-
                 if (response.status === 400) {
                     throw new Error("BAD_REQUEST");
                 }
 
-                if (
-                    response.status === 401 ||
-                    response.status === 403
-                ) {
+                if (response.status === 401 ||
+                    response.status === 403) {
                     throw new Error("API_KEY_INVALID");
                 }
 
@@ -84,24 +70,20 @@ App.Gemini = {
             let data;
 
             try {
-                data = JSON.parse(responseText);
+                data = JSON.parse(text);
             } catch {
                 throw new Error("INVALID_GEMINI_RESPONSE");
             }
 
-            const text =
+            const outputText =
                 data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-            if (
-                typeof text !== "string" ||
-                !text.trim()
-            ) {
+            if (!outputText || typeof outputText !== "string") {
                 throw new Error("EMPTY_GEMINI_RESPONSE");
             }
 
-            let cleaned = text.trim();
-
-            cleaned = cleaned
+            const cleaned = outputText
+                .trim()
                 .replace(/^```json\s*/i, "")
                 .replace(/^```\s*/i, "")
                 .replace(/\s*```$/i, "")
@@ -120,7 +102,7 @@ App.Gemini = {
             }
 
             if (
-                result === null ||
+                !result ||
                 typeof result !== "object" ||
                 Array.isArray(result)
             ) {
@@ -130,7 +112,6 @@ App.Gemini = {
             return result;
 
         } catch (error) {
-
             if (error?.name === "AbortError") {
                 throw new Error("TIMEOUT");
             }
@@ -138,7 +119,6 @@ App.Gemini = {
             throw error;
 
         } finally {
-
             clearTimeout(timer);
         }
     }
