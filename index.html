@@ -125,62 +125,88 @@
         </section>
 
         <!-- VIEW 2: CAMERA OCR SCREEN -->
-        <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white pb-28">
-            <video id="live-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
-            <canvas id="snapshot-canvas" class="hidden"></canvas>
+        <<!-- VIEW 2: ULTRA PRO VISION OCR CAMERA SCREEN (FIXED UI) -->
+<section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white pb-36">
+    
+    <video id="live-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
+    <canvas id="snapshot-canvas" class="hidden"></canvas>
 
-            <div id="simulated-camera-bg" class="hidden absolute inset-0 bg-cover bg-center flex flex-col justify-between p-4" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=1000&auto=format&fit=crop');">
-                <div class="bg-black/70 backdrop-blur-md p-2.5 rounded-xl text-center text-xs text-amber-300 border border-amber-500/40">
-                    ⚠️ Camera offline or permission denied. Showing demo preview.
-                </div>
+    <!-- Camera Fallback Banner (Fixed Position Below Top Nav) -->
+    <div id="simulated-camera-bg" class="hidden absolute top-16 left-4 right-4 z-20 bg-black/80 backdrop-blur-md p-2.5 rounded-xl text-center text-xs text-amber-300 border border-amber-500/40 shadow-lg">
+        ⚠️ Camera offline or permission denied. Showing demo preview.
+    </div>
+
+    <div class="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
+        
+        <!-- Clean Camera Header Controls -->
+        <div class="flex justify-between items-center pointer-events-auto pt-1 z-30">
+            <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95">
+                <i class="ph ph-caret-left text-lg"></i>
+            </button>
+            <span class="text-xs font-black bg-brandGreen text-darkForest px-3 py-1 rounded-full shadow-lg">
+                📷 Camera AI Pro Live
+            </span>
+            <button onclick="App.CameraEngine.toggleTorch()" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95">
+                <i class="ph ph-flashlight text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Center Laser Scanner Frame -->
+        <div class="relative w-full max-w-[250px] aspect-square mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center my-auto">
+            <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
+            <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
+            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
+            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brandGreen rounded-br-2xl"></div>
+
+            <div class="scanner-beam absolute w-full h-1 bg-gradient-to-r from-transparent via-brandGreen to-transparent shadow-[0_0_20px_#39D322]"></div>
+
+            <span class="text-[10px] bg-black/70 backdrop-blur-md text-emerald-300 font-bold px-3 py-1 rounded-full border border-white/10 pointer-events-none">
+                Point at Japanese Signs / Menus
+            </span>
+        </div>
+
+        <!-- AR Side HUD -->
+        <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[150px] overflow-y-auto no-scrollbar mb-2" aria-live="polite">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1">
+                    <i class="ph ph-eye"></i> Instant OCR Visualization
+                </span>
+                <button onclick="App.CameraRenderer.speakArDetected()" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30">
+                    <i class="ph ph-speaker-high"></i> Pronounce
+                </button>
             </div>
-
-            <div class="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
-                <div class="flex justify-between items-center pointer-events-auto pt-1">
-                    <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95">
-                        <i class="ph ph-caret-left text-lg"></i>
-                    </button>
-                    <span class="text-xs font-black bg-brandGreen text-darkForest px-3 py-1 rounded-full shadow-lg">📷 Camera AI Pro Live</span>
-                    <button onclick="App.CameraEngine.toggleTorch()" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95">
-                        <i class="ph ph-flashlight text-lg"></i>
-                    </button>
-                </div>
-
-                <div class="relative w-full max-w-[270px] aspect-square mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center">
-                    <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
-                    <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
-                    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
-                    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brandGreen rounded-br-2xl"></div>
-                    <div class="scanner-beam absolute w-full h-1 bg-gradient-to-r from-transparent via-brandGreen to-transparent shadow-[0_0_20px_#39D322]"></div>
-                    <span class="text-[10px] bg-black/70 backdrop-blur-md text-emerald-300 font-bold px-3 py-1 rounded-full border border-white/10 pointer-events-none">Point at Japanese Signs / Menus</span>
-                </div>
-
-                <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3.5 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[170px] overflow-y-auto no-scrollbar" aria-live="polite">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1"><i class="ph ph-eye"></i> Instant OCR Visualization</span>
-                        <button onclick="App.CameraRenderer.speakArDetected()" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i> Pronounce</button>
-                    </div>
-                    <div class="flex items-baseline gap-2">
-                        <p id="ar-jp" class="text-xl font-black text-white leading-tight">止まれ</p>
-                        <p id="ar-romaji" class="text-xs text-brandGreen font-bold">(Tomare - Stop)</p>
-                    </div>
-                    <div class="border-t border-white/10 my-1.5 pt-1 space-y-0.5 text-[11px]">
-                        <p class="text-gray-200"><b class="text-emerald-400 font-bold">🇱🇰 සිංහල:</b> <span id="ar-si">සම්පූර්ණ නැවතීම (නවතින්න)</span></p>
-                        <p class="text-gray-300"><b class="text-blue-300 font-bold">🇬🇧 English:</b> <span id="ar-en">Mandatory Full Stop</span></p>
-                    </div>
-                    <div class="bg-white/10 p-1.5 rounded-lg text-[9px] text-gray-300 mt-1 border border-brandGreen/20">
-                        <span class="text-brandGreen font-bold">🎌 Cultural Etiquette:</span>
-                        <span id="ar-guide">Must stop completely before entering the road to obey Japanese traffic rules.</span>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-center gap-6 pointer-events-auto mt-1">
-                    <button onclick="App.CameraOCR.triggerDemo()" title="Cycle Sign Samples" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-cards text-lg"></i></button>
-                    <button onclick="App.CameraOCR.scanFrame()" aria-label="Scan Camera Frame" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]"><div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold"><i class="ph ph-scan"></i></div></button>
-                    <button onclick="App.CameraEngine.toggleFacing()" title="Flip Camera" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
-                </div>
+            <div class="flex items-baseline gap-2">
+                <p id="ar-jp" class="text-xl font-black text-white leading-tight">止まれ</p>
+                <p id="ar-romaji" class="text-xs text-brandGreen font-bold">(Tomare - Stop)</p>
             </div>
-        </section>
+            <div class="border-t border-white/10 my-1 pt-1 space-y-0.5 text-[11px]">
+                <p class="text-gray-200"><b class="text-emerald-400 font-bold">🇱🇰 සිංහල:</b> <span id="ar-si">සම්පූර්ණ නැවතීම (නවතින්න)</span></p>
+                <p class="text-gray-300"><b class="text-blue-300 font-bold">🇬🇧 English:</b> <span id="ar-en">Mandatory Full Stop</span></p>
+            </div>
+            <div class="bg-white/10 p-1.5 rounded-lg text-[9px] text-gray-300 mt-1 border border-brandGreen/20">
+                <span class="text-brandGreen font-bold">🎌 Cultural Etiquette:</span>
+                <span id="ar-guide">Must stop completely before entering the road to obey Japanese traffic rules.</span>
+            </div>
+        </div>
+
+        <!-- Camera Control Triggers -->
+        <div class="flex items-center justify-center gap-6 pointer-events-auto z-30">
+            <button onclick="App.CameraOCR.triggerDemo()" title="Cycle Sign Samples" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95">
+                <i class="ph ph-cards text-lg"></i>
+            </button>
+
+            <button onclick="App.CameraOCR.scanFrame()" aria-label="Scan Camera Frame" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
+                <div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold">
+                    <i class="ph ph-scan"></i>
+                </div>
+            </button>
+
+            <button onclick="App.CameraEngine.toggleFacing()" title="Flip Camera" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95">
+                <i class="ph ph-arrows-clockwise text-lg"></i>
+            </button>
+        </div>
+    </div>
+</section>
 
         <!-- VIEW 3: VOICE ASSISTANT SCREEN -->
         <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-32 text-gray-900">
