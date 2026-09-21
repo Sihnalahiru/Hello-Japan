@@ -1,165 +1,160 @@
-window.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        console.log(
-            "Hello Japan AI starting..."
-        );
+const CACHE_NAME =
+    "hello-japan-v4";
 
 
-        /*
-         * Clock
-         */
-        App.Navigation
-            ?.tickClock
-            ?.();
+self.addEventListener(
+    "install",
+    event => {
+
+        self.skipWaiting();
+    }
+);
 
 
-        setInterval(
-            () => {
+self.addEventListener(
+    "activate",
+    event => {
 
-                App.Navigation
-                    ?.tickClock
-                    ?.();
+        event.waitUntil(
 
-            },
-            1000
-        );
+            caches
+                .keys()
+                .then(
+                    keys => {
 
+                        return Promise.all(
 
-        /*
-         * Secure AI status
-         */
-        App.UI
-            ?.updateApiStatus
-            ?.();
-
-
-        /*
-         * Voice TTS initialization
-         */
-        App.VoiceTTS
-            ?.init
-            ?.();
-
-
-        /*
-         * Default speaker
-         */
-        App.VoiceEngine
-            ?.setSpeaker
-            ?.(
-                "ja-JP"
-            );
-
-
-        /*
-         * Empty voice UI
-         */
-        App.VoiceRenderer
-            ?.clearConversation
-            ?.();
-
-
-        /*
-         * Visibility handling
-         */
-        document.addEventListener(
-            "visibilitychange",
-            () => {
-
-                if (
-                    document.hidden
-                ) {
-
-                    App.VoiceEngine
-                        ?.stop
-                        ?.();
-
-                    App.CameraOCR
-                        ?.cancel
-                        ?.();
-
-                    App.CameraEngine
-                        ?.stop
-                        ?.(
-                            true
+                            keys
+                                .filter(
+                                    key =>
+                                        key.startsWith(
+                                            "hello-japan-"
+                                        ) &&
+                                        key !==
+                                            CACHE_NAME
+                                )
+                                .map(
+                                    key =>
+                                        caches.delete(
+                                            key
+                                        )
+                                )
                         );
-
-                    return;
-                }
-
-
-                const view =
-                    App.State.currentActiveView;
-
-
-                if (
-                    view === "voice"
-                ) {
-
-                    App.VoiceEngine
-                        ?.start
-                        ?.();
-                }
-
-
-                if (
-                    view === "camera"
-                ) {
-
-                    App.CameraEngine
-                        ?.init
-                        ?.();
-                }
-            }
-        );
-
-
-        /*
-         * Service Worker
-         */
-        if (
-            "serviceWorker" in navigator
-        ) {
-
-            navigator.serviceWorker
-                .register(
-                    "sw.js"
+                    }
                 )
                 .then(
-                    registration => {
-
-                        console.log(
-                            "Service Worker registered:",
-                            registration.scope
-                        );
-                    }
+                    () =>
+                        self.clients.claim()
                 )
-                .catch(
-                    error => {
+        );
+    }
+);
 
-                        console.warn(
-                            "Service Worker registration failed:",
-                            error
-                        );
-                    }
-                );
+
+self.addEventListener(
+    "fetch",
+    event => {
+
+        if (
+            event.request.method !==
+            "GET"
+        ) {
+            return;
         }
 
 
-        /*
-         * Start on Home
-         */
-        App.Navigation
-            ?.switchView
-            ?.(
-                "hero"
+        const url =
+            new URL(
+                event.request.url
             );
 
 
-        console.log(
-            "Hello Japan AI ready."
+        /*
+         * Only cache our own application.
+         */
+        if (
+            url.origin !==
+            self.location.origin
+        ) {
+            return;
+        }
+
+
+        event.respondWith(
+
+            (async () => {
+
+                try {
+
+                    /*
+                     * NETWORK FIRST
+                     *
+                     * This prevents old JS from
+                     * remaining active after deployment.
+                     */
+                    const response =
+                        await fetch(
+                            event.request
+                        );
+
+
+                    if (
+                        response &&
+                        response.ok
+                    ) {
+
+                        const cache =
+                            await caches.open(
+                                CACHE_NAME
+                            );
+
+
+                        cache.put(
+                            event.request,
+                            response.clone()
+                        );
+                    }
+
+
+                    return response;
+
+                } catch (error) {
+
+                    /*
+                     * Offline fallback.
+                     */
+                    const cached =
+                        await caches.match(
+                            event.request
+                        );
+
+
+                    if (cached) {
+                        return cached;
+                    }
+
+
+                    if (
+                        event.request.mode ===
+                        "navigate"
+                    ) {
+
+                        const index =
+                            await caches.match(
+                                "./index.html"
+                            );
+
+
+                        if (index) {
+                            return index;
+                        }
+                    }
+
+
+                    throw error;
+                }
+
+            })()
         );
     }
 );
