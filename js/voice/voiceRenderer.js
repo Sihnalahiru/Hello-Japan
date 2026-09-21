@@ -4,70 +4,62 @@ App.VoiceRenderer = {
 
     updateMicVisuals(active) {
 
-        const avatar =
-            document.getElementById("mic-avatar-btn");
-
         const dot =
             document.getElementById("listening-badge-dot");
-
-        const label =
-            document.getElementById("mic-status-label");
 
         const icon =
             document.getElementById("mic-live-icon");
 
+        const label =
+            document.getElementById("mic-status-label");
 
-        if (!avatar) {
-            return;
-        }
-
+        const avatar =
+            document.getElementById("mic-avatar-btn");
 
         if (active) {
 
-            avatar.classList.add(
-                "listening-glow"
-            );
-
-            dot?.classList.remove("hidden");
-
-
-            if (label) {
-
-                label.textContent =
-                    `Live Ear: Listening (${App.State.activeSpeakerLang})...`;
+            if (dot) {
+                dot.classList.remove("hidden");
             }
 
-
             if (icon) {
-
                 icon.className =
                     "w-2 h-2 rounded-full bg-red-500 animate-pulse";
             }
 
-        } else {
-
-            avatar.classList.remove(
-                "listening-glow"
-            );
-
-            dot?.classList.add("hidden");
-
-
             if (label) {
-
                 label.textContent =
-                    App.VoiceTTS?.isSpeaking
-                        ? "AI Speaking..."
-                        : "Listening Paused";
+                    "Listening...";
             }
 
+            if (avatar) {
+                avatar.classList.add(
+                    "ring-4",
+                    "ring-red-400/40"
+                );
+            }
+
+        } else {
+
+            if (dot) {
+                dot.classList.add("hidden");
+            }
 
             if (icon) {
-
                 icon.className =
-                    App.VoiceTTS?.isSpeaking
-                        ? "w-2 h-2 rounded-full bg-emerald-500 animate-pulse"
-                        : "w-2 h-2 rounded-full bg-gray-400";
+                    "w-2 h-2 rounded-full bg-gray-400";
+            }
+
+            if (label) {
+                label.textContent =
+                    "Listening Paused";
+            }
+
+            if (avatar) {
+                avatar.classList.remove(
+                    "ring-4",
+                    "ring-red-400/40"
+                );
             }
         }
     },
@@ -75,414 +67,432 @@ App.VoiceRenderer = {
 
     renderConversation(data) {
 
-        if (
-            !data ||
-            typeof data !== "object"
-        ) {
-
+        if (!data || typeof data !== "object") {
             return;
         }
 
-
-        const japanese =
-            typeof data.japanese === "string"
-                ? data.japanese.trim()
+        const heardJapanese =
+            typeof data.heard_japanese === "string"
+                ? data.heard_japanese.trim()
                 : "";
 
+        const heardRomaji =
+            typeof data.heard_romaji === "string"
+                ? data.heard_romaji.trim()
+                : "";
+
+        const heardSinhala =
+            typeof data.heard_sinhala === "string"
+                ? data.heard_sinhala.trim()
+                : "";
+
+        const heardEnglish =
+            typeof data.heard_english === "string"
+                ? data.heard_english.trim()
+                : "";
+
+        const responseJapanese =
+            typeof data.response_japanese === "string"
+                ? data.response_japanese.trim()
+                : "";
+
+        const responseRomaji =
+            typeof data.response_romaji === "string"
+                ? data.response_romaji.trim()
+                : "";
+
+        const responseSinhala =
+            typeof data.response_sinhala === "string"
+                ? data.response_sinhala.trim()
+                : "";
+
+        const responseEnglish =
+            typeof data.response_english === "string"
+                ? data.response_english.trim()
+                : "";
+
+        const transcript =
+            App.State.currentVoiceTranscript || "";
+
+        const finalJapanese =
+            heardJapanese ||
+            transcript ||
+            "No speech detected.";
+
+        const jp =
+            document.getElementById("detected-japanese");
 
         const romaji =
-            typeof data.romaji === "string"
-                ? data.romaji.trim()
-                : "";
-
+            document.getElementById("detected-romaji");
 
         const sinhala =
-            typeof data.sinhala === "string"
-                ? data.sinhala.trim()
-                : "";
-
+            document.getElementById("detected-sinhala");
 
         const english =
-            typeof data.english === "string"
-                ? data.english.trim()
-                : "";
+            document.getElementById("detected-english");
 
+        if (jp) {
 
-        const detectedJapanese =
-            document.getElementById(
-                "detected-japanese"
-            );
+            jp.textContent = finalJapanese;
 
-        const detectedRomaji =
-            document.getElementById(
-                "detected-romaji"
-            );
-
-        const detectedSinhala =
-            document.getElementById(
-                "detected-sinhala"
-            );
-
-        const detectedEnglish =
-            document.getElementById(
-                "detected-english"
-            );
-
-
-        if (detectedJapanese) {
-
-            detectedJapanese.textContent =
-                japanese;
+            jp.style.fontSize = "1.15rem";
+            jp.style.lineHeight = "1.45";
+            jp.style.fontWeight = "900";
+            jp.style.display = "block";
+            jp.style.whiteSpace = "normal";
+            jp.style.wordBreak = "break-word";
         }
 
+        if (romaji) {
 
-        if (detectedRomaji) {
+            romaji.textContent =
+                heardRomaji ||
+                "Romaji will appear here.";
 
-            detectedRomaji.textContent =
-                romaji
-                    ? `(${romaji})`
-                    : "";
+            romaji.style.fontSize = "0.75rem";
+            romaji.style.lineHeight = "1.45";
+            romaji.style.display = "block";
         }
 
+        if (sinhala) {
 
-        if (detectedSinhala) {
+            sinhala.textContent =
+                heardSinhala ||
+                "සිංහල තේරුම ලබාගනිමින්...";
 
-            detectedSinhala.textContent =
-                sinhala;
+            sinhala.style.fontSize = "0.8rem";
+            sinhala.style.lineHeight = "1.5";
+            sinhala.style.display = "block";
         }
 
+        if (english) {
 
-        if (detectedEnglish) {
+            english.textContent =
+                heardEnglish ||
+                "English meaning is being generated...";
 
-            detectedEnglish.textContent =
-                english;
+            english.style.fontSize = "0.75rem";
+            english.style.lineHeight = "1.5";
+            english.style.display = "block";
         }
 
 
         App.State.currentVoiceJapanese =
-            japanese;
+            finalJapanese;
 
         App.State.currentVoiceRomaji =
-            romaji;
+            heardRomaji;
 
         App.State.currentVoiceSinhala =
-            sinhala;
+            heardSinhala;
 
         App.State.currentVoiceEnglish =
-            english;
+            heardEnglish;
+
+        App.State.currentVoiceResponseJapanese =
+            responseJapanese;
+
+        App.State.currentVoiceResponseRomaji =
+            responseRomaji;
+
+        App.State.currentVoiceResponseSinhala =
+            responseSinhala;
+
+        App.State.currentVoiceResponseEnglish =
+            responseEnglish;
 
 
-        this.renderSuggestions(
+        /*
+         * PRIMARY AI ANSWER
+         *
+         * Put this BEFORE the alternative replies.
+         */
+        const suggestions = [];
+
+        if (responseJapanese) {
+
+            suggestions.push({
+                badge: "🤖 AI ANSWER",
+                jp: responseJapanese,
+                romaji: responseRomaji,
+                sinhala: responseSinhala,
+                english: responseEnglish,
+                primary: true
+            });
+        }
+
+
+        const replies =
             Array.isArray(data.replies)
                 ? data.replies
-                : []
-        );
+                : [];
+
+        replies.forEach(reply => {
+
+            if (
+                !reply ||
+                typeof reply !== "object"
+            ) {
+                return;
+            }
+
+            const jpText =
+                typeof reply.jp === "string"
+                    ? reply.jp.trim()
+                    : "";
+
+            if (!jpText) {
+                return;
+            }
+
+            suggestions.push({
+                badge:
+                    typeof reply.badge === "string" &&
+                    reply.badge.trim()
+                        ? reply.badge.trim()
+                        : "💬 QUICK REPLY",
+
+                jp: jpText,
+
+                romaji:
+                    typeof reply.romaji === "string"
+                        ? reply.romaji.trim()
+                        : "",
+
+                sinhala:
+                    typeof reply.sinhala === "string"
+                        ? reply.sinhala.trim()
+                        : "",
+
+                english:
+                    typeof reply.english === "string"
+                        ? reply.english.trim()
+                        : "",
+
+                primary: false
+            });
+        });
+
+
+        App.State.currentVoiceSuggestions =
+            suggestions;
+
+        this.renderSuggestions(suggestions);
     },
 
 
     renderSuggestions(replies) {
 
-        const list =
-            document.getElementById(
-                "suggestions-list"
-            );
+        const container =
+            document.getElementById("suggestions-list");
 
+        const empty =
+            document.getElementById("voice-suggestion-empty");
 
-        if (!list) {
+        if (!container) {
             return;
         }
 
-
-        while (list.firstChild) {
-
-            list.removeChild(
-                list.firstChild
-            );
-        }
-
-
-        if (
-            !Array.isArray(replies) ||
-            replies.length === 0
-        ) {
-
-            const empty =
-                document.createElement("div");
-
-
-            empty.className =
-                "text-center text-xs text-gray-400 py-4";
-
-
-            empty.textContent =
-                "AI suggestions will appear after you speak.";
-
-
-            list.appendChild(empty);
-
-
-            App.State.currentVoiceSuggestions =
-                [];
-
-
-            return;
-        }
-
+        container.innerHTML = "";
 
         const validReplies =
-            replies
-                .filter(reply => {
+            Array.isArray(replies)
+                ? replies.filter(
+                    item =>
+                        item &&
+                        typeof item.jp === "string" &&
+                        item.jp.trim()
+                )
+                : [];
 
-                    return (
-                        reply &&
-                        typeof reply === "object" &&
-                        typeof reply.jp === "string" &&
-                        reply.jp.trim()
-                    );
-                })
-                .slice(0, 3);
+        if (!validReplies.length) {
+
+            if (empty) {
+                empty.classList.remove("hidden");
+                empty.textContent =
+                    "No reply suggestion was generated. Please speak again.";
+            }
+
+            return;
+        }
+
+        if (empty) {
+            empty.classList.add("hidden");
+        }
 
 
-        App.State.currentVoiceSuggestions =
-            validReplies;
-
-
-        validReplies.forEach(reply => {
-
-            const jp =
-                reply.jp.trim();
-
-            const romaji =
-                typeof reply.romaji === "string"
-                    ? reply.romaji.trim()
-                    : "";
-
-            const sinhala =
-                typeof reply.sinhala === "string"
-                    ? reply.sinhala.trim()
-                    : "";
-
-            const english =
-                typeof reply.english === "string"
-                    ? reply.english.trim()
-                    : "";
-
-            const badge =
-                typeof reply.badge === "string" &&
-                reply.badge.trim()
-                    ? reply.badge.trim()
-                    : "Reply";
-
+        validReplies.slice(0, 4).forEach((reply, index) => {
 
             const card =
                 document.createElement("button");
 
-
-            card.type =
-                "button";
-
+            card.type = "button";
 
             card.className =
-                "w-full text-left bg-white p-2.5 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer active:scale-[0.98] transition-all flex items-center justify-between";
+                "w-full text-left bg-white rounded-2xl p-3 border shadow-sm active:scale-[0.98] transition-all";
+
+            if (reply.primary) {
+
+                card.classList.add(
+                    "border-brandGreen",
+                    "ring-1",
+                    "ring-brandGreen/20"
+                );
+
+            } else {
+
+                card.classList.add(
+                    "border-gray-100"
+                );
+            }
+
+
+            const header =
+                document.createElement("div");
+
+            header.className =
+                "flex items-center justify-between gap-2 mb-1";
+
+
+            const badge =
+                document.createElement("span");
+
+            badge.className =
+                reply.primary
+                    ? "text-[9px] font-black text-emerald-800 bg-brandGreen/20 px-2 py-0.5 rounded-full"
+                    : "text-[9px] font-black text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full";
+
+            badge.textContent =
+                reply.badge ||
+                (index === 0
+                    ? "🤖 AI ANSWER"
+                    : "💬 QUICK REPLY");
+
+
+            const speakIcon =
+                document.createElement("span");
+
+            speakIcon.className =
+                "text-emerald-700 text-sm";
+
+            speakIcon.innerHTML =
+                '<i class="ph ph-speaker-high"></i>';
+
+
+            header.appendChild(badge);
+            header.appendChild(speakIcon);
+
+
+            const jp =
+                document.createElement("div");
+
+            jp.className =
+                "text-[15px] font-black text-gray-900 leading-snug";
+
+            jp.textContent =
+                reply.jp;
+
+
+            const romaji =
+                document.createElement("div");
+
+            romaji.className =
+                "text-[10px] text-emerald-700 font-semibold mt-1 leading-snug";
+
+            romaji.textContent =
+                reply.romaji || "";
+
+
+            const sinhala =
+                document.createElement("div");
+
+            sinhala.className =
+                "text-[11px] text-gray-800 font-semibold mt-1 leading-snug";
+
+            sinhala.textContent =
+                reply.sinhala || "";
+
+
+            const english =
+                document.createElement("div");
+
+            english.className =
+                "text-[10px] text-gray-500 mt-0.5 leading-snug";
+
+            english.textContent =
+                reply.english || "";
+
+
+            card.appendChild(header);
+            card.appendChild(jp);
+
+            if (reply.romaji) {
+                card.appendChild(romaji);
+            }
+
+            if (reply.sinhala) {
+                card.appendChild(sinhala);
+            }
+
+            if (reply.english) {
+                card.appendChild(english);
+            }
 
 
             card.addEventListener(
                 "click",
                 () => {
 
-                    App.VoiceTTS?.speakReplyOption?.(
-                        jp
-                    );
+                    if (
+                        App.VoiceTTS &&
+                        typeof App.VoiceTTS.speakReplyOption === "function"
+                    ) {
+                        App.VoiceTTS.speakReplyOption(
+                            reply.jp
+                        );
+                    }
                 }
             );
 
-
-            const left =
-                document.createElement("div");
-
-
-            left.className =
-                "flex-1 pr-2";
-
-
-            const header =
-                document.createElement("div");
-
-
-            header.className =
-                "flex items-center gap-1.5";
-
-
-            const badgeElement =
-                document.createElement("span");
-
-
-            badgeElement.className =
-                "text-[9px] bg-brandGreen/20 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded";
-
-
-            badgeElement.textContent =
-                badge;
-
-
-            const jpElement =
-                document.createElement("span");
-
-
-            jpElement.className =
-                "text-xs font-black text-gray-900";
-
-
-            jpElement.textContent =
-                jp;
-
-
-            header.appendChild(
-                badgeElement
-            );
-
-            header.appendChild(
-                jpElement
-            );
-
-
-            const romajiElement =
-                document.createElement("p");
-
-
-            romajiElement.className =
-                "text-[10px] text-emerald-700 font-semibold mt-0.5";
-
-
-            romajiElement.textContent =
-                romaji
-                    ? `(${romaji})`
-                    : "";
-
-
-            const translations =
-                document.createElement("div");
-
-
-            translations.className =
-                "flex flex-col mt-0.5 text-[10px]";
-
-
-            const sinhalaElement =
-                document.createElement("p");
-
-
-            sinhalaElement.className =
-                "text-gray-700 font-semibold";
-
-
-            sinhalaElement.textContent =
-                sinhala
-                    ? `🇱🇰 ${sinhala}`
-                    : "";
-
-
-            const englishElement =
-                document.createElement("p");
-
-
-            englishElement.className =
-                "text-gray-500 font-medium";
-
-
-            englishElement.textContent =
-                english
-                    ? `🇬🇧 ${english}`
-                    : "";
-
-
-            translations.appendChild(
-                sinhalaElement
-            );
-
-            translations.appendChild(
-                englishElement
-            );
-
-
-            left.appendChild(
-                header
-            );
-
-            left.appendChild(
-                romajiElement
-            );
-
-            left.appendChild(
-                translations
-            );
-
-
-            const right =
-                document.createElement("div");
-
-
-            right.className =
-                "w-8 h-8 rounded-full bg-brandGreen/20 text-emerald-800 flex items-center justify-center shrink-0";
-
-
-            const icon =
-                document.createElement("i");
-
-
-            icon.className =
-                "ph ph-speaker-high text-base";
-
-
-            right.appendChild(icon);
-
-
-            card.appendChild(left);
-
-            card.appendChild(right);
-
-            list.appendChild(card);
+            container.appendChild(card);
         });
     },
 
 
     clearConversation() {
 
-        const ids = [
-            "detected-japanese",
-            "detected-romaji",
-            "detected-sinhala",
-            "detected-english"
-        ];
+        const jp =
+            document.getElementById("detected-japanese");
 
+        const romaji =
+            document.getElementById("detected-romaji");
 
-        ids.forEach(id => {
+        const sinhala =
+            document.getElementById("detected-sinhala");
 
-            const element =
-                document.getElementById(id);
+        const english =
+            document.getElementById("detected-english");
 
+        if (jp) {
+            jp.textContent =
+                "Speak when you are ready...";
+        }
 
-            if (element) {
-                element.textContent = "";
-            }
-        });
+        if (romaji) {
+            romaji.textContent =
+                "Your Japanese speech will appear here.";
+        }
 
+        if (sinhala) {
+            sinhala.textContent =
+                "ඔබ කතා කරන වාක්‍යයේ තේරුම මෙහි පෙන්වයි.";
+        }
+
+        if (english) {
+            english.textContent =
+                "Your recognized speech will be translated here.";
+        }
 
         this.renderSuggestions([]);
-
-
-        App.State.currentVoiceTranscript = "";
-
-        App.State.currentVoiceJapanese = "";
-
-        App.State.currentVoiceRomaji = "";
-
-        App.State.currentVoiceSinhala = "";
-
-        App.State.currentVoiceEnglish = "";
-
-        App.State.currentVoiceResponse = "";
-
-        App.State.currentVoiceSuggestions = [];
     }
 };
