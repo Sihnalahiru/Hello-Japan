@@ -1,162 +1,101 @@
 window.addEventListener(
     "DOMContentLoaded",
     () => {
-
         console.log(
             "Hello Japan AI starting..."
         );
 
-
-        /*
-         * Clock
-         */
         App.Navigation
-            ?.tickClock
-            ?.();
-
+            ?.tickClock?.();
 
         setInterval(
-            () => {
-
+            () =>
                 App.Navigation
-                    ?.tickClock
-                    ?.();
-
-            },
+                    ?.tickClock?.(),
             1000
         );
 
-
-        /*
-         * Secure AI status
-         */
         App.UI
-            ?.updateApiStatus
-            ?.();
+            ?.updateApiStatus?.();
 
-
-        /*
-         * Voice TTS initialization
-         */
         App.VoiceTTS
-            ?.init
-            ?.();
+            ?.init?.();
 
-
-        /*
-         * Default speaker
-         */
         App.VoiceEngine
-            ?.setSpeaker
-            ?.(
+            ?.setSpeaker?.(
                 "ja-JP"
             );
 
-
-        /*
-         * Empty voice UI
-         */
         App.VoiceRenderer
-            ?.clearConversation
-            ?.();
+            ?.clearConversation?.();
 
+        App.CameraRenderer
+            ?.clearCard?.();
 
-        /*
-         * Visibility handling
-         */
         document.addEventListener(
             "visibilitychange",
             () => {
-
-                if (
-                    document.hidden
-                ) {
-
+                if (document.hidden) {
                     App.VoiceEngine
-                        ?.stop
-                        ?.();
+                        ?.stop?.();
 
                     App.CameraOCR
-                        ?.cancel
-                        ?.();
+                        ?.cancel?.();
 
                     App.CameraEngine
-                        ?.stop
-                        ?.(
-                            true
-                        );
+                        ?.stop?.(true);
 
                     return;
                 }
 
-
                 const view =
                     App.State.currentActiveView;
 
-
-                if (
-                    view === "voice"
-                ) {
-
+                if (view === "voice") {
                     App.VoiceEngine
-                        ?.start
-                        ?.();
+                        ?.start?.();
                 }
 
-
-                if (
-                    view === "camera"
-                ) {
-
+                if (view === "camera") {
                     App.CameraEngine
-                        ?.init
-                        ?.();
+                        ?.init?.();
                 }
             }
         );
 
-
-        /*
-         * Service Worker
-         */
         if (
             "serviceWorker" in navigator
         ) {
-
             navigator.serviceWorker
                 .register(
-                    "sw.js"
-                )
-                .then(
-                    registration => {
-
-                        console.log(
-                            "Service Worker registered:",
-                            registration.scope
-                        );
+                    "./sw.js",
+                    {
+                        updateViaCache:
+                            "none"
                     }
                 )
-                .catch(
-                    error => {
+                .then(registration => {
+                    registration
+                        .update()
+                        .catch(() => {});
 
-                        console.warn(
-                            "Service Worker registration failed:",
-                            error
-                        );
-                    }
-                );
+                    console.log(
+                        "Service Worker:",
+                        registration.scope
+                    );
+                })
+                .catch(error => {
+                    console.warn(
+                        "Service Worker registration:",
+                        error
+                    );
+                });
         }
 
-
-        /*
-         * Start on Home
-         */
         App.Navigation
-            ?.switchView
-            ?.(
+            ?.switchView?.(
                 "hero"
             );
-
 
         console.log(
             "Hello Japan AI ready."
