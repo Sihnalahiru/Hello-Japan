@@ -2,8 +2,7 @@ window.App = window.App || {};
 
 App.Gemini = {
     async callContent(payload, timeoutMs = App.Config.DEFAULT_TIMEOUT_MS, schema = null) {
-        if (!App.State.userApiKey) throw new Error("NO_API_KEY");
-        const url = `${App.Config.GEMINI_API_BASE}/${App.Config.GEMINI_MODEL}:generateContent`;
+        const url = App.Config.WORKER_ENDPOINT;
 
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -17,8 +16,7 @@ App.Gemini = {
             const resp = await fetch(url, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': App.State.userApiKey
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload),
                 signal: controller.signal
