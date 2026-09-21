@@ -2,12 +2,6 @@ window.App = window.App || {};
 
 App.VoiceAI = {
 
-    /*
-     * =========================================================
-     * HANDLE SPOKEN VOICE
-     * =========================================================
-     */
-
     async handleSpokenVoice(heardText) {
 
         const transcript =
@@ -21,52 +15,18 @@ App.VoiceAI = {
         }
 
 
-        /*
-         * =====================================================
-         * REQUEST ID
-         * =====================================================
-         *
-         * Only the newest Gemini request is allowed
-         * to update the UI.
-         */
-
         const currentReq =
             ++App.State.voiceRequestId;
 
-
-        /*
-         * =====================================================
-         * SAVE TRANSCRIPT
-         * =====================================================
-         */
 
         App.State.currentVoiceTranscript =
             transcript;
 
 
-        /*
-         * =====================================================
-         * USER FEEDBACK
-         * =====================================================
-         */
+        App.Toast?.show?.(
+            `Heard: "${transcript}"`
+        );
 
-        if (
-            App.Toast &&
-            typeof App.Toast.show ===
-                "function"
-        ) {
-
-            App.Toast.show(
-                `Heard: "${transcript}"`
-            );
-        }
-
-
-        /*
-         * =====================================================
-         * BUILD PROMPT
-         * =====================================================
-         */
 
         let prompt;
 
@@ -87,15 +47,10 @@ App.VoiceAI = {
 
             prompt =
                 App.Prompts.getVoicePrompt(
-
                     App.State.activeVoiceContext,
-
                     App.State.activeSpeakerLang,
-
                     transcript
-
                 );
-
 
         } catch (error) {
 
@@ -104,39 +59,13 @@ App.VoiceAI = {
                 error
             );
 
-
-            if (
-                currentReq ===
-                App.State.voiceRequestId
-            ) {
-
-                this.showVoiceError(
-                    "⚠️ Voice AI prompt is unavailable."
-                );
-            }
-
+            this.showVoiceError(
+                "Voice AI prompt is unavailable."
+            );
 
             return;
         }
 
-
-        /*
-         * =====================================================
-         * CALL CLOUDFLARE WORKER → GEMINI
-         * =====================================================
-         *
-         * IMPORTANT:
-         *
-         * There is NO browser API key here.
-         *
-         * Browser
-         *    ↓
-         * Cloudflare Worker
-         *    ↓
-         * GEMINI_API_KEY secret
-         *    ↓
-         * Gemini
-         */
 
         let analysis;
 
@@ -175,15 +104,9 @@ App.VoiceAI = {
 
                     App.Schemas?.VOICE_RESPONSE_SCHEMA ||
                         null
-
                 );
 
-
         } catch (error) {
-
-            /*
-             * Ignore old request errors.
-             */
 
             if (
                 currentReq !==
@@ -200,43 +123,33 @@ App.VoiceAI = {
             );
 
 
-            const errorCode =
+            const code =
                 error?.message ||
                 "UNKNOWN_ERROR";
 
 
-            if (
-                errorCode ===
-                "TIMEOUT"
-            ) {
+            if (code === "TIMEOUT") {
 
                 this.showVoiceError(
                     "⏱️ AI response timed out. Please speak again."
                 );
 
-
-            } else if (
-                errorCode ===
-                "RATE_LIMIT"
-            ) {
+            } else if (code === "RATE_LIMIT") {
 
                 this.showVoiceError(
                     "⚠️ AI request limit reached. Please try again shortly."
                 );
 
-
             } else if (
-                errorCode ===
-                "API_KEY_INVALID"
+                code === "API_KEY_INVALID"
             ) {
 
                 this.showVoiceError(
                     "🔑 Gemini service configuration is invalid."
                 );
 
-
             } else if (
-                errorCode ===
+                code ===
                 "SERVER_CONFIGURATION_ERROR"
             ) {
 
@@ -244,32 +157,11 @@ App.VoiceAI = {
                     "⚠️ Gemini API is not configured on the Cloudflare Worker."
                 );
 
-
-            } else if (
-                errorCode ===
-                "BAD_REQUEST"
-            ) {
+            } else if (code === "BAD_REQUEST") {
 
                 this.showVoiceError(
                     "⚠️ Gemini rejected the voice request."
                 );
-
-
-            } else if (
-                errorCode ===
-                "INVALID_GEMINI_RESPONSE" ||
-                errorCode ===
-                "EMPTY_GEMINI_RESPONSE" ||
-                errorCode ===
-                "INVALID_GEMINI_JSON" ||
-                errorCode ===
-                "INVALID_GEMINI_DATA"
-            ) {
-
-                this.showVoiceError(
-                    "⚠️ Gemini returned an invalid response."
-                );
-
 
             } else {
 
@@ -278,16 +170,9 @@ App.VoiceAI = {
                 );
             }
 
-
             return;
         }
 
-
-        /*
-         * =====================================================
-         * REQUEST STILL CURRENT?
-         * =====================================================
-         */
 
         if (
             currentReq !==
@@ -297,12 +182,6 @@ App.VoiceAI = {
             return;
         }
 
-
-        /*
-         * =====================================================
-         * VALIDATE RESPONSE
-         * =====================================================
-         */
 
         const validated =
             this.validateResponse(
@@ -322,15 +201,12 @@ App.VoiceAI = {
                 "⚠️ AI returned an invalid voice response."
             );
 
-
             return;
         }
 
 
         /*
-         * =====================================================
-         * SAVE REAL AI RESPONSE
-         * =====================================================
+         * SAVE REAL RESULT
          */
 
         App.State.currentVoiceJapanese =
@@ -353,35 +229,19 @@ App.VoiceAI = {
 
 
         /*
-         * =====================================================
-         * RENDER REAL AI RESPONSE
-         * =====================================================
+         * RENDER
          */
 
-        if (
-            App.VoiceRenderer &&
-            typeof App.VoiceRenderer.renderConversation ===
-                "function"
-        ) {
-
-            App.VoiceRenderer.renderConversation(
-                validated
-            );
-        }
+        App.VoiceRenderer?.renderConversation?.(
+            validated
+        );
 
 
         /*
-         * =====================================================
-         * SPEAK AI JAPANESE RESPONSE
-         * =====================================================
+         * TTS.
          *
-         * VoiceTTS will:
-         *
-         * 1. Pause recognition
-         * 2. Speak Japanese
-         * 3. Resume recognition
-         *
-         * Do NOT manually change the listening state here.
+         * VoiceTTS will pause the microphone.
+         * It will resume automatically after speech.
          */
 
         if (
@@ -397,55 +257,28 @@ App.VoiceAI = {
                     validated.japanese
                 );
 
-
             } catch (error) {
 
                 console.warn(
                     "Voice TTS notice:",
                     error
                 );
-
-
-                /*
-                 * If TTS itself fails, allow the
-                 * recognition engine to continue.
-                 */
-
-                if (
-                    App.State.isContinuousListening &&
-                    App.VoiceEngine &&
-                    typeof App.VoiceEngine.start ===
-                        "function"
-                ) {
-
-                    App.VoiceEngine.start();
-                }
             }
 
-        } else {
+        } else if (
+            App.State.isContinuousListening &&
+            !App.VoiceEngine?.isPausedForSpeech
+        ) {
 
-            /*
-             * No Japanese response available.
-             *
-             * Do not invent one.
-             */
-
-            if (
-                App.State.isContinuousListening &&
-                App.VoiceEngine &&
-                typeof App.VoiceEngine.start ===
-                    "function"
-            ) {
-
-                App.VoiceEngine.start();
-            }
+            App.State.currentVoiceState =
+                App.State.VoiceState.LISTENING;
         }
     },
 
 
     /*
      * =========================================================
-     * VALIDATE GEMINI RESPONSE
+     * VALIDATE
      * =========================================================
      */
 
@@ -485,34 +318,16 @@ App.VoiceAI = {
                 : "";
 
 
-        /*
-         * Japanese is required because it is
-         * the actual speech response.
-         */
-
         if (!japanese) {
-
             return null;
         }
 
-
-        /*
-         * =====================================================
-         * REPLIES
-         * =====================================================
-         */
 
         const rawReplies =
             Array.isArray(data.replies)
                 ? data.replies
                 : [];
 
-
-        /*
-         * Prompt/schema allow 0–3 replies.
-         *
-         * Keep the UI limited to 3.
-         */
 
         const replies =
             rawReplies
@@ -532,34 +347,25 @@ App.VoiceAI = {
                     return {
 
                         badge:
-                            typeof reply.badge ===
-                                "string" &&
-                            reply.badge.trim()
+                            typeof reply.badge === "string"
                                 ? reply.badge.trim()
                                 : "Suggested Reply",
-
 
                         jp:
                             reply.jp.trim(),
 
-
                         romaji:
-                            typeof reply.romaji ===
-                                "string"
+                            typeof reply.romaji === "string"
                                 ? reply.romaji.trim()
                                 : "",
 
-
                         sinhala:
-                            typeof reply.sinhala ===
-                                "string"
+                            typeof reply.sinhala === "string"
                                 ? reply.sinhala.trim()
                                 : "",
 
-
                         english:
-                            typeof reply.english ===
-                                "string"
+                            typeof reply.english === "string"
                                 ? reply.english.trim()
                                 : ""
                     };
@@ -567,15 +373,10 @@ App.VoiceAI = {
 
 
         return {
-
             japanese,
-
             romaji,
-
             sinhala,
-
             english,
-
             replies
         };
     },
@@ -583,10 +384,8 @@ App.VoiceAI = {
 
     /*
      * =========================================================
-     * ERROR HANDLER
+     * ERROR
      * =========================================================
-     *
-     * NEVER create fake/offline content.
      */
 
     showVoiceError(message) {
@@ -597,43 +396,19 @@ App.VoiceAI = {
         );
 
 
-        if (
-            App.Toast &&
-            typeof App.Toast.show ===
-                "function"
-        ) {
-
-            App.Toast.show(
-                message
-            );
-        }
+        App.Toast?.show?.(
+            message
+        );
 
 
-        /*
-         * Clear stale suggestions.
-         */
+        App.VoiceRenderer?.renderSuggestions?.(
+            []
+        );
 
-        if (
-            App.VoiceRenderer &&
-            typeof App.VoiceRenderer.renderSuggestions ===
-                "function"
-        ) {
-
-            App.VoiceRenderer.renderSuggestions(
-                []
-            );
-        }
-
-
-        /*
-         * Return to listening only if the
-         * user still wants hands-free mode.
-         */
 
         if (
             App.State.isContinuousListening &&
-            App.VoiceEngine &&
-            !App.VoiceEngine.isPausedForSpeech
+            !App.VoiceEngine?.isPausedForSpeech
         ) {
 
             App.State.currentVoiceState =
