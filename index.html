@@ -413,16 +413,13 @@
                         <span id="mic-status-label">Continuous Live Ear: Listening...</span>
                     </div>
 
-                    <!-- Voice Action Tools (Photo, Mic Trigger, Quick Manual Speech Test) -->
+                    <!-- Voice Action Tools (Photo, Mic Trigger) -->
                     <div class="flex items-center gap-4 mt-2 mb-1">
                         <button onclick="switchView('camera')" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Open Vision Camera">
                             <i class="ph ph-camera text-lg"></i>
                         </button>
                         <button onclick="toggleHandsFreeListening()" id="main-mic-fab" class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center shadow-lg shadow-brandGreen/40 text-darkForest text-xl font-bold active:scale-90 transition-transform">
                             <i id="mic-center-icon" class="ph ph-microphone"></i>
-                        </button>
-                        <button onclick="openQuickSpeechPrompt()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95" title="Type or Select Conversation Sample">
-                            <i class="ph ph-chat-centered-dots text-lg"></i>
                         </button>
                     </div>
                 </div>
@@ -485,70 +482,7 @@
 
                 </div>
 
-                <!-- Quick Manual Speech Prompt Modal -->
-                <div id="quick-input-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div class="bg-white w-full max-w-sm p-4 rounded-3xl shadow-2xl border border-emerald-200 text-gray-900">
-                        <div class="flex justify-between items-center mb-2.5">
-                            <h3 class="font-extrabold text-sm flex items-center gap-1 text-emerald-800">
-                                <i class="ph ph-microphone"></i> Test Live Speech Input
-                            </h3>
-                            <button onclick="document.getElementById('quick-input-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-700">
-                                <i class="ph ph-x text-base"></i>
-                            </button>
-                        </div>
-                        <p class="text-[10px] text-gray-500 mb-2">
-                            Type any spoken phrase or tap a sample to see instant live translation & reply suggestions:
-                        </p>
-                        <input type="text" id="quick-speech-input" placeholder="Type Japanese, Sinhala, or English..." class="w-full bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 text-xs text-gray-800 outline-none focus:border-brandGreen mb-3 font-semibold">
-                        
-                        <div class="flex flex-wrap gap-1 mb-3">
-                            <button onclick="fillQuickInput('お疲れ様でした！')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">お疲れ様でした！</button>
-                            <button onclick="fillQuickInput('この電車は新宿に行きますか？')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">新宿に行きますか？</button>
-                            <button onclick="fillQuickInput('මම මේ කෑම එක ගන්න කැමතියි')" class="text-[10px] bg-gray-100 hover:bg-emerald-100 px-2 py-1 rounded-lg">Sinhala test</button>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <button onclick="submitQuickSpeechInput()" class="flex-1 bg-brandGreen text-darkForest font-black py-2.5 rounded-xl text-xs active:scale-95 shadow-md">
-                                Translate & Suggest
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- VIEW 4: ULTRA PRO VISION OCR CAMERA (With Live Visual Side-HUD) -->
-        <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white">
-            
-            <!-- Real Live Video Feed -->
-            <video id="live-video" class="w-full h-full object-cover" autoplay playsinline muted></video>
-            
-            <!-- Simulated Japanese Signpost Fallback (if camera not allowed) -->
-            <div id="simulated-camera-bg" class="hidden absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80');"></div>
-
-            <!-- Canvas for OCR frame capture -->
-            <canvas id="snapshot-canvas" class="hidden"></canvas>
-
-            <!-- AR Overlay UI Controls -->
-            <div class="absolute inset-0 z-10 flex flex-col justify-between p-4 pointer-events-none pb-28">
-                
-                <!-- Top Toolbar -->
-                <div class="flex justify-between items-center pt-2 pointer-events-auto">
-                    <button onclick="switchView('dashboard')" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
-                        <i class="ph ph-caret-left text-lg"></i>
-                    </button>
-                    <div class="bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold border border-brandGreen/40">
-                        <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
-                        <span>Live Visual OCR</span>
-                        <span class="text-brandGreen text-[10px] bg-white/10 px-1.5 py-0.5 rounded">JA ➜ SI / EN</span>
-                    </div>
-                    <button onclick="toggleTorchLight()" id="torch-btn" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white active:scale-90 border border-white/20">
-                        <i class="ph ph-lightning text-lg"></i>
-                    </button>
-                </div>
-
-                <!-- Center Scanner Target Bounding Box -->
+        <!-- Center Scanner Target Bounding Box -->
                 <div class="relative w-full max-w-[270px] aspect-[4/4] mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center">
                     <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
                     <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
@@ -644,7 +578,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-white">Gemini API Key</h3>
-                        <p class="text-[10px] text-gray-400">Enables live Gemini 3 Flash translations & OCR</p>
+                        <p class="text-[10px] text-gray-400">Enables live Gemini AI translations & OCR</p>
                     </div>
                 </div>
                 <input type="password" id="gemini-key-input" placeholder="Paste Gemini API key (AIza...)"
@@ -681,13 +615,27 @@
         let currentArJapanese = '止まれ';
         let activeSpeakerLang = 'ja-JP'; // 'ja-JP' or 'si-LK'
         let speechRecognitionInstance = null;
+        let voiceAnalysisBusy = false;
+        let speechRestartTimer = null;
 
         // Adaptive Self-Development Stats
-        let stats = JSON.parse(localStorage.getItem('HELLO_JAPAN_STATS') || JSON.stringify({
-            phrases: 14,
-            streak: 26,
-            confidence: 88
-        }));
+        const DEFAULT_STATS = { phrases: 14, streak: 26, confidence: 88 };
+        let stats = (() => {
+            try {
+                const saved = localStorage.getItem('HELLO_JAPAN_STATS');
+                if (!saved) return { ...DEFAULT_STATS };
+                const parsed = JSON.parse(saved);
+                if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_STATS };
+                return {
+                    phrases: Number.isFinite(Number(parsed.phrases)) ? Number(parsed.phrases) : DEFAULT_STATS.phrases,
+                    streak: Number.isFinite(Number(parsed.streak)) ? Number(parsed.streak) : DEFAULT_STATS.streak,
+                    confidence: Number.isFinite(Number(parsed.confidence)) ? Number(parsed.confidence) : DEFAULT_STATS.confidence
+                };
+            } catch (e) {
+                console.warn('Stats storage was invalid; using defaults.', e);
+                return { ...DEFAULT_STATS };
+            }
+        })();
 
         function updateStatsDisplay() {
             const streakHero = document.getElementById('dash-streak');
@@ -756,12 +704,23 @@
             }
 
             // Restart recognition with selected language
-            if (speechRecognitionInstance) {
-                try {
-                    speechRecognitionInstance.abort();
-                    speechRecognitionInstance.lang = lang;
-                    if (isContinuousListening) speechRecognitionInstance.start();
-                } catch(e) {}
+            if (isContinuousListening) {
+                const rec = ensureSpeechRecognition();
+                if (rec) {
+                    try {
+                        rec.abort();
+                        rec.lang = lang;
+                        setTimeout(() => {
+                            if (isContinuousListening) {
+                                try { rec.start(); } catch (e) {
+                                    if (e?.name !== 'InvalidStateError') console.warn('Speech language restart failed:', e);
+                                }
+                            }
+                        }, 120);
+                    } catch(e) {
+                        console.warn('Speech language switch failed:', e);
+                    }
+                }
             }
         };
 
@@ -798,6 +757,12 @@
         };
 
         // API Key Modal Controls
+        function updateApiStatusUI() {
+            const connected = Boolean(getGeminiApiKey());
+            const heroStatus = document.getElementById('api-status-hero');
+            if (heroStatus) heroStatus.textContent = connected ? 'API Connected' : 'API Key';
+        }
+
         window.toggleApiKeyModal = function() {
             const modal = document.getElementById('apikey-modal');
             const input = document.getElementById('gemini-key-input');
@@ -818,9 +783,11 @@
             if (val) {
                 localStorage.setItem('SUHADA_GEMINI_API_KEY', val);
                 showToast("Custom Gemini API Key Connected!");
+                updateApiStatusUI();
             } else {
                 localStorage.removeItem('SUHADA_GEMINI_API_KEY');
-                showToast("Default System AI Key Active");
+                showToast("Gemini API Key cleared — offline mode");
+                updateApiStatusUI();
             }
             toggleApiKeyModal();
         };
@@ -830,11 +797,24 @@
             userApiKey = '';
             const input = document.getElementById('gemini-key-input');
             if (input) input.value = '';
-            showToast("API Key reset.");
+            showToast("API Key reset — offline mode");
+            updateApiStatusUI();
         };
 
         // --- Real-time Continuous Hands-Free Voice Listener ---
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function scheduleSpeechRestart(delay = 350) {
+            if (!isContinuousListening || !speechRecognitionInstance) return;
+            if (speechRestartTimer) clearTimeout(speechRestartTimer);
+            speechRestartTimer = setTimeout(() => {
+                if (!isContinuousListening || !speechRecognitionInstance) return;
+                try {
+                    speechRecognitionInstance.lang = activeSpeakerLang;
+                    speechRecognitionInstance.start();
+                } catch (_) {}
+            }, delay);
+        }
 
         function initSpeechRecognition() {
             if (!SpeechRec) {
@@ -847,32 +827,42 @@
             rec.lang = activeSpeakerLang;
 
             rec.onresult = async (event) => {
-                const lastIdx = event.results.length - 1;
-                const transcript = event.results[lastIdx][0].transcript.trim();
-                if (transcript) {
-                    await handleLiveSpokenVoice(transcript);
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (!event.results[i].isFinal) continue;
+                    const transcript = event.results[i][0].transcript.trim();
+                    if (!transcript) continue;
+
+                    if (voiceAnalysisBusy) {
+                        console.log("Voice analysis busy; waiting for next final phrase.");
+                        continue;
+                    }
+
+                    voiceAnalysisBusy = true;
+                    try {
+                        await handleLiveSpokenVoice(transcript);
+                    } finally {
+                        voiceAnalysisBusy = false;
+                    }
                 }
             };
 
             rec.onerror = (e) => {
                 console.warn("Speech recognition notice:", e);
-                if (isContinuousListening) {
-                    setTimeout(() => {
-                        try { rec.start(); } catch(err) {}
-                    }, 1200);
-                }
+                if (isContinuousListening) scheduleSpeechRestart(1200);
             };
 
             rec.onend = () => {
-                if (isContinuousListening) {
-                    try { rec.start(); } catch(e) {}
-                }
+                if (isContinuousListening) scheduleSpeechRestart(350);
             };
 
             return rec;
         }
 
-        speechRecognitionInstance = initSpeechRecognition();
+        function ensureSpeechRecognition() {
+            if (speechRecognitionInstance) return speechRecognitionInstance;
+            speechRecognitionInstance = initSpeechRecognition();
+            return speechRecognitionInstance;
+        }
 
         window.toggleHandsFreeListening = function() {
             if (isContinuousListening) {
@@ -887,16 +877,27 @@
         function startContinuousListening() {
             isContinuousListening = true;
             updateMicVisuals(true);
-            if (speechRecognitionInstance) {
+            const rec = ensureSpeechRecognition();
+            if (rec) {
                 try {
-                    speechRecognitionInstance.lang = activeSpeakerLang;
-                    speechRecognitionInstance.start();
-                } catch(e) {}
+                    rec.lang = activeSpeakerLang;
+                    rec.start();
+                } catch(e) {
+                    // InvalidStateError simply means recognition is already running.
+                    if (e?.name !== 'InvalidStateError') console.warn('Speech start failed:', e);
+                }
+            } else {
+                updateMicVisuals(false);
+                showToast('Voice recognition is not supported in this browser');
             }
         }
 
         function stopContinuousListening() {
             isContinuousListening = false;
+            if (speechRestartTimer) {
+                clearTimeout(speechRestartTimer);
+                speechRestartTimer = null;
+            }
             updateMicVisuals(false);
             if (speechRecognitionInstance) {
                 try {
@@ -942,24 +943,230 @@
         };
 
         window.speakReplyOption = function(jp) {
-            speakText(jp);
+            const wasListening = isContinuousListening;
+            if (wasListening) stopContinuousListening();
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(String(jp || ''));
+                u.lang = 'ja-JP';
+                u.rate = 0.90;
+                u.onend = () => {
+                    if (wasListening && currentActiveView === 'voice') {
+                        setTimeout(() => startContinuousListening(), 350);
+                    }
+                };
+                u.onerror = () => {
+                    if (wasListening && currentActiveView === 'voice') {
+                        setTimeout(() => startContinuousListening(), 350);
+                    }
+                };
+                window.speechSynthesis.speak(u);
+            }
+
             showToast(`Speaking aloud: "${jp}"`);
             incrementGrowth();
         };
 
-        // Process detected speech via Gemini 3 Flash Live API
+        // ============================================================
+        // GEMINI API ENGINE
+        // ============================================================
+        // All AI processing remains inside this single index.html.
+        // The UI/layout is intentionally unchanged.
+
+        const GEMINI_MODEL = "gemini-3.8-flash";
+        const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+
+        function getGeminiApiKey() {
+            return String(userApiKey || "").trim();
+        }
+
+        function getGeminiErrorMessage(status, apiMessage = "") {
+            const msg = String(apiMessage || "").trim();
+            switch (status) {
+                case 400: return `GEMINI_400: ${msg || "Bad request"}`;
+                case 401: return "GEMINI_401: Invalid or unauthorized API key";
+                case 403: return "GEMINI_403: API key does not have permission";
+                case 404: return "GEMINI_404: Model or endpoint not available";
+                case 429: return "GEMINI_429: Rate limit or quota exceeded";
+                case 500: return "GEMINI_500: Gemini server error";
+                case 502: return "GEMINI_502: Gemini gateway error";
+                case 503: return "GEMINI_503: Gemini service temporarily unavailable";
+                default: return `GEMINI_${status}: ${msg || "Unknown API error"}`;
+            }
+        }
+
+        async function callGeminiGenerateContent({ contents, systemInstruction = "", imagePart = null }) {
+            const apiKey = getGeminiApiKey();
+            if (!apiKey) throw new Error("NO_API_KEY");
+
+            const url = `${GEMINI_API_BASE}/${GEMINI_MODEL}:generateContent`;
+            const parts = [];
+
+            if (contents?.length) {
+                for (const item of contents) {
+                    if (item?.text) parts.push({ text: String(item.text) });
+                    if (item?.inlineData) parts.push({ inlineData: item.inlineData });
+                }
+            }
+            if (imagePart) parts.push({ inlineData: imagePart });
+
+            const payload = {
+                contents: [{ role: "user", parts }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    thinkingConfig: { thinkingLevel: "low" }
+                }
+            };
+
+            if (systemInstruction) {
+                payload.systemInstruction = {
+                    parts: [{ text: String(systemInstruction) }]
+                };
+            }
+
+            let resp;
+            try {
+                resp = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": apiKey
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkError) {
+                throw new Error(`NETWORK_ERROR: ${networkError?.message || "Network request failed"}`);
+            }
+
+            let data = null;
+            try {
+                data = await resp.json();
+            } catch (_) {
+                throw new Error(`INVALID_API_RESPONSE_${resp.status}`);
+            }
+
+            if (!resp.ok) {
+                const apiMessage = data?.error?.message || data?.error?.status || "";
+                console.error("Gemini API error", { status: resp.status, data });
+                throw new Error(getGeminiErrorMessage(resp.status, apiMessage));
+            }
+
+            const text = data?.candidates?.[0]?.content?.parts
+                ?.filter(part => typeof part?.text === "string")
+                ?.map(part => part.text)
+                ?.join("")
+                ?.trim();
+
+            if (!text) {
+                console.error("Gemini empty response", data);
+                throw new Error("EMPTY_GEMINI_RESPONSE");
+            }
+
+            return { raw: data, text };
+        }
+
+        function parseGeminiJSON(text) {
+            if (!text) throw new Error("EMPTY_JSON_TEXT");
+            let cleaned = String(text).trim()
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/i, "")
+                .trim();
+
+            try { return JSON.parse(cleaned); } catch (_) {}
+
+            const first = cleaned.indexOf("{");
+            const last = cleaned.lastIndexOf("}");
+            if (first >= 0 && last > first) {
+                try { return JSON.parse(cleaned.slice(first, last + 1)); } catch (_) {}
+            }
+            throw new Error("INVALID_GEMINI_JSON");
+        }
+
+        // ============================================================
+        // VOICE AI ANALYSIS
+        // ============================================================
+        async function fetchGeminiVoiceAnalysis(spokenPhrase) {
+            const phrase = String(spokenPhrase || "").trim();
+            if (!phrase) throw new Error("EMPTY_SPOKEN_PHRASE");
+
+            const context = String(activeVoiceContext || "daily").toUpperCase();
+            const systemPrompt = `
+You are Hello Japan!, a hands-free Japanese workplace voice assistant.
+This is NOT a chat application. The user does not type. The app listens
+for the other person's speech, translates it, then suggests exactly
+three short replies the user can speak.
+
+Context: ${context}
+
+The other person said:
+"${phrase}"
+
+Return ONLY valid JSON with exactly this structure:
+{
+  "japanese": "...",
+  "romaji": "...",
+  "sinhala": "...",
+  "english": "...",
+  "replies": [
+    {"badge":"...","jp":"...","romaji":"...","sinhala":"...","english":"..."},
+    {"badge":"...","jp":"...","romaji":"...","sinhala":"...","english":"..."},
+    {"badge":"...","jp":"...","romaji":"...","sinhala":"...","english":"..."}
+  ]
+}
+
+Rules:
+- Preserve the actual meaning of the spoken sentence.
+- If it is Japanese, keep the Japanese meaning natural.
+- If it is Sinhala or English, provide the natural Japanese representation.
+- Sinhala must be natural conversational Sinhala.
+- Replies must be realistic spoken Japanese.
+- Prefer polite Japanese suitable for workplace/hotel situations.
+- Keep replies concise.
+- Exactly 3 replies, never more or fewer.
+`;
+
+            const result = await callGeminiGenerateContent({
+                contents: [{ text: phrase }],
+                systemInstruction
+            });
+
+            const data = parseGeminiJSON(result.text);
+            if (!data || typeof data !== "object") throw new Error("INVALID_VOICE_ANALYSIS");
+            if (!Array.isArray(data.replies) || data.replies.length < 3) {
+                throw new Error("VOICE_REPLIES_INCOMPLETE");
+            }
+            data.replies = data.replies.slice(0, 3).map((r, i) => ({
+                badge: r?.badge || `Reply ${i + 1}`,
+                jp: r?.jp || "はい、わかりました。",
+                romaji: r?.romaji || "Hai, wakarimashita.",
+                sinhala: r?.sinhala || "හරි, මට තේරුණා.",
+                english: r?.english || "Yes, I understand."
+            }));
+            return data;
+        }
+
         async function handleLiveSpokenVoice(heardText) {
+            const phrase = String(heardText || "").trim();
+            if (!phrase) return;
+
             const translatingBadge = document.getElementById('live-translating-badge');
             if (translatingBadge) translatingBadge.classList.remove('hidden');
-            showToast(`Heard: "${heardText}"`);
+            showToast(`Heard: "${phrase}"`);
 
-            let analysis = null;
+            let analysis;
             try {
-                // Call Gemini 3 Flash directly
-                analysis = await fetchGeminiVoiceAnalysis(heardText);
-            } catch(err) {
-                console.warn("Live API fallback:", err);
-                analysis = generateDynamicFallbackAnalysis(heardText);
+                analysis = await fetchGeminiVoiceAnalysis(phrase);
+            } catch (err) {
+                console.warn("Gemini voice failed; using offline fallback:", err);
+                if (err?.message === "NO_API_KEY") showToast("Add Gemini API Key in Settings");
+                else if (String(err?.message).startsWith("GEMINI_401")) showToast("Invalid Gemini API Key");
+                else if (String(err?.message).startsWith("GEMINI_403")) showToast("Gemini API access denied");
+                else if (String(err?.message).startsWith("GEMINI_429")) showToast("Gemini quota/rate limit reached");
+                else if (String(err?.message).startsWith("GEMINI_404")) showToast("Gemini model unavailable");
+                else showToast("AI unavailable — offline reply mode");
+                analysis = generateDynamicFallbackAnalysis(phrase);
             }
 
             if (translatingBadge) translatingBadge.classList.add('hidden');
@@ -967,57 +1174,36 @@
             incrementGrowth();
         }
 
-        // Gemini 3 Flash Direct API Call
-        async function fetchGeminiVoiceAnalysis(spokenPhrase) {
-            const systemPrompt = `You are "Hello Japan !", a live hands-free 2-way Japanese Voice Assistant.
-Conversation context: "${activeVoiceContext.toUpperCase()}".
-The input spoken was: "${spokenPhrase}".
-Analyze what was spoken (which could be Japanese, Sinhala, or English).
-Provide:
-1. "japanese": Kanji/Kana representation of what was said.
-2. "romaji": Reading pronunciation.
-3. "sinhala": Accurate, natural Sinhala translation.
-4. "english": Clear English translation.
-5. "replies": Array of exactly 3 ideal, respectful, polite replies the user can say back to foster great friendliness and respect. Each reply must have:
-   - "badge": e.g., "Polite / Gentle / Workplace"
-   - "jp": Japanese text to say
-   - "romaji": Pronunciation
-   - "sinhala": Sinhala meaning
-   - "english": English meaning
+        // ============================================================
+        // VISION OCR AI
+        // ============================================================
+        async function analyzeCameraImageWithGemini(base64Data) {
+            if (!base64Data) throw new Error("EMPTY_IMAGE");
 
-Return ONLY valid JSON matching this structure without markdown fences:
+            const prompt = `
+You are Hello Japan! Live Visual OCR.
+Inspect only the Japanese text/sign that is actually visible in this image.
+Return ONLY valid JSON:
 {
-  "japanese": "...",
-  "romaji": "...",
-  "sinhala": "...",
-  "english": "...",
-  "replies": [
-    { "badge": "...", "jp": "...", "romaji": "...", "sinhala": "...", "english": "..." }
-  ]
-}`;
+  "japanese":"...",
+  "romaji":"...",
+  "sinhala":"...",
+  "english":"...",
+  "guide":"..."
+}
+Do not invent unreadable text. If the Japanese text is unclear, say so.
+The guide should be short and practical for someone working/living in Japan.
+`;
 
-            const apiKey = userApiKey || "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: spokenPhrase }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: { responseMimeType: "application/json" }
-            };
-
-            const resp = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const result = await callGeminiGenerateContent({
+                contents: [{ text: prompt }],
+                imagePart: {
+                    mimeType: "image/jpeg",
+                    data: base64Data
+                }
             });
 
-            if (!resp.ok) {
-                throw new Error(`API returned ${resp.status}`);
-            }
-
-            const data = await resp.json();
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            return JSON.parse(text);
+            return parseGeminiJSON(result.text);
         }
 
         // Dynamic fallback generator if network fails
@@ -1140,28 +1326,6 @@ Return ONLY valid JSON matching this structure without markdown fences:
             });
         }
 
-        // Quick Manual Speech Prompt Modal
-        window.openQuickSpeechPrompt = function() {
-            const modal = document.getElementById('quick-input-modal');
-            if (modal) modal.classList.remove('hidden');
-        };
-
-        window.fillQuickInput = function(text) {
-            const input = document.getElementById('quick-speech-input');
-            if (input) input.value = text;
-        };
-
-        window.submitQuickSpeechInput = function() {
-            const input = document.getElementById('quick-speech-input');
-            if (!input) return;
-            const val = input.value.trim();
-            if (val) {
-                document.getElementById('quick-input-modal').classList.add('hidden');
-                handleLiveSpokenVoice(val);
-                input.value = '';
-            }
-        };
-
         // --- Ultra Pro Vision AR Camera ---
         async function initLiveCamera() {
             const video = document.getElementById('live-video');
@@ -1222,49 +1386,30 @@ Return ONLY valid JSON matching this structure without markdown fences:
             const video = document.getElementById('live-video');
             const canvas = document.getElementById('snapshot-canvas');
 
-            if (video && video.videoWidth > 0) {
-                try {
-                    canvas.width = video.videoWidth || 640;
-                    canvas.height = video.videoHeight || 480;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-
-                    const prompt = `You are Hello Japan ! Live Visual OCR. Inspect the Japanese text/sign in this image.
-Return strictly JSON matching:
-{
-  "japanese": "Text in Kanji/Kana",
-  "romaji": "Romaji reading",
-  "sinhala": "Sinhala translation",
-  "english": "English translation",
-  "guide": "Japanese etiquette advice & rules"
-}`;
-                    const apiKey = userApiKey || "";
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-                    const resp = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: prompt },
-                                    { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
-                                ]
-                            }],
-                            generationConfig: { responseMimeType: "application/json" }
-                        })
-                    });
-                    const d = await resp.json();
-                    const text = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        displayArCard(JSON.parse(text));
-                        return;
-                    }
-                } catch(e) {
-                    console.warn("Vision OCR error, triggering sample:", e);
-                }
+            if (!video || !canvas || video.videoWidth <= 0) {
+                showToast("Camera frame unavailable");
+                triggerArSampleDemo();
+                return;
             }
-            triggerArSampleDemo();
+
+            try {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d', { willReadFrequently: false });
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const base64Data = canvas.toDataURL('image/jpeg', 0.82).split(',')[1];
+                const result = await analyzeCameraImageWithGemini(base64Data);
+                displayArCard(result);
+                showToast("OCR translation ready");
+            } catch (e) {
+                console.warn("Vision OCR failed:", e);
+                if (e?.message === "NO_API_KEY") showToast("Add Gemini API Key in Settings");
+                else if (String(e?.message).startsWith("GEMINI_401")) showToast("Invalid Gemini API Key");
+                else if (String(e?.message).startsWith("GEMINI_403")) showToast("Gemini API access denied");
+                else if (String(e?.message).startsWith("GEMINI_429")) showToast("Gemini quota/rate limit reached");
+                else showToast("OCR unavailable — demo mode");
+                triggerArSampleDemo();
+            }
         };
 
         window.triggerArSampleDemo = function() {
@@ -1332,10 +1477,22 @@ Return strictly JSON matching:
         }
         setInterval(tickClock, 1000);
 
+        // Last-resort runtime guard: keep one unexpected browser/API error from blanking the app.
+        window.addEventListener('error', (event) => {
+            console.error('Hello Japan runtime error:', event.error || event.message);
+            if (typeof showToast === 'function') showToast('App recovered from a browser error');
+        });
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Hello Japan unhandled promise:', event.reason);
+            event.preventDefault();
+        });
+
         // Window startup
         window.addEventListener('DOMContentLoaded', () => {
             tickClock();
             updateStatsDisplay();
+            updateApiStatusUI();
+            setActiveSpeaker('ja-JP');
             // Initial default suggestions
             renderVoiceConversation({
                 japanese: "こんにちは！今日はお疲れ様でした。",
