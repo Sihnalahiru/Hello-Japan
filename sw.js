@@ -1,60 +1,47 @@
 const CACHE_NAME =
-    "hello-japan-v4";
-
+    "hello-japan-v5";
 
 self.addEventListener(
     "install",
     event => {
-
         self.skipWaiting();
     }
 );
 
-
 self.addEventListener(
     "activate",
     event => {
-
         event.waitUntil(
-
             caches
                 .keys()
-                .then(
-                    keys => {
-
-                        return Promise.all(
-
-                            keys
-                                .filter(
-                                    key =>
-                                        key.startsWith(
-                                            "hello-japan-"
-                                        ) &&
-                                        key !==
-                                            CACHE_NAME
+                .then(keys =>
+                    Promise.all(
+                        keys
+                            .filter(
+                                key =>
+                                    key.startsWith(
+                                        "hello-japan-"
+                                    ) &&
+                                    key !==
+                                        CACHE_NAME
+                            )
+                            .map(key =>
+                                caches.delete(
+                                    key
                                 )
-                                .map(
-                                    key =>
-                                        caches.delete(
-                                            key
-                                        )
-                                )
-                        );
-                    }
+                            )
+                    )
                 )
-                .then(
-                    () =>
-                        self.clients.claim()
+                .then(() =>
+                    self.clients.claim()
                 )
         );
     }
 );
 
-
 self.addEventListener(
     "fetch",
     event => {
-
         if (
             event.request.method !==
             "GET"
@@ -62,16 +49,11 @@ self.addEventListener(
             return;
         }
 
-
         const url =
             new URL(
                 event.request.url
             );
 
-
-        /*
-         * Only cache our own application.
-         */
         if (
             url.origin !==
             self.location.origin
@@ -79,81 +61,68 @@ self.addEventListener(
             return;
         }
 
-
         event.respondWith(
-
             (async () => {
-
                 try {
-
-                    /*
-                     * NETWORK FIRST
-                     *
-                     * This prevents old JS from
-                     * remaining active after deployment.
-                     */
                     const response =
                         await fetch(
-                            event.request
+                            event.request,
+                            {
+                                cache: "no-store"
+                            }
                         );
-
 
                     if (
                         response &&
                         response.ok
                     ) {
-
                         const cache =
                             await caches.open(
                                 CACHE_NAME
                             );
 
-
-                        cache.put(
+                        await cache.put(
                             event.request,
                             response.clone()
                         );
                     }
 
-
                     return response;
-
-                } catch (error) {
-
-                    /*
-                     * Offline fallback.
-                     */
+                } catch {
                     const cached =
                         await caches.match(
                             event.request
                         );
 
-
                     if (cached) {
                         return cached;
                     }
-
 
                     if (
                         event.request.mode ===
                         "navigate"
                     ) {
-
-                        const index =
+                        const fallback =
                             await caches.match(
                                 "./index.html"
                             );
 
-
-                        if (index) {
-                            return index;
+                        if (fallback) {
+                            return fallback;
                         }
                     }
 
-
-                    throw error;
+                    return new Response(
+                        "Offline",
+                        {
+                            status: 503,
+                            headers: {
+                                "Content-Type":
+                                    "text/plain"
+                            }
+                        }
+                    );
                 }
-
             })()
         );
     }
