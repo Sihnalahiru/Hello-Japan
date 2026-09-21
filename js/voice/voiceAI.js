@@ -1,19 +1,15 @@
 window.App = window.App || {};
 
 App.VoiceAI = {
-
     async handleSpokenVoice(heardText) {
-
         const transcript =
             typeof heardText === "string"
                 ? heardText.trim()
                 : "";
 
-        if (!transcript) {
-            return;
-        }
+        if (!transcript) return;
 
-        const currentRequest =
+        const requestId =
             ++App.State.voiceRequestId;
 
         App.State.currentVoiceTranscript =
@@ -22,16 +18,15 @@ App.VoiceAI = {
         App.State.currentVoiceState =
             App.State.VoiceState.PROCESSING;
 
+        App.VoiceRenderer?.showProcessing?.(transcript);
 
         try {
-
             const prompt =
                 App.Prompts.getVoicePrompt(
                     App.State.activeVoiceContext,
                     App.State.activeSpeakerLang,
                     transcript
                 );
-
 
             const result =
                 await App.Gemini.callContent(
@@ -46,105 +41,73 @@ App.VoiceAI = {
                             }
                         ]
                     },
-
-                    App.Config?.DEFAULT_TIMEOUT_MS ||
-                    12000,
-
-                    App.Schemas?.VOICE_RESPONSE_SCHEMA ||
-                    null
+                    App.Config?.DEFAULT_TIMEOUT_MS || 12000,
+                    App.Schemas?.VOICE_RESPONSE_SCHEMA
                 );
 
-
-            /*
-             * Ignore old Gemini response if the user
-             * has already spoken again.
-             */
             if (
-                currentRequest !==
+                requestId !==
                 App.State.voiceRequestId
             ) {
                 return;
             }
 
-
             const validated =
                 this.validateResponse(result);
 
-
             if (!validated) {
-
-                console.error(
-                    "Invalid voice response:",
-                    result
+                throw new Error(
+                    "INVALID_VOICE_RESPONSE"
                 );
-
-                this.showVoiceError(
-                    "⚠️ AI response format was invalid."
-                );
-
-                return;
             }
-
 
             App.State.currentVoiceJapanese =
-                validated.heard_japanese ||
-                transcript;
+                validated.heardJapanese;
 
             App.State.currentVoiceRomaji =
-                validated.heard_romaji;
+                validated.heardRomaji;
 
             App.State.currentVoiceSinhala =
-                validated.heard_sinhala;
+                validated.heardSinhala;
 
             App.State.currentVoiceEnglish =
-                validated.heard_english;
-
+                validated.heardEnglish;
 
             App.State.currentVoiceResponseJapanese =
-                validated.response_japanese;
+                validated.responseJapanese;
 
             App.State.currentVoiceResponseRomaji =
-                validated.response_romaji;
+                validated.responseRomaji;
 
             App.State.currentVoiceResponseSinhala =
-                validated.response_sinhala;
+                validated.responseSinhala;
 
             App.State.currentVoiceResponseEnglish =
-                validated.response_english;
+                validated.responseEnglish;
 
+            App.State.currentVoiceSuggestions =
+                validated.replies;
+
+            App.VoiceRenderer?.renderConversation?.(
+                validated
+            );
+
+            App.State.currentVoiceState =
+                App.State.VoiceState.LISTENING;
 
             if (
-                App.VoiceRenderer &&
-                typeof App.VoiceRenderer.renderConversation ===
-                    "function"
-            ) {
-
-                App.VoiceRenderer.renderConversation(
-                    validated
-                );
-            }
-
-
-            /*
-             * Speak the AI's suggested answer,
-             * NOT merely the user's detected words.
-             */
-            if (
-                validated.response_japanese &&
+                validated.responseJapanese &&
                 App.VoiceTTS &&
-                typeof App.VoiceTTS.speakText ===
-                    "function"
+                typeof App.VoiceTTS.speakText === "function"
             ) {
-
                 App.VoiceTTS.speakText(
-                    validated.response_japanese
+                    validated.responseJapanese
                 );
             }
 
         } catch (error) {
-
             if (
-                currentRequest !==
+                requestId !==
                 App.State.voiceRequestId
             ) {
                 return;
@@ -155,71 +118,14 @@ App.VoiceAI = {
                 error
             );
 
-            const code =
-                error?.message ||
-                "UNKNOWN_ERROR";
+            App.State.currentVoiceState =
+                App.State.VoiceState.LISTENING;
 
-
-            if (code === "TIMEOUT") {
-
-                this.showVoiceError(
-                    "⏱️ AI response timed out. Please speak again."
-                );
-
-            } else if (code === "RATE_LIMIT") {
-
-                this.showVoiceError(
-                    "⚠️ AI request limit reached. Please try again shortly."
-                );
-
-            } else if (code === "API_KEY_INVALID") {
-
-                this.showVoiceError(
-                    "🔑 Gemini service configuration is invalid."
-                );
-
-            } else if (code === "BAD_REQUEST") {
-
-                this.showVoiceError(
-                    "⚠️ Gemini rejected the voice request."
-                );
-
-            } else if (
-                code === "INVALID_GEMINI_RESPONSE" ||
-                code === "EMPTY_GEMINI_RESPONSE" ||
-                code === "INVALID_GEMINI_JSON" ||
-                code === "INVALID_GEMINI_DATA"
-            ) {
-
-                this.showVoiceError(
-                    "⚠️ Gemini returned an invalid response."
-                );
-
-            } else {
-
-                this.showVoiceError(
-                    "❌ Voice AI failed. Please speak again."
-                );
-            }
-
-        } finally {
-
-            if (
-                currentRequest ===
-                App.State.voiceRequestId
-            ) {
-
-                App.State.currentVoiceState =
-                    App.State.isContinuousListening
-                        ? App.State.VoiceState.LISTENING
-                        : App.State.VoiceState.IDLE;
-            }
+            this.showError(error);
         }
     },
 
-
     validateResponse(data) {
-
         if (
             !data ||
             typeof data !== "object" ||
@@ -228,184 +134,115 @@ App.VoiceAI = {
             return null;
         }
 
-
-        /*
-         * New response format.
-         */
-        let heardJapanese =
-            typeof data.heard_japanese === "string"
-                ? data.heard_japanese.trim()
+        const text = key =>
+            typeof data[key] === "string"
+                ? data[key].trim()
                 : "";
 
-        let heardRomaji =
-            typeof data.heard_romaji === "string"
-                ? data.heard_romaji.trim()
-                : "";
+        const heardJapanese =
+            text("heard_japanese");
 
-        let heardSinhala =
-            typeof data.heard_sinhala === "string"
-                ? data.heard_sinhala.trim()
-                : "";
+        const heardRomaji =
+            text("heard_romaji");
 
-        let heardEnglish =
-            typeof data.heard_english === "string"
-                ? data.heard_english.trim()
-                : "";
+        const heardSinhala =
+            text("heard_sinhala");
 
+        const heardEnglish =
+            text("heard_english");
 
-        let responseJapanese =
-            typeof data.response_japanese === "string"
-                ? data.response_japanese.trim()
-                : "";
+        const responseJapanese =
+            text("response_japanese");
 
-        let responseRomaji =
-            typeof data.response_romaji === "string"
-                ? data.response_romaji.trim()
-                : "";
+        const responseRomaji =
+            text("response_romaji");
 
-        let responseSinhala =
-            typeof data.response_sinhala === "string"
-                ? data.response_sinhala.trim()
-                : "";
+        const responseSinhala =
+            text("response_sinhala");
 
-        let responseEnglish =
-            typeof data.response_english === "string"
-                ? data.response_english.trim()
-                : "";
+        const responseEnglish =
+            text("response_english");
 
-
-        /*
-         * Backward compatibility.
-         */
-        if (!heardJapanese && typeof data.japanese === "string") {
-            heardJapanese = data.japanese.trim();
-        }
-
-        if (!heardRomaji && typeof data.romaji === "string") {
-            heardRomaji = data.romaji.trim();
-        }
-
-        if (!heardSinhala && typeof data.sinhala === "string") {
-            heardSinhala = data.sinhala.trim();
-        }
-
-        if (!heardEnglish && typeof data.english === "string") {
-            heardEnglish = data.english.trim();
-        }
-
-
-        if (!heardJapanese && !App.State.currentVoiceTranscript) {
+        if (!responseJapanese) {
             return null;
         }
 
-
-        const rawReplies =
+        const replies =
             Array.isArray(data.replies)
                 ? data.replies
+                    .filter(
+                        reply =>
+                            reply &&
+                            typeof reply === "object" &&
+                            typeof reply.jp === "string" &&
+                            reply.jp.trim()
+                    )
+                    .slice(0, 3)
+                    .map(reply => ({
+                        badge:
+                            typeof reply.badge === "string" &&
+                            reply.badge.trim()
+                                ? reply.badge.trim()
+                                : "💬 QUICK REPLY",
+
+                        jp:
+                            reply.jp.trim(),
+
+                        romaji:
+                            typeof reply.romaji === "string"
+                                ? reply.romaji.trim()
+                                : "",
+
+                        sinhala:
+                            typeof reply.sinhala === "string"
+                                ? reply.sinhala.trim()
+                                : "",
+
+                        english:
+                            typeof reply.english === "string"
+                                ? reply.english.trim()
+                                : ""
+                    }))
                 : [];
 
-
-        const replies =
-            rawReplies
-                .filter(
-                    reply =>
-                        reply &&
-                        typeof reply === "object" &&
-                        typeof reply.jp === "string" &&
-                        reply.jp.trim()
-                )
-                .slice(0, 3)
-                .map(reply => ({
-                    badge:
-                        typeof reply.badge === "string" &&
-                        reply.badge.trim()
-                            ? reply.badge.trim()
-                            : "💬 QUICK REPLY",
-
-                    jp:
-                        reply.jp.trim(),
-
-                    romaji:
-                        typeof reply.romaji === "string"
-                            ? reply.romaji.trim()
-                            : "",
-
-                    sinhala:
-                        typeof reply.sinhala === "string"
-                            ? reply.sinhala.trim()
-                            : "",
-
-                    english:
-                        typeof reply.english === "string"
-                            ? reply.english.trim()
-                            : ""
-                }));
-
-
         return {
+            heardJapanese,
+            heardRomaji,
+            heardSinhala,
+            heardEnglish,
 
-            heard_japanese:
-                heardJapanese ||
-                App.State.currentVoiceTranscript,
-
-            heard_romaji:
-                heardRomaji,
-
-            heard_sinhala:
-                heardSinhala,
-
-            heard_english:
-                heardEnglish,
-
-            response_japanese:
-                responseJapanese,
-
-            response_romaji:
-                responseRomaji,
-
-            response_sinhala:
-                responseSinhala,
-
-            response_english:
-                responseEnglish,
+            responseJapanese,
+            responseRomaji,
+            responseSinhala,
+            responseEnglish,
 
             replies
         };
     },
 
+    showError(error) {
+        const code =
+            error?.message || "UNKNOWN_ERROR";
 
-    showVoiceError(message) {
+        let message =
+            "❌ Voice AI response failed. Please speak again.";
 
-        console.warn(
-            "Voice AI:",
-            message
-        );
-
-
-        if (
-            App.Toast &&
-            typeof App.Toast.show === "function"
-        ) {
-            App.Toast.show(message);
+        if (code === "TIMEOUT") {
+            message =
+                "⏱️ AI response timed out. Please speak again.";
+        } else if (code === "RATE_LIMIT") {
+            message =
+                "⚠️ AI limit reached. Please try again shortly.";
+        } else if (code === "API_KEY_INVALID") {
+            message =
+                "🔑 Gemini Worker configuration is invalid.";
+        } else if (code === "BAD_REQUEST") {
+            message =
+                "⚠️ Gemini rejected the voice request.";
         }
 
+        App.Toast?.show?.(message);
 
-        if (
-            App.VoiceRenderer &&
-            typeof App.VoiceRenderer.renderSuggestions ===
-                "function"
-        ) {
-            App.VoiceRenderer.renderSuggestions([]);
-        }
-
-
-        if (
-            App.State.isContinuousListening &&
-            App.State.currentActiveView === "voice"
-        ) {
-
-            App.State.currentVoiceState =
-                App.State.VoiceState.LISTENING;
-        }
+        App.VoiceRenderer?.showError?.(message);
     }
 };
