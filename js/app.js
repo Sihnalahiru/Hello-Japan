@@ -1,15 +1,16 @@
 window.addEventListener("DOMContentLoaded", () => {
 
     /*
-     * ================================
+     * =========================================================
      * CLOCK
-     * ================================
+     * =========================================================
      */
 
     if (
         App.Navigation &&
         typeof App.Navigation.tickClock === "function"
     ) {
+
         App.Navigation.tickClock();
 
         setInterval(() => {
@@ -19,66 +20,57 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
     /*
-     * ================================
-     * INITIAL UI STATUS
-     * ================================
+     * =========================================================
+     * API / WORKER STATUS
+     * =========================================================
      */
 
     if (
         App.UI &&
         typeof App.UI.updateApiStatus === "function"
     ) {
+
         App.UI.updateApiStatus();
     }
 
 
     /*
-     * ================================
-     * DEFAULT VOICE SPEAKER
-     * ================================
+     * =========================================================
+     * DEFAULT SPEAKER
+     * =========================================================
      */
 
     if (
         App.VoiceEngine &&
         typeof App.VoiceEngine.setSpeaker === "function"
     ) {
+
         App.VoiceEngine.setSpeaker("ja-JP");
     }
 
 
     /*
-     * ================================
-     * CLEAN INITIAL VOICE STATE
-     * ================================
-     *
-     * IMPORTANT:
-     * Do NOT render fake conversation data here.
-     *
-     * The VoiceRenderer will only receive
-     * actual speech / AI results.
+     * =========================================================
+     * INITIAL VOICE STATE
+     * =========================================================
      */
 
-    if (App.VoiceRenderer) {
+    if (
+        App.VoiceRenderer &&
+        typeof App.VoiceRenderer.clearConversation === "function"
+    ) {
 
-        if (
-            typeof App.VoiceRenderer.clearConversation ===
-            "function"
-        ) {
-            App.VoiceRenderer.clearConversation();
-        }
+        App.VoiceRenderer.clearConversation();
     }
 
 
     /*
-     * ================================
-     * VISIBILITY HANDLING
-     * ================================
+     * =========================================================
+     * VISIBILITY
      *
-     * When the PWA goes into the background,
-     * release camera + microphone.
-     *
-     * When returning, restart only the
-     * currently active feature.
+     * Release microphone/camera while app is hidden.
+     * Resume only the active feature when returning.
+     * =========================================================
      */
 
     document.addEventListener(
@@ -91,6 +83,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     App.VoiceEngine &&
                     typeof App.VoiceEngine.stop === "function"
                 ) {
+
                     App.VoiceEngine.stop();
                 }
 
@@ -98,16 +91,13 @@ window.addEventListener("DOMContentLoaded", () => {
                     App.CameraEngine &&
                     typeof App.CameraEngine.stop === "function"
                 ) {
-                    App.CameraEngine.stop();
+
+                    App.CameraEngine.stop(false);
                 }
 
                 return;
             }
 
-
-            /*
-             * App became visible again.
-             */
 
             const activeView =
                 App.State.currentActiveView;
@@ -118,6 +108,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 App.VoiceEngine &&
                 typeof App.VoiceEngine.start === "function"
             ) {
+
                 App.VoiceEngine.start();
             }
 
@@ -127,31 +118,35 @@ window.addEventListener("DOMContentLoaded", () => {
                 App.CameraEngine &&
                 typeof App.CameraEngine.init === "function"
             ) {
+
                 App.CameraEngine.init();
             }
-
         }
     );
 
 
     /*
-     * ================================
+     * =========================================================
      * SERVICE WORKER
-     * ================================
+     * =========================================================
      */
 
     if ("serviceWorker" in navigator) {
 
         navigator.serviceWorker
             .register("sw.js")
-            .then(() => {
+            .then(registration => {
+
                 console.log(
-                    "Hello Japan PWA service worker registered."
+                    "Hello Japan service worker registered.",
+                    registration.scope
                 );
+
             })
             .catch(error => {
-                console.log(
-                    "PWA service worker notice:",
+
+                console.warn(
+                    "Service worker registration notice:",
                     error
                 );
             });
@@ -159,15 +154,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
     /*
-     * ================================
-     * INITIAL SCREEN
-     * ================================
+     * =========================================================
+     * INITIAL VIEW
+     * =========================================================
      */
 
     if (
         App.Navigation &&
         typeof App.Navigation.switchView === "function"
     ) {
+
         App.Navigation.switchView("hero");
     }
 
