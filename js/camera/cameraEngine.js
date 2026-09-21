@@ -2,14 +2,6 @@ window.App = window.App || {};
 
 App.CameraEngine = {
 
-    /**
-     * =========================================================
-     * CAMERA ENGINE
-     * Real device camera only.
-     * No demo / offline camera fallback.
-     * =========================================================
-     */
-
     isStarting: false,
 
     isReady: false,
@@ -22,20 +14,18 @@ App.CameraEngine = {
 
     statusTimer: null,
 
+    basicRetryRunning: false,
 
-    /**
-     * =========================================================
-     * INIT
-     * =========================================================
-     */
 
     async init() {
 
         const requestId =
-            ++(App.State.cameraRequestId);
+            ++App.State.cameraRequestId;
+
 
         const video =
             document.getElementById("live-video");
+
 
         if (!video) {
 
@@ -47,48 +37,26 @@ App.CameraEngine = {
         }
 
 
-        if (
-            this.isStarting &&
-            this.isReady
-        ) {
+        if (this.isStarting) {
+            return false;
+        }
 
+
+        if (this.isReady && this.stream) {
             return true;
         }
 
 
         this.isStarting = true;
+
         this.isReady = false;
 
 
-        /*
-         * Keep state-compatible facing mode.
-         */
+        this.facingMode =
+            App.State.useFacingMode ||
+            this.facingMode ||
+            "environment";
 
-        if (
-            App.State &&
-            App.State.useFacingMode
-        ) {
-
-            this.facingMode =
-                App.State.useFacingMode;
-
-        } else {
-
-            this.facingMode =
-                this.facingMode ||
-                "environment";
-
-            if (App.State) {
-
-                App.State.useFacingMode =
-                    this.facingMode;
-            }
-        }
-
-
-        /*
-         * Stop previous stream first.
-         */
 
         this.stop(false);
 
@@ -100,10 +68,6 @@ App.CameraEngine = {
 
         try {
 
-            /*
-             * Browser support check.
-             */
-
             if (
                 !navigator.mediaDevices ||
                 !navigator.mediaDevices.getUserMedia
@@ -114,13 +78,6 @@ App.CameraEngine = {
                 );
             }
 
-
-            /*
-             * Camera constraints.
-             *
-             * Do not request an excessive resolution.
-             * Gemini OCR does not need 4K.
-             */
 
             const constraints = {
 
@@ -145,20 +102,11 @@ App.CameraEngine = {
             };
 
 
-            /*
-             * Request real camera.
-             */
-
             const stream =
                 await navigator.mediaDevices.getUserMedia(
                     constraints
                 );
 
-
-            /*
-             * A newer camera request may have started
-             * while this request was waiting.
-             */
 
             if (
                 requestId !==
@@ -173,65 +121,34 @@ App.CameraEngine = {
             }
 
 
-            /*
-             * Store stream.
-             */
-
-            this.stream = stream;
-
-            if (App.State) {
-
-                App.State.mediaStream =
-                    stream;
-            }
+            this.stream =
+                stream;
 
 
-            /*
-             * Attach stream to video.
-             */
+            App.State.mediaStream =
+                stream;
+
 
             video.srcObject =
                 stream;
 
-
-            /*
-             * Important:
-             * Wait until video metadata exists.
-             */
 
             await this.waitForVideoReady(
                 video
             );
 
 
-            /*
-             * Start playback.
-             */
-
             try {
 
                 await video.play();
 
-            } catch (playError) {
+            } catch (error) {
 
-                /*
-                 * Some browsers may already be playing.
-                 * If not, report it.
-                 */
-
-                if (
-                    video.paused
-                ) {
-
-                    throw playError;
+                if (video.paused) {
+                    throw error;
                 }
             }
 
-
-            /*
-             * Check that the camera really produced
-             * usable dimensions.
-             */
 
             if (
                 video.videoWidth <= 0 ||
@@ -244,20 +161,13 @@ App.CameraEngine = {
             }
 
 
-            /*
-             * Check torch capability.
-             */
-
             this.updateTorchCapability(
                 stream
             );
 
 
-            /*
-             * Camera is ready.
-             */
-
             this.isReady = true;
+
             this.isStarting = false;
 
 
@@ -277,15 +187,11 @@ App.CameraEngine = {
 
 
             this.isReady = false;
+
             this.isStarting = false;
 
 
-            /*
-             * Clean failed stream.
-             */
-
             this.stop(false);
-
 
             this.handleCameraError(
                 error
@@ -296,12 +202,6 @@ App.CameraEngine = {
         }
     },
 
-
-    /**
-     * =========================================================
-     * WAIT FOR VIDEO METADATA
-     * =========================================================
-     */
 
     waitForVideoReady(video) {
 
@@ -315,7 +215,6 @@ App.CameraEngine = {
                 ) {
 
                     resolve();
-
                     return;
                 }
 
@@ -340,9 +239,7 @@ App.CameraEngine = {
                         onError
                     );
 
-                    clearTimeout(
-                        timeout
-                    );
+                    clearTimeout(timeout);
                 };
 
 
@@ -391,66 +288,43 @@ App.CameraEngine = {
 
 
                 const onError = () => {
-
                     fail();
                 };
 
 
                 const timeout =
-                    setTimeout(
-                        () => {
+                    setTimeout(() => {
 
-                            /*
-                             * One final check before failing.
-                             */
+                        if (
+                            video.videoWidth > 0 &&
+                            video.videoHeight > 0
+                        ) {
 
-                            if (
-                                video.videoWidth > 0 &&
-                                video.videoHeight > 0
-                            ) {
+                            complete();
 
-                                complete();
+                        } else {
 
-                            } else {
+                            fail();
+                        }
 
-                                fail();
-                            }
-
-                        },
-                        10000
-                    );
+                    }, 10000);
 
 
                 video.addEventListener(
                     "loadedmetadata",
-                    onReady,
-                    {
-                        once: false
-                    }
+                    onReady
                 );
-
 
                 video.addEventListener(
                     "canplay",
-                    onReady,
-                    {
-                        once: false
-                    }
+                    onReady
                 );
-
 
                 video.addEventListener(
                     "error",
-                    onError,
-                    {
-                        once: false
-                    );
+                    onError
+                );
 
-
-                /*
-                 * Force a metadata check in case the
-                 * event already happened.
-                 */
 
                 setTimeout(
                     onReady,
@@ -461,15 +335,10 @@ App.CameraEngine = {
     },
 
 
-    /**
-     * =========================================================
-     * UPDATE TORCH CAPABILITY
-     * =========================================================
-     */
-
     updateTorchCapability(stream) {
 
-        this.torchSupported = false;
+        this.torchSupported =
+            false;
 
 
         const track =
@@ -498,35 +367,22 @@ App.CameraEngine = {
                 "Torch capability check failed:",
                 error
             );
-
-            this.torchSupported = false;
         }
     },
 
 
-    /**
-     * =========================================================
-     * STOP CAMERA
-     * =========================================================
-     */
-
     stop(showStatus = false) {
 
         this.isReady = false;
+
         this.isStarting = false;
 
         this.torchSupported = false;
 
 
-        if (App.State) {
+        App.State.isTorchOn =
+            false;
 
-            App.State.isTorchOn = false;
-        }
-
-
-        /*
-         * Stop internal stream.
-         */
 
         if (this.stream) {
 
@@ -534,22 +390,17 @@ App.CameraEngine = {
 
                 this.stream
                     .getTracks()
-                    .forEach(
-                        track => {
+                    .forEach(track => {
 
-                            try {
-
-                                track.stop();
-
-                            } catch (error) {
-
-                                console.warn(
-                                    "Camera track stop failed:",
-                                    error
-                                );
-                            }
+                        try {
+                            track.stop();
+                        } catch (error) {
+                            console.warn(
+                                "Camera track stop failed:",
+                                error
+                            );
                         }
-                    );
+                    });
 
             } catch (error) {
 
@@ -559,24 +410,14 @@ App.CameraEngine = {
                 );
             }
 
+
             this.stream = null;
         }
 
 
-        /*
-         * Keep App.State synchronized.
-         */
+        App.State.mediaStream =
+            null;
 
-        if (App.State) {
-
-            App.State.mediaStream =
-                null;
-        }
-
-
-        /*
-         * Detach video.
-         */
 
         const video =
             document.getElementById(
@@ -587,11 +428,9 @@ App.CameraEngine = {
         if (video) {
 
             try {
-
                 video.pause();
-
             } catch (error) {
-                // Ignore
+                /* ignore */
             }
 
 
@@ -609,12 +448,6 @@ App.CameraEngine = {
     },
 
 
-    /**
-     * =========================================================
-     * TOGGLE FRONT / BACK CAMERA
-     * =========================================================
-     */
-
     async toggleFacing() {
 
         const nextMode =
@@ -624,30 +457,15 @@ App.CameraEngine = {
                 : "environment";
 
 
-        /*
-         * Update state BEFORE starting the new request.
-         */
-
         this.facingMode =
             nextMode;
 
 
-        if (App.State) {
-
-            App.State.useFacingMode =
-                nextMode;
-        }
+        App.State.useFacingMode =
+            nextMode;
 
 
-        /*
-         * Invalidate previous camera request.
-         */
-
-        if (App.State) {
-
-            App.State.cameraRequestId =
-                (App.State.cameraRequestId || 0) + 1;
-        }
+        App.State.cameraRequestId++;
 
 
         this.stop(false);
@@ -671,28 +489,17 @@ App.CameraEngine = {
                     ? "Rear camera active"
                     : "Front camera active"
             );
-
         }
     },
 
 
-    /**
-     * =========================================================
-     * GET CURRENT FACING MODE
-     * =========================================================
-     */
-
     getFacingMode() {
 
         if (
-            App.State &&
-            (
-                App.State.useFacingMode ===
-                    "environment" ||
-
-                App.State.useFacingMode ===
-                    "user"
-            )
+            App.State.useFacingMode ===
+                "environment" ||
+            App.State.useFacingMode ===
+                "user"
         ) {
 
             return App.State.useFacingMode;
@@ -704,17 +511,11 @@ App.CameraEngine = {
     },
 
 
-    /**
-     * =========================================================
-     * TOGGLE TORCH
-     * =========================================================
-     */
-
     async toggleTorch() {
 
         const stream =
             this.stream ||
-            App.State?.mediaStream;
+            App.State.mediaStream;
 
 
         if (!stream) {
@@ -761,8 +562,7 @@ App.CameraEngine = {
 
 
         if (
-            !capabilities ||
-            capabilities.torch !== true
+            capabilities?.torch !== true
         ) {
 
             App.Toast?.show?.(
@@ -775,7 +575,7 @@ App.CameraEngine = {
 
         const current =
             Boolean(
-                App.State?.isTorchOn
+                App.State.isTorchOn
             );
 
 
@@ -796,11 +596,8 @@ App.CameraEngine = {
             });
 
 
-            if (App.State) {
-
-                App.State.isTorchOn =
-                    next;
-            }
+            App.State.isTorchOn =
+                next;
 
 
             App.Toast?.show?.(
@@ -817,11 +614,8 @@ App.CameraEngine = {
             );
 
 
-            if (App.State) {
-
-                App.State.isTorchOn =
-                    current;
-            }
+            App.State.isTorchOn =
+                current;
 
 
             App.Toast?.show?.(
@@ -830,12 +624,6 @@ App.CameraEngine = {
         }
     },
 
-
-    /**
-     * =========================================================
-     * STATUS MESSAGE
-     * =========================================================
-     */
 
     showStatus(message) {
 
@@ -861,41 +649,21 @@ App.CameraEngine = {
 
 
             this.statusTimer =
-                setTimeout(
-                    () => {
+                setTimeout(() => {
 
-                        status.classList.add(
-                            "hidden"
-                        );
+                    status.classList.add(
+                        "hidden"
+                    );
 
-                    },
-                    3500
-                );
+                }, 3500);
         }
 
 
-        /*
-         * Also use existing Toast system.
-         */
-
-        if (
-            App.Toast &&
-            typeof App.Toast.show ===
-                "function"
-        ) {
-
-            App.Toast.show(
-                message
-            );
-        }
+        App.Toast?.show?.(
+            message
+        );
     },
 
-
-    /**
-     * =========================================================
-     * CAMERA ERROR HANDLER
-     * =========================================================
-     */
 
     handleCameraError(error) {
 
@@ -907,18 +675,9 @@ App.CameraEngine = {
             error?.message || "";
 
 
-        console.error(
-            "Camera error:",
-            {
-                name,
-                message
-            }
-        );
-
-
         if (
-            name ===
-            "NotAllowedError"
+            name === "NotAllowedError" ||
+            name === "PermissionDeniedError"
         ) {
 
             this.showStatus(
@@ -929,23 +688,7 @@ App.CameraEngine = {
         }
 
 
-        if (
-            name ===
-            "PermissionDeniedError"
-        ) {
-
-            this.showStatus(
-                "🔒 Camera permission denied. Allow camera access and try again."
-            );
-
-            return;
-        }
-
-
-        if (
-            name ===
-            "NotFoundError"
-        ) {
+        if (name === "NotFoundError") {
 
             this.showStatus(
                 "📷 No camera was found on this device."
@@ -955,10 +698,7 @@ App.CameraEngine = {
         }
 
 
-        if (
-            name ===
-            "NotReadableError"
-        ) {
+        if (name === "NotReadableError") {
 
             this.showStatus(
                 "⚠️ Camera is busy or unavailable. Close other camera apps and try again."
@@ -968,19 +708,12 @@ App.CameraEngine = {
         }
 
 
-        if (
-            name ===
-            "OverconstrainedError"
-        ) {
+        if (name === "OverconstrainedError") {
 
             this.showStatus(
-                "⚠️ Camera settings are not supported. Trying again..."
+                "⚠️ Camera settings are not supported. Trying basic camera..."
             );
 
-            /*
-             * Retry with the simplest possible camera
-             * constraint.
-             */
 
             this.retryBasicCamera();
 
@@ -988,10 +721,7 @@ App.CameraEngine = {
         }
 
 
-        if (
-            name ===
-            "SecurityError"
-        ) {
+        if (name === "SecurityError") {
 
             this.showStatus(
                 "🔐 Camera access requires a secure HTTPS page."
@@ -1033,17 +763,7 @@ App.CameraEngine = {
     },
 
 
-    /**
-     * =========================================================
-     * BASIC CAMERA RETRY
-     * =========================================================
-     */
-
     async retryBasicCamera() {
-
-        /*
-         * Prevent an immediate retry loop.
-         */
 
         if (this.basicRetryRunning) {
             return;
@@ -1056,11 +776,7 @@ App.CameraEngine = {
 
         try {
 
-            if (App.State) {
-
-                App.State.cameraRequestId =
-                    (App.State.cameraRequestId || 0) + 1;
-            }
+            App.State.cameraRequestId++;
 
 
             this.stop(false);
@@ -1083,23 +799,20 @@ App.CameraEngine = {
 
 
             const stream =
-                await navigator.mediaDevices.getUserMedia(
-                    {
-                        video: true,
-                        audio: false
-                    }
-                );
+                await navigator.mediaDevices.getUserMedia({
+
+                    video: true,
+
+                    audio: false
+                });
 
 
             this.stream =
                 stream;
 
 
-            if (App.State) {
-
-                App.State.mediaStream =
-                    stream;
-            }
+            App.State.mediaStream =
+                stream;
 
 
             video.srcObject =
