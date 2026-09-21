@@ -1,11 +1,16 @@
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     };
 
+    // --------------------------------------------------
+    // CORS PREFLIGHT
+    // --------------------------------------------------
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -13,49 +18,18 @@ export default {
       });
     }
 
-    if (request.method !== "POST") {
-      return new Response(
-        JSON.stringify({
-          error: "METHOD_NOT_ALLOWED",
-          message: "Only POST requests are allowed.",
-        }),
-        {
-          status: 405,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    if (!env.GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({
-          error: "SERVER_CONFIGURATION_ERROR",
-          message: "Gemini API key is not configured on the Worker.",
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    try {
-      const body = await request.json();
-
-      if (!body || typeof body !== "object") {
+    // --------------------------------------------------
+    // GEMINI API PROXY
+    // --------------------------------------------------
+    if (request.method === "POST") {
+      if (!env.GEMINI_API_KEY) {
         return new Response(
           JSON.stringify({
-            error: "INVALID_REQUEST",
-            message: "Request body must be a JSON object.",
+            error: "SERVER_CONFIGURATION_ERROR",
+            message: "Gemini API key is not configured on the Worker.",
           }),
           {
-            status: 400,
+            status: 500,
             headers: {
               ...corsHeaders,
               "Content-Type": "application/json",
@@ -64,42 +38,90 @@ export default {
         );
       }
 
-      const geminiUrl =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+      try {
+        const body = await request.json();
 
-      const geminiResponse = await fetch(geminiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": env.GEMINI_API_KEY,
-        },
-        body: JSON.stringify(body),
-      });
+        if (
+          !body ||
+          typeof body !== "object" ||
+          Array.isArray(body)
+        ) {
+          return new Response(
+            JSON.stringify({
+              error: "INVALID_REQUEST",
+              message: "Request body must be a JSON object.",
+            }),
+            {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+        }
 
-      const responseText = await geminiResponse.text();
+        const geminiUrl =
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
 
-      return new Response(responseText, {
-        status: geminiResponse.status,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (error) {
-      return new Response(
-        JSON.stringify({
-          error: "WORKER_ERROR",
-          message:
-            error?.message || "An unexpected Worker error occurred.",
-        }),
-        {
-          status: 500,
+        const geminiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": env.GEMINI_API_KEY,
+          },
+          body: JSON.stringify(body),
+        });
+
+        const responseText = await geminiResponse.text();
+
+        return new Response(responseText, {
+          status: geminiResponse.status,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
           },
-        }
-      );
+        });
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            error: "WORKER_ERROR",
+            message:
+              error?.message ||
+              "An unexpected Worker error occurred.",
+          }),
+          {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
     }
+
+    // --------------------------------------------------
+    // STATIC PWA
+    // --------------------------------------------------
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+
+    // --------------------------------------------------
+    // FALLBACK
+    // --------------------------------------------------
+    return new Response(
+      JSON.stringify({
+        error: "ASSETS_BINDING_MISSING",
+        message: "Static assets binding is not configured.",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   },
 };
