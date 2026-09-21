@@ -1,31 +1,150 @@
 window.App = window.App || {};
 
 App.State = {
-    currentActiveView: 'hero',
-    userApiKey: localStorage.getItem('SUHADA_GEMINI_API_KEY') || '',
+
+    /**
+     * =========================================================
+     * APPLICATION VIEW
+     * =========================================================
+     */
+
+    currentActiveView: "hero",
+
+
+    /**
+     * =========================================================
+     * API / WORKER STATE
+     *
+     * Gemini API key is handled by the Cloudflare Worker.
+     * Browser should not contain the real Gemini secret.
+     *
+     * Kept temporarily for compatibility with the existing
+     * apiModal.js until that module is removed.
+     * =========================================================
+     */
+
+    userApiKey:
+        localStorage.getItem(
+            "SUHADA_GEMINI_API_KEY"
+        ) || "",
+
+
+    /**
+     * =========================================================
+     * CAMERA STATE
+     * =========================================================
+     */
+
     mediaStream: null,
-    useFacingMode: 'environment',
-    activeVoiceContext: 'daily',
-    currentArJapanese: '止まれ',
-    activeSpeakerLang: 'ja-JP',
+
+    useFacingMode: "environment",
+
     isTorchOn: false,
-    
-    // Voice State Machine
-    VoiceState: {
-        IDLE: 'IDLE',
-        STARTING: 'STARTING',
-        LISTENING: 'LISTENING',
-        PROCESSING: 'PROCESSING',
-        STOPPING: 'STOPPING'
-    },
-    currentVoiceState: 'IDLE',
-    isContinuousListening: false,
-    
-    // Race Condition Trackers
-    voiceRequestId: 0,
+
     cameraRequestId: 0,
-    
-    // Debounce Trackers
-    lastTranscript: '',
-    lastTranscriptTime: 0
+
+    currentArJapanese: "",
+
+
+    /**
+     * =========================================================
+     * VOICE CONTEXT
+     * =========================================================
+     */
+
+    activeVoiceContext: "daily",
+
+    activeSpeakerLang: "ja-JP",
+
+
+    /**
+     * =========================================================
+     * VOICE STATE MACHINE
+     * =========================================================
+     */
+
+    VoiceState: {
+
+        IDLE: "IDLE",
+
+        STARTING: "STARTING",
+
+        LISTENING: "LISTENING",
+
+        PROCESSING: "PROCESSING",
+
+        STOPPING: "STOPPING"
+    },
+
+
+    currentVoiceState: "IDLE",
+
+    isContinuousListening: false,
+
+
+    /**
+     * =========================================================
+     * VOICE RACE-CONDITION TRACKER
+     * =========================================================
+     */
+
+    voiceRequestId: 0,
+
+
+    /**
+     * =========================================================
+     * VOICE DEBOUNCE
+     * =========================================================
+     */
+
+    lastTranscript: "",
+
+    lastTranscriptTime: 0,
+
+
+    /**
+     * =========================================================
+     * VOICE RESPONSE STATE
+     *
+     * These are intentionally empty.
+     * No hard-coded/demo conversation.
+     * =========================================================
+     */
+
+    currentVoiceTranscript: "",
+
+    currentVoiceJapanese: "",
+
+    currentVoiceRomaji: "",
+
+    currentVoiceSinhala: "",
+
+    currentVoiceEnglish: "",
+
+    currentVoiceResponse: "",
+
+    currentVoiceSuggestions: [],
+
+
+    /**
+     * =========================================================
+     * CAMERA RESULT STATE
+     *
+     * Empty until Gemini Vision returns a real result.
+     * =========================================================
+     */
+
+    currentCameraResult: {
+
+        japanese: "",
+
+        romaji: "",
+
+        sinhala: "",
+
+        english: "",
+
+        guide: ""
+    }
+
 };
