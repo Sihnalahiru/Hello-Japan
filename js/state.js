@@ -2,21 +2,17 @@ window.App = window.App || {};
 
 App.State = {
 
-    /*
-     * =========================================================
-     * APPLICATION VIEW
-     * =========================================================
-     */
-
     currentActiveView: "hero",
 
+    /*
+     * Gemini secret is NOT stored in the browser.
+     * Cloudflare Worker handles authentication.
+     */
+    userApiKey: "",
 
     /*
-     * =========================================================
-     * CAMERA STATE
-     * =========================================================
+     * CAMERA
      */
-
     mediaStream: null,
 
     useFacingMode: "environment",
@@ -27,87 +23,49 @@ App.State = {
 
     currentArJapanese: "",
 
+    currentCameraResult: {
+        japanese: "",
+        romaji: "",
+        sinhala: "",
+        english: "",
+        guide: ""
+    },
 
     /*
-     * =========================================================
-     * VOICE CONTEXT
-     * =========================================================
+     * VOICE
      */
-
     activeVoiceContext: "daily",
 
     activeSpeakerLang: "ja-JP",
 
-
-    /*
-     * =========================================================
-     * VOICE STATE MACHINE
-     * =========================================================
-     */
-
     VoiceState: {
-
         IDLE: "IDLE",
-
         STARTING: "STARTING",
-
         LISTENING: "LISTENING",
-
         PROCESSING: "PROCESSING",
-
         STOPPING: "STOPPING"
     },
 
-
     currentVoiceState: "IDLE",
-
-
-    /*
-     * =========================================================
-     * HANDS-FREE LISTENING
-     * =========================================================
-     *
-     * true  = assistant should continue listening
-     * false = user deliberately stopped it
-     */
 
     isContinuousListening: false,
 
-
     /*
-     * =========================================================
-     * VOICE REQUEST RACE PROTECTION
-     * =========================================================
+     * Prevent stale Gemini responses.
      */
-
     voiceRequestId: 0,
 
-
     /*
-     * =========================================================
-     * DUPLICATE TRANSCRIPT PROTECTION
-     * =========================================================
+     * Prevent duplicate speech recognition results.
      */
-
     lastTranscript: "",
 
     lastTranscriptTime: 0,
 
-
     /*
-     * =========================================================
-     * CURRENT VOICE TRANSCRIPT
-     * =========================================================
+     * REAL voice result only.
      */
-
     currentVoiceTranscript: "",
-
-
-    /*
-     * =========================================================
-     * CURRENT AI RESPONSE
-     * =========================================================
-     */
 
     currentVoiceJapanese: "",
 
@@ -119,35 +77,5 @@ App.State = {
 
     currentVoiceResponse: "",
 
-
-    /*
-     * =========================================================
-     * AI SUGGESTED REPLIES
-     * =========================================================
-     */
-
-    currentVoiceSuggestions: [],
-
-
-    /*
-     * =========================================================
-     * CAMERA / VISION RESULT
-     * =========================================================
-     *
-     * Empty until a real Gemini Vision scan succeeds.
-     */
-
-    currentCameraResult: {
-
-        japanese: "",
-
-        romaji: "",
-
-        sinhala: "",
-
-        english: "",
-
-        guide: ""
-    }
-
+    currentVoiceSuggestions: []
 };
