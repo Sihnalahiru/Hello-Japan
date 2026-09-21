@@ -8,250 +8,138 @@ App.Gemini = {
         schema = null
     ) {
 
-        const url =
-            App.Config.WORKER_ENDPOINT;
-
+        const url = App.Config.WORKER_ENDPOINT;
 
         if (!url) {
-
-            throw new Error(
-                "WORKER_ENDPOINT_MISSING"
-            );
+            throw new Error("WORKER_ENDPOINT_MISSING");
         }
 
-
-        if (
-            !payload ||
-            typeof payload !== "object" ||
-            Array.isArray(payload)
-        ) {
-
-            throw new Error(
-                "INVALID_GEMINI_PAYLOAD"
-            );
+        if (!payload || typeof payload !== "object") {
+            throw new Error("INVALID_GEMINI_PAYLOAD");
         }
 
+        const controller = new AbortController();
 
-        const controller =
-            new AbortController();
-
-
-        const timer =
-            setTimeout(
-                () => {
-                    controller.abort();
-                },
-                timeoutMs
-            );
-
+        const timer = setTimeout(() => {
+            controller.abort();
+        }, timeoutMs);
 
         try {
 
-            const generationConfig = {
-
-                ...(payload.generationConfig || {}),
-
-                responseMimeType:
-                    "application/json"
-            };
-
-
-            if (schema) {
-
-                generationConfig.responseSchema =
-                    schema;
-            }
-
-
             const requestPayload = {
-
                 ...payload,
 
-                generationConfig
+                generationConfig: {
+                    ...(payload.generationConfig || {}),
+                    responseMimeType: "application/json"
+                }
             };
 
+            if (schema) {
+                requestPayload.generationConfig.responseSchema = schema;
+            }
 
-            const response =
-                await fetch(
-                    url,
-                    {
-                        method: "POST",
+            const response = await fetch(url, {
+                method: "POST",
 
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Cache-Control": "no-cache"
+                },
 
-                        body:
-                            JSON.stringify(
-                                requestPayload
-                            ),
+                cache: "no-store",
 
-                        signal:
-                            controller.signal
-                    }
-                );
+                body: JSON.stringify(requestPayload),
 
+                signal: controller.signal
+            });
 
-            const responseText =
-                await response.text();
-
+            const responseText = await response.text();
 
             if (!response.ok) {
 
                 if (response.status === 400) {
-                    throw new Error(
-                        "BAD_REQUEST"
-                    );
+                    throw new Error("BAD_REQUEST");
                 }
 
                 if (
                     response.status === 401 ||
                     response.status === 403
                 ) {
-
-                    throw new Error(
-                        "API_KEY_INVALID"
-                    );
+                    throw new Error("API_KEY_INVALID");
                 }
 
                 if (response.status === 429) {
-
-                    throw new Error(
-                        "RATE_LIMIT"
-                    );
+                    throw new Error("RATE_LIMIT");
                 }
 
                 if (response.status >= 500) {
-
-                    throw new Error(
-                        "SERVER_ERROR"
-                    );
+                    throw new Error("SERVER_ERROR");
                 }
 
-                throw new Error(
-                    `API_ERROR_${response.status}`
-                );
+                throw new Error(`API_ERROR_${response.status}`);
             }
-
 
             let data;
 
-
             try {
-
-                data =
-                    JSON.parse(
-                        responseText
-                    );
-
-            } catch (error) {
-
-                throw new Error(
-                    "INVALID_GEMINI_RESPONSE"
-                );
+                data = JSON.parse(responseText);
+            } catch {
+                throw new Error("INVALID_GEMINI_RESPONSE");
             }
-
 
             const text =
-                data
-                    ?.candidates?.[0]
-                    ?.content?.parts?.[0]
-                    ?.text;
-
+                data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
             if (
-                !text ||
-                typeof text !== "string"
+                typeof text !== "string" ||
+                !text.trim()
             ) {
-
-                throw new Error(
-                    "EMPTY_GEMINI_RESPONSE"
-                );
+                throw new Error("EMPTY_GEMINI_RESPONSE");
             }
 
+            let cleaned = text.trim();
 
-            let cleaned =
-                text.trim();
-
-
-            cleaned =
-                cleaned
-                    .replace(
-                        /^```json\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /^```\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /\s*```$/i,
-                        ""
-                    )
-                    .trim();
-
+            cleaned = cleaned
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/i, "")
+                .trim();
 
             if (!cleaned) {
-
-                throw new Error(
-                    "EMPTY_GEMINI_JSON"
-                );
+                throw new Error("EMPTY_GEMINI_JSON");
             }
-
 
             let result;
 
-
             try {
-
-                result =
-                    JSON.parse(
-                        cleaned
-                    );
-
-            } catch (error) {
-
-                throw new Error(
-                    "INVALID_GEMINI_JSON"
-                );
+                result = JSON.parse(cleaned);
+            } catch {
+                throw new Error("INVALID_GEMINI_JSON");
             }
-
 
             if (
                 result === null ||
                 typeof result !== "object" ||
                 Array.isArray(result)
             ) {
-
-                throw new Error(
-                    "INVALID_GEMINI_DATA"
-                );
+                throw new Error("INVALID_GEMINI_DATA");
             }
-
 
             return result;
 
         } catch (error) {
 
-            if (
-                error?.name ===
-                "AbortError"
-            ) {
-
-                throw new Error(
-                    "TIMEOUT"
-                );
+            if (error?.name === "AbortError") {
+                throw new Error("TIMEOUT");
             }
-
 
             throw error;
 
         } finally {
 
-            clearTimeout(
-                timer
-            );
+            clearTimeout(timer);
         }
     }
 };
