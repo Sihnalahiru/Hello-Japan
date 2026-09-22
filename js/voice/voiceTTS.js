@@ -6,7 +6,6 @@
 
 import { Toast } from '../ui/toast.js';
 
-
 export const VoiceTTS = {
 
     // ========================================================
@@ -37,7 +36,6 @@ export const VoiceTTS = {
             typeof window.SpeechSynthesisUtterance !==
                 'undefined';
 
-
         if (!this.isSupported) {
 
             console.warn(
@@ -47,9 +45,7 @@ export const VoiceTTS = {
             return false;
         }
 
-
         this.loadVoices();
-
 
         if (
             'onvoiceschanged' in
@@ -61,7 +57,6 @@ export const VoiceTTS = {
                     this.loadVoices();
                 };
         }
-
 
         return true;
     },
@@ -115,11 +110,9 @@ export const VoiceTTS = {
                 .replace('_', '-')
                 .toLowerCase();
 
-
         if (value.startsWith('ja')) {
             return 'ja-JP';
         }
-
 
         if (
             value.startsWith('si') ||
@@ -128,11 +121,9 @@ export const VoiceTTS = {
             return 'si-LK';
         }
 
-
         if (value.startsWith('en')) {
             return 'en-US';
         }
-
 
         return 'ja-JP';
     },
@@ -164,11 +155,9 @@ export const VoiceTTS = {
                 .toLowerCase()
                 .replace('_', '-');
 
-
         if (!this.voiceCache.length) {
             return null;
         }
-
 
         // Exact language.
         let voice =
@@ -182,11 +171,9 @@ export const VoiceTTS = {
                     target
             );
 
-
         if (voice) {
             return voice;
         }
-
 
         // Base language.
         const base =
@@ -212,11 +199,9 @@ export const VoiceTTS = {
                 }
             );
 
-
         if (voice) {
             return voice;
         }
-
 
         // Name-based fallback.
         if (target === 'ja-jp') {
@@ -231,7 +216,6 @@ export const VoiceTTS = {
                             .includes('japanese')
                 );
         }
-
 
         if (
             !voice &&
@@ -248,7 +232,6 @@ export const VoiceTTS = {
                             .includes('english')
                 );
         }
-
 
         if (
             !voice &&
@@ -278,12 +261,12 @@ export const VoiceTTS = {
                 );
         }
 
-
         return voice || null;
     },
 
 
     findJapaneseVoice() {
+
         return this.findVoice('ja-JP');
     },
 
@@ -300,7 +283,6 @@ export const VoiceTTS = {
         ) {
             return false;
         }
-
 
         if (!this.isSupported) {
 
@@ -320,7 +302,6 @@ export const VoiceTTS = {
             }
         }
 
-
         const cleanText =
             text.trim();
 
@@ -335,13 +316,18 @@ export const VoiceTTS = {
             language;
 
 
-        // Invalidate every previous utterance.
+        // ----------------------------------------------------
+        // IMPORTANT
+        //
+        // Create the NEW request ID first.
+        // Cancelling the old utterance must NOT increment it.
+        // Old callbacks will become stale because their ID
+        // is different from this current ID.
+        // ----------------------------------------------------
+
         const requestId =
             ++this.speechRequestId;
 
-
-        // Cancel old speech WITHOUT
-        // notifying VoiceEngine.
         this.cancelCurrentUtterance();
 
 
@@ -349,7 +335,6 @@ export const VoiceTTS = {
             new SpeechSynthesisUtterance(
                 cleanText
             );
-
 
         utterance.lang =
             language;
@@ -395,6 +380,10 @@ export const VoiceTTS = {
             true;
 
 
+        // ----------------------------------------------------
+        // FINISH
+        // ----------------------------------------------------
+
         const finish = (reason) => {
 
             if (
@@ -423,6 +412,10 @@ export const VoiceTTS = {
         };
 
 
+        // ----------------------------------------------------
+        // EVENTS
+        // ----------------------------------------------------
+
         utterance.onstart = () => {
 
             if (
@@ -438,12 +431,18 @@ export const VoiceTTS = {
 
 
         utterance.onend = () => {
-            finish('finished');
+
+            finish(
+                'finished'
+            );
         };
 
 
         utterance.oncancel = () => {
-            finish('cancelled');
+
+            finish(
+                'cancelled'
+            );
         };
 
 
@@ -454,9 +453,15 @@ export const VoiceTTS = {
                 event?.error || event
             );
 
-            finish('error');
+            finish(
+                'error'
+            );
         };
 
+
+        // ----------------------------------------------------
+        // START SPEECH
+        // ----------------------------------------------------
 
         try {
 
@@ -473,7 +478,9 @@ export const VoiceTTS = {
                 error
             );
 
-            finish('exception');
+            finish(
+                'exception'
+            );
 
             return false;
         }
@@ -562,6 +569,7 @@ export const VoiceTTS = {
             );
 
         if (result) {
+
             Toast.show(
                 `🔊 ${japanese}`
             );
@@ -573,17 +581,22 @@ export const VoiceTTS = {
 
     // ========================================================
     // INTERNAL CANCEL
+    //
+    // IMPORTANT:
+    // This function does NOT change speechRequestId.
+    //
+    // The caller that starts a NEW speech request is responsible
+    // for creating the new request ID.
     // ========================================================
 
     cancelCurrentUtterance() {
-
-        this.speechRequestId += 1;
 
         try {
 
             if (
                 'speechSynthesis' in window
             ) {
+
                 window.speechSynthesis.cancel();
             }
 
@@ -615,9 +628,13 @@ export const VoiceTTS = {
                 this.currentUtterance
             );
 
+        // Invalidate the current request.
+        this.speechRequestId += 1;
+
         this.cancelCurrentUtterance();
 
         if (hadSpeech) {
+
             this.notifyEngine(
                 'stopped'
             );
@@ -639,6 +656,7 @@ export const VoiceTTS = {
             typeof engine.notifySpeechFinished ===
                 'function'
         ) {
+
             engine.notifySpeechFinished(
                 reason
             );
@@ -647,7 +665,7 @@ export const VoiceTTS = {
 
 
     // ========================================================
-    // PAUSE / RESUME
+    // PAUSE
     // ========================================================
 
     pause() {
@@ -675,6 +693,10 @@ export const VoiceTTS = {
         return false;
     },
 
+
+    // ========================================================
+    // RESUME
+    // ========================================================
 
     resume() {
 
