@@ -41,6 +41,7 @@ export const VoiceAI = {
 
         } catch (error) {
             if (requestId !== State.voiceRequestId) return;
+            console.error("Voice AI Error:", error);
             this.showError(error);
         }
     },
@@ -50,6 +51,7 @@ export const VoiceAI = {
         const text = (k) => typeof data[k] === "string" ? data[k].trim() : "";
 
         return {
+            detectedEnvironment: text("detected_environment") || "Daily / Friendly",
             heardJapanese: text("heard_japanese"),
             heardRomaji: text("heard_romaji"),
             heardSinhala: text("heard_sinhala"),
@@ -63,7 +65,7 @@ export const VoiceAI = {
     },
 
     showError(error) {
-        const message = "❌ Voice AI failed. Speak again.";
+        const message = "❌ Voice AI failed. Please speak again.";
         Toast.show(message);
         VoiceRenderer.showError(message);
     }
