@@ -8,10 +8,6 @@ import { Toast } from '../ui/toast.js';
 
 export const VoiceTTS = {
 
-    // ========================================================
-    // STATE
-    // ========================================================
-
     isSupported: false,
 
     isSpeaking: false,
@@ -159,7 +155,6 @@ export const VoiceTTS = {
             return null;
         }
 
-        // Exact language.
         let voice =
             this.voiceCache.find(
                 (item) =>
@@ -175,7 +170,6 @@ export const VoiceTTS = {
             return voice;
         }
 
-        // Base language.
         const base =
             target.split('-')[0];
 
@@ -203,7 +197,6 @@ export const VoiceTTS = {
             return voice;
         }
 
-        // Name-based fallback.
         if (target === 'ja-jp') {
 
             voice =
@@ -317,12 +310,9 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // IMPORTANT
-        //
-        // Create the NEW request ID first.
-        // Cancelling the old utterance must NOT increment it.
-        // Old callbacks will become stale because their ID
-        // is different from this current ID.
+        // IMPORTANT:
+        // Create the new request ID ONCE.
+        // cancelCurrentUtterance() does NOT modify it.
         // ----------------------------------------------------
 
         const requestId =
@@ -460,7 +450,7 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // START SPEECH
+        // START
         // ----------------------------------------------------
 
         try {
@@ -580,13 +570,10 @@ export const VoiceTTS = {
 
 
     // ========================================================
-    // INTERNAL CANCEL
+    // CANCEL CURRENT UTTERANCE
     //
     // IMPORTANT:
-    // This function does NOT change speechRequestId.
-    //
-    // The caller that starts a NEW speech request is responsible
-    // for creating the new request ID.
+    // Do NOT increment speechRequestId here.
     // ========================================================
 
     cancelCurrentUtterance() {
@@ -628,7 +615,7 @@ export const VoiceTTS = {
                 this.currentUtterance
             );
 
-        // Invalidate the current request.
+        // Invalidate current callbacks.
         this.speechRequestId += 1;
 
         this.cancelCurrentUtterance();
