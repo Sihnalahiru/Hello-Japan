@@ -3,10 +3,21 @@ import { State } from './state.js';
 import { Toast } from './ui/toast.js';
 import { UI } from './ui/apiModal.js';
 import { Navigation } from './ui/navigation.js';
+
 import { Schemas } from './ai/schemas.js';
 import { Prompts } from './ai/prompts.js';
 import { Gemini } from './ai/gemini.js';
 
+import { CameraEngine } from './camera/cameraEngine.js';
+import { CameraOCR } from './camera/cameraOCR.js';
+import { CameraRenderer } from './camera/cameraRenderer.js';
+
+import { VoiceTTS } from './voice/voiceTTS.js';
+import { VoiceRenderer } from './voice/voiceRenderer.js';
+import { VoiceAI } from './voice/voiceAI.js';
+import { VoiceEngine } from './voice/voiceEngine.js';
+
+// Global window.App binding for HTML inline events compatibility
 window.App = {
     Config,
     State,
@@ -16,23 +27,32 @@ window.App = {
     Schemas,
     Prompts,
     Gemini,
-    CameraEngine: { toggleTorch: () => {}, toggleFacing: () => {} },
-    CameraOCR: { scanFrame: () => {} },
-    CameraRenderer: { speakArDetected: () => {} },
-    VoiceEngine: { setSpeaker: () => {}, setContext: () => {}, toggleListening: () => {} },
-    VoiceTTS: { speakCurrentDetected: () => {} }
+    CameraEngine,
+    CameraOCR,
+    CameraRenderer,
+    VoiceTTS,
+    VoiceRenderer,
+    VoiceAI,
+    VoiceEngine
 };
 
 window.addEventListener("DOMContentLoaded", () => {
-    console.log("Hello Japan AI starting (Phase 2 ES6 Mode)...");
-    
+    console.log("🚀 Hello Japan AI initialized successfully as Modular ES6 App!");
+
+    // Clock init
     Navigation.tickClock();
     setInterval(() => Navigation.tickClock(), 1000);
+
+    // API UI init
     UI.updateApiStatus();
 
+    // TTS init
+    VoiceTTS.init();
+
+    // Service Worker registration
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
-            .then(reg => console.log("Service Worker registered:", reg.scope))
-            .catch(err => console.warn("Service Worker registration failed:", err));
+            .then(reg => console.log("Service Worker active:", reg.scope))
+            .catch(err => console.warn("Service Worker error:", err));
     }
 });
