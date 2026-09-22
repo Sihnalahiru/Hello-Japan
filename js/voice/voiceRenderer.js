@@ -24,9 +24,37 @@ export const VoiceRenderer = {
         }
     },
 
+    updateEnvironmentBadge(envText) {
+        const display = document.getElementById("voice-env-display");
+        if (display && envText) {
+            State.detectedEnvironment = envText;
+            display.textContent = `Context: ${envText}`;
+        }
+    },
+
     renderConversation(data) {
         if (!data || typeof data !== "object") return;
 
+        // Auto Environment Update
+        if (data.detectedEnvironment) {
+            this.updateEnvironmentBadge(data.detectedEnvironment);
+        }
+
+        // Save into central history thread array (Unshift = Add newest to TOP)
+        State.conversationHistory.unshift({
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            heardJapanese: data.heardJapanese,
+            heardRomaji: data.heardRomaji,
+            heardSinhala: data.heardSinhala,
+            heardEnglish: data.heardEnglish,
+            responseJapanese: data.responseJapanese,
+            responseRomaji: data.responseRomaji,
+            responseSinhala: data.responseSinhala,
+            responseEnglish: data.responseEnglish,
+            replies: data.replies || []
+        });
+
+        // Update Detected User Speech Card UI
         const jp = document.getElementById("detected-japanese");
         const romaji = document.getElementById("detected-romaji");
         const sinhala = document.getElementById("detected-sinhala");
@@ -34,9 +62,10 @@ export const VoiceRenderer = {
 
         if (jp) jp.textContent = data.heardJapanese || "No speech detected.";
         if (romaji) romaji.textContent = data.heardRomaji || "";
-        if (sinhala) sinhala.textContent = data.heardSinhala || "";
-        if (english) english.textContent = data.heardEnglish || "";
+        if (sinhala) sinhala.textContent = data.heardSinhala || "සිංහල තේරුම ලබාගනිමින්...";
+        if (english) english.textContent = data.heardEnglish || "English meaning generated...";
 
+        // Build Suggestions (AI Primary Answer + Gentle/Polite Quick Replies)
         const suggestions = [];
         if (data.responseJapanese) {
             suggestions.push({
@@ -54,7 +83,11 @@ export const VoiceRenderer = {
                 if (r?.jp) {
                     suggestions.push({
                         badge: r.badge || "💬 QUICK REPLY",
-                        jp: r.jp, romaji: r.romaji, sinhala: r.sinhala, english: r.english, primary: false
+                        jp: r.jp,
+                        romaji: r.romaji,
+                        sinhala: r.sinhala,
+                        english: r.english,
+                        primary: false
                     });
                 }
             });
@@ -89,6 +122,7 @@ export const VoiceRenderer = {
                 <div class="text-[15px] font-black text-gray-900 leading-snug">${reply.jp}</div>
                 ${reply.romaji ? `<div class="text-[10px] text-emerald-700 font-semibold mt-1">${reply.romaji}</div>` : ''}
                 ${reply.sinhala ? `<div class="text-[11px] text-gray-800 font-semibold mt-1">${reply.sinhala}</div>` : ''}
+                ${reply.english ? `<div class="text-[10px] text-gray-500 mt-0.5">${reply.english}</div>` : ''}
             `;
 
             card.addEventListener("click", () => VoiceTTS.speakReplyOption(reply.jp));
@@ -109,33 +143,5 @@ export const VoiceRenderer = {
 
     showError(msg) {
         this.setListeningState(false, msg);
-    },
-
-    updateSpeakerUI(lang) {
-        ["ja-JP", "si-LK", "en-US"].forEach(l => {
-            const code = l.split('-')[0].toLowerCase();
-            const btn = document.getElementById(`btn-speaker-${code}`);
-            if (btn) {
-                if (l === lang) {
-                    btn.className = "bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
-                } else {
-                    btn.className = "bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all";
-                }
-            }
-        });
-    },
-
-    updateContextUI(context) {
-        const label = document.getElementById("voice-env-display");
-        if (label) label.textContent = `Context: ${context}`;
-
-        const buttons = document.querySelectorAll("#view-voice .ctx-pill");
-        buttons.forEach(btn => {
-            if (btn.getAttribute("onclick")?.includes(`'${context}'`)) {
-                btn.className = "ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
-            } else {
-                btn.className = "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
-            }
-        });
     }
 };
