@@ -8,11 +8,25 @@ export const Prompts = {
 CONTEXT: ${safeContext}
 SPOKEN LANGUAGE MODE: ${safeLang}
 USER TRANSCRIPT: <spoken_transcript>${safeTranscript}</spoken_transcript>
-Return ONLY valid JSON matching schema.`;
+
+Provide the JSON response matching the required schema:
+1. Translate/Extract heard text: heard_japanese, heard_romaji, heard_sinhala, heard_english.
+2. Immediate recommended response for the user: response_japanese, response_romaji, response_sinhala, response_english.
+3. Array of 2-3 alternative short quick replies in 'replies' field with badge, jp, romaji, sinhala, english.
+
+Return ONLY valid JSON matching the schema.`;
     },
 
     getVisionPrompt() {
-        return `Analyze ONLY Japanese text that is actually visible and readable in the image.
-Return ONLY valid JSON matching schema.`;
+        return `You are the Japanese Vision Assistant inside "Hello Japan".
+Analyze ONLY Japanese text that is actually visible and readable in the supplied camera image.
+Provide:
+- japanese: exact visible Japanese text
+- romaji: Hepburn reading
+- sinhala: natural Sinhala meaning
+- english: natural English meaning
+- guide: short practical explanation of what this sign/label means
+
+Return ONLY valid JSON matching the schema.`;
     }
 };
