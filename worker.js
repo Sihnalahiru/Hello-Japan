@@ -1,131 +1,451 @@
-const GEMINI_MODEL = "gemini-1.5-flash";
+// ============================================================
+// Hello Japan AI
+// worker.js
+// Cloudflare Worker -> Gemini API
+// ============================================================
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL =
+    'gemini-3.8-flash';
 
-const CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-goog-api-key",
-    "Cache-Control": "no-store"
-};
+const GEMINI_API_URL =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-function jsonResponse(data, status = 200, extraHeaders = {}) {
-    return new Response(JSON.stringify(data), {
-        status,
-        headers: {
-            ...CORS_HEADERS,
-            "Content-Type": "application/json; charset=utf-8",
-            ...extraHeaders
-        }
-    });
+
+// ============================================================
+// CORS
+// ============================================================
+
+function corsHeaders() {
+
+    return {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods':
+            'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers':
+            'Content-Type, x-goog-api-key',
+        'Access-Control-Max-Age':
+            '86400'
+    };
 }
 
-export default {
-    async fetch(request, env) {
-        const url = new URL(request.url);
 
-        if (request.method === "OPTIONS") {
-            return new Response(null, {
-                status: 204,
-                headers: CORS_HEADERS
-            });
-        }
+function jsonResponse(
+    data,
+    status = 200,
+    extraHeaders = {}
+) {
 
-        if (request.method === "GET" && url.pathname === "/api/health") {
-            return jsonResponse({
-                ok: true,
-                worker: "hello-japan",
-                geminiModel: GEMINI_MODEL,
-                apiKeyConfigured: Boolean(env.GEMINI_API_KEY || request.headers.get("x-goog-api-key"))
-            });
-        }
-
-        if (request.method === "POST") {
-            const apiKey = request.headers.get("x-goog-api-key") || env.GEMINI_API_KEY;
-
-            if (!apiKey) {
-                return jsonResponse(
-                    {
-                        ok: false,
-                        error: "SERVER_CONFIGURATION_ERROR",
-                        message: "GEMINI_API_KEY is missing from Cloudflare Worker and request headers."
-                    },
-                    401
-                );
-            }
-
-            let body;
-            try {
-                body = await request.json();
-            } catch {
-                return jsonResponse(
-                    {
-                        ok: false,
-                        error: "INVALID_JSON",
-                        message: "Request body is not valid JSON."
-                    },
-                    400
-                );
-            }
-
-            if (!body || typeof body !== "object" || Array.isArray(body)) {
-                return jsonResponse(
-                    {
-                        ok: false,
-                        error: "INVALID_REQUEST",
-                        message: "Request body must be a JSON object."
-                    },
-                    400
-                );
-            }
-
-            body.generationConfig = {
-                ...(body.generationConfig || {}),
-                responseMimeType: "application/json"
-            };
-
-            try {
-                const geminiResponse = await fetch(GEMINI_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-goog-api-key": apiKey
-                    },
-                    body: JSON.stringify(body)
-                });
-
-                const responseText = await geminiResponse.text();
-
-                return new Response(responseText, {
-                    status: geminiResponse.status,
-                    headers: {
-                        ...CORS_HEADERS,
-                        "Content-Type": "application/json; charset=utf-8"
-                    }
-                });
-            } catch (error) {
-                return jsonResponse(
-                    {
-                        ok: false,
-                        error: "WORKER_GEMINI_FETCH_ERROR",
-                        message: error?.message || "Worker could not contact Gemini."
-                    },
-                    502
-                );
+    return new Response(
+        JSON.stringify(data),
+        {
+            status,
+            headers: {
+                'Content-Type':
+                    'application/json; charset=utf-8',
+                ...corsHeaders(),
+                ...extraHeaders
             }
         }
+    );
+}
 
-        if (env.ASSETS) {
-            return env.ASSETS.fetch(request);
+
+// ============================================================
+// OPTIONS
+// ============================================================
+
+function handleOptions() {
+
+    return new Response(
+        null,
+        {
+            status: 204,
+            headers: corsHeaders()
         }
+    );
+}
+
+
+// ============================================================
+// GET
+// ============================================================
+
+async function handleGet(
+    request,
+    env
+) {
+
+    const url =
+        new URL(request.url);
+
+
+    if (
+        url.pathname === '/api/health' ||
+        url.pathname === '/health'
+    ) {
 
         return jsonResponse(
             {
-                ok: false,
-                error: "ASSETS_BINDING_MISSING",
-                message: "Cloudflare ASSETS binding is missing."
+                ok: true,
+                worker: 'hello-japan',
+                geminiModel:
+                    GEMINI_MODEL,
+                apiKeyConfigured:
+                    Boolean(
+                        env?.GEMINI_API_KEY
+                    )
+            }
+        );
+    }
+
+
+    return jsonResponse(
+        {
+            ok: true,
+            service:
+                'Hello Japan AI Gemini Worker',
+            model:
+                GEMINI_MODEL
+        }
+    );
+}
+
+
+// ============================================================
+// POST
+// ============================================================
+
+async function handlePost(
+    request,
+    env
+) {
+
+    // --------------------------------------------------------
+    // API key
+    // --------------------------------------------------------
+
+    const clientKey =
+        request.headers.get(
+            'x-goog-api-key'
+        );
+
+    const serverKey =
+        env?.GEMINI_API_KEY;
+
+    const apiKey =
+        clientKey ||
+        serverKey;
+
+
+    if (!apiKey) {
+
+        return jsonResponse(
+            {
+                error:
+                    'Gemini API key is not configured.'
             },
             500
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Parse request
+    // --------------------------------------------------------
+
+    let payload;
+
+    try {
+
+        payload =
+            await request.json();
+
+    } catch {
+
+        return jsonResponse(
+            {
+                error:
+                    'Invalid JSON request.'
+            },
+            400
+        );
+    }
+
+
+    if (
+        !payload ||
+        typeof payload !== 'object'
+    ) {
+
+        return jsonResponse(
+            {
+                error:
+                    'Invalid request payload.'
+            },
+            400
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Gemini generation config
+    // --------------------------------------------------------
+
+    const incomingGenerationConfig =
+        payload.generationConfig &&
+        typeof payload.generationConfig ===
+            'object'
+            ? payload.generationConfig
+            : {};
+
+
+    const generationConfig = {
+        ...incomingGenerationConfig,
+        responseMimeType:
+            'application/json'
+    };
+
+
+    // Gemini 3.8 migration:
+    // Do not forward obsolete sampling settings.
+    delete generationConfig.temperature;
+    delete generationConfig.topP;
+    delete generationConfig.topK;
+    delete generationConfig.candidateCount;
+    delete generationConfig.candidate_count;
+    delete generationConfig.thinking_budget;
+
+
+    const requestBody = {
+        ...payload,
+        generationConfig
+    };
+
+
+    // --------------------------------------------------------
+    // Gemini request
+    // --------------------------------------------------------
+
+    let response;
+
+    try {
+
+        response =
+            await fetch(
+                GEMINI_API_URL,
+                {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type':
+                            'application/json',
+                        'x-goog-api-key':
+                            apiKey
+                    },
+
+                    body:
+                        JSON.stringify(
+                            requestBody
+                        )
+                }
+            );
+
+    } catch (error) {
+
+        console.error(
+            '[Worker] Gemini network error:',
+            error
+        );
+
+        return jsonResponse(
+            {
+                error:
+                    'Unable to reach Gemini API.'
+            },
+            502
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Read response
+    // --------------------------------------------------------
+
+    const responseText =
+        await response.text();
+
+
+    let responseData;
+
+    try {
+
+        responseData =
+            JSON.parse(
+                responseText
+            );
+
+    } catch {
+
+        responseData = {
+            error:
+                responseText ||
+                'Invalid Gemini response.'
+        };
+    }
+
+
+    // --------------------------------------------------------
+    // Map common errors
+    // --------------------------------------------------------
+
+    if (!response.ok) {
+
+        console.error(
+            '[Worker] Gemini error:',
+            response.status,
+            responseData
+        );
+
+
+        let message =
+            'Gemini request failed.';
+
+
+        if (
+            response.status === 400
+        ) {
+            message =
+                'Invalid Gemini request.';
+        }
+
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
+            message =
+                'Gemini API authentication failed.';
+        }
+
+        if (
+            response.status === 429
+        ) {
+            message =
+                'Gemini API rate limit reached.';
+        }
+
+        if (
+            response.status >= 500
+        ) {
+            message =
+                'Gemini service is temporarily unavailable.';
+        }
+
+
+        return jsonResponse(
+            {
+                error: message,
+                status:
+                    response.status,
+                details:
+                    responseData
+            },
+            response.status
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Success
+    // --------------------------------------------------------
+
+    return new Response(
+        JSON.stringify(
+            responseData
+        ),
+        {
+            status: 200,
+            headers: {
+                'Content-Type':
+                    'application/json; charset=utf-8',
+                ...corsHeaders()
+            }
+        }
+    );
+}
+
+
+// ============================================================
+// MAIN FETCH
+// ============================================================
+
+export default {
+
+    async fetch(
+        request,
+        env
+    ) {
+
+        const url =
+            new URL(request.url);
+
+
+        // ----------------------------------------------------
+        // CORS preflight
+        // ----------------------------------------------------
+
+        if (
+            request.method ===
+            'OPTIONS'
+        ) {
+            return handleOptions();
+        }
+
+
+        // ----------------------------------------------------
+        // Health / GET
+        // ----------------------------------------------------
+
+        if (
+            request.method ===
+            'GET'
+        ) {
+            return handleGet(
+                request,
+                env
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // Gemini API
+        // ----------------------------------------------------
+
+        if (
+            request.method ===
+            'POST'
+        ) {
+
+            return handlePost(
+                request,
+                env
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // Unsupported method
+        // ----------------------------------------------------
+
+        return jsonResponse(
+            {
+                error:
+                    'Method not allowed.'
+            },
+            405,
+            {
+                Allow:
+                    'GET, POST, OPTIONS'
+            }
         );
     }
 };
