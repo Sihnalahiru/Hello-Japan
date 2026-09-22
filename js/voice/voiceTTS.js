@@ -3,26 +3,66 @@
 // js/voice/voiceTTS.js
 // Text-to-Speech Engine
 // ============================================================
+//
+// RESPONSIBILITY
+//
+// Text
+//   ↓
+// VoiceTTS
+//   ↓
+// Browser SpeechSynthesis
+//
+// VoiceEngine owns microphone/TTS protection.
+// VoiceTTS reports speech completion back to VoiceEngine.
+//
+// IMPORTANT:
+// VoiceTTS does NOT import VoiceEngine directly.
+//
+// This avoids:
+//
+// VoiceEngine
+//    ↓
+// VoiceTTS
+//    ↓
+// VoiceEngine
+//
+// Instead VoiceEngine is accessed through window.App.
+// ============================================================
 
 import { Toast } from '../ui/toast.js';
 
+
+// ============================================================
+// VOICE TTS
+// ============================================================
+
 export const VoiceTTS = {
 
-    // --------------------------------------------------------
-    // State
-    // --------------------------------------------------------
+    // ========================================================
+    // STATE
+    // ========================================================
 
     isSupported: false,
+
     isSpeaking: false,
+
     currentUtterance: null,
+
     voiceCache: [],
 
     activeLanguage: 'ja-JP',
 
+    // Unique speech lifecycle ID.
+    //
+    // Every new speech request receives a new ID.
+    // Old utterance callbacks cannot modify the state of a
+    // newer utterance.
+    speechRequestId: 0,
 
-    // --------------------------------------------------------
-    // Initialize
-    // --------------------------------------------------------
+
+    // ========================================================
+    // INITIALIZE
+    // ========================================================
 
     init() {
 
@@ -44,20 +84,21 @@ export const VoiceTTS = {
         this.loadVoices();
 
 
-        // Chrome / Edge normally populate voices
-        // asynchronously.
-        window.speechSynthesis.onvoiceschanged = () => {
-            this.loadVoices();
-        };
+        // Chrome / Edge may populate voices asynchronously.
+        window.speechSynthesis.onvoiceschanged =
+            () => {
+
+                this.loadVoices();
+            };
 
 
         return true;
     },
 
 
-    // --------------------------------------------------------
-    // Load available voices
-    // --------------------------------------------------------
+    // ========================================================
+    // LOAD VOICES
+    // ========================================================
 
     loadVoices() {
 
@@ -93,9 +134,9 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Normalize language
-    // --------------------------------------------------------
+    // ========================================================
+    // NORMALIZE LANGUAGE
+    // ========================================================
 
     normalizeLanguage(language) {
 
@@ -110,7 +151,9 @@ export const VoiceTTS = {
                 .toLowerCase();
 
 
-        if (value.startsWith('ja')) {
+        if (
+            value.startsWith('ja')
+        ) {
             return 'ja-JP';
         }
 
@@ -123,20 +166,25 @@ export const VoiceTTS = {
         }
 
 
-        if (value.startsWith('en')) {
+        if (
+            value.startsWith('en')
+        ) {
             return 'en-US';
         }
 
 
-        return language || 'ja-JP';
+        return language ||
+            'ja-JP';
     },
 
 
-    // --------------------------------------------------------
-    // Find voice by language
-    // --------------------------------------------------------
+    // ========================================================
+    // FIND VOICE
+    // ========================================================
 
-    findVoice(language = 'ja-JP') {
+    findVoice(
+        language = 'ja-JP'
+    ) {
 
         this.loadVoices();
 
@@ -149,7 +197,9 @@ export const VoiceTTS = {
                 .replace('_', '-');
 
 
-        if (!this.voiceCache.length) {
+        if (
+            !this.voiceCache.length
+        ) {
             return null;
         }
 
@@ -160,7 +210,7 @@ export const VoiceTTS = {
 
         let voice =
             this.voiceCache.find(
-                (item) => {
+                item => {
 
                     const lang =
                         String(
@@ -168,6 +218,7 @@ export const VoiceTTS = {
                         )
                             .toLowerCase()
                             .replace('_', '-');
+
 
                     return lang === target;
                 }
@@ -189,7 +240,7 @@ export const VoiceTTS = {
 
         voice =
             this.voiceCache.find(
-                (item) => {
+                item => {
 
                     const lang =
                         String(
@@ -198,10 +249,13 @@ export const VoiceTTS = {
                             .toLowerCase()
                             .replace('_', '-');
 
-                    return lang === base ||
+
+                    return (
+                        lang === base ||
                         lang.startsWith(
                             `${base}-`
-                        );
+                        )
+                    );
                 }
             );
 
@@ -212,20 +266,28 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // Common fallback mapping
+        // Japanese fallback
         // ----------------------------------------------------
 
-        if (target === 'ja-jp') {
+        if (
+            target === 'ja-jp'
+        ) {
 
             voice =
                 this.voiceCache.find(
-                    (item) =>
-                        String(item.name || '')
+                    item =>
+                        String(
+                            item.name || ''
+                        )
                             .toLowerCase()
                             .includes('japanese')
                 );
         }
 
+
+        // ----------------------------------------------------
+        // English fallback
+        // ----------------------------------------------------
 
         if (
             !voice &&
@@ -234,13 +296,19 @@ export const VoiceTTS = {
 
             voice =
                 this.voiceCache.find(
-                    (item) =>
-                        String(item.name || '')
+                    item =>
+                        String(
+                            item.name || ''
+                        )
                             .toLowerCase()
                             .includes('english')
                 );
         }
 
+
+        // ----------------------------------------------------
+        // Sinhala fallback
+        // ----------------------------------------------------
 
         if (
             !voice &&
@@ -249,17 +317,21 @@ export const VoiceTTS = {
 
             voice =
                 this.voiceCache.find(
-                    (item) => {
+                    item => {
 
                         const name =
                             String(
                                 item.name || ''
-                            ).toLowerCase();
+                            )
+                                .toLowerCase();
+
 
                         const lang =
                             String(
                                 item.lang || ''
-                            ).toLowerCase();
+                            )
+                                .toLowerCase();
+
 
                         return (
                             lang.includes('si') ||
@@ -275,9 +347,9 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Backward-compatible Japanese helper
-    // --------------------------------------------------------
+    // ========================================================
+    // BACKWARD-COMPATIBLE JAPANESE HELPER
+    // ========================================================
 
     findJapaneseVoice() {
 
@@ -287,11 +359,13 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Set active TTS language
-    // --------------------------------------------------------
+    // ========================================================
+    // SET ACTIVE LANGUAGE
+    // ========================================================
 
-    setLanguage(language) {
+    setLanguage(
+        language
+    ) {
 
         const normalized =
             this.normalizeLanguage(
@@ -307,11 +381,18 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Speak text
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAK TEXT
+    // ========================================================
 
-    speakText(text, options = {}) {
+    speakText(
+        text,
+        options = {}
+    ) {
+
+        // ----------------------------------------------------
+        // Validate text
+        // ----------------------------------------------------
 
         if (
             typeof text !== 'string' ||
@@ -321,12 +402,20 @@ export const VoiceTTS = {
         }
 
 
-        if (!this.isSupported) {
+        // ----------------------------------------------------
+        // Initialize if necessary
+        // ----------------------------------------------------
+
+        if (
+            !this.isSupported
+        ) {
 
             this.init();
 
 
-            if (!this.isSupported) {
+            if (
+                !this.isSupported
+            ) {
 
                 Toast.show(
                     'Speech synthesis is not supported on this device.'
@@ -342,7 +431,7 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // Determine language
+        // Language
         // ----------------------------------------------------
 
         const language =
@@ -358,10 +447,21 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // Stop previous speech
+        // Cancel previous speech
+        //
+        // IMPORTANT:
+        //
+        // Increment speechRequestId BEFORE cancelling.
+        //
+        // Therefore an old oncancel/onend callback cannot
+        // terminate the new speech lifecycle.
         // ----------------------------------------------------
 
-        this.stop();
+        const requestId =
+            ++this.speechRequestId;
+
+
+        this.cancelCurrentUtterance();
 
 
         // ----------------------------------------------------
@@ -381,7 +481,9 @@ export const VoiceTTS = {
         utterance.rate =
             typeof options.rate === 'number'
                 ? options.rate
-                : this.getDefaultRate(language);
+                : this.getDefaultRate(
+                    language
+                );
 
 
         utterance.pitch =
@@ -403,50 +505,100 @@ export const VoiceTTS = {
 
 
         // ----------------------------------------------------
-        // Select language-matching voice
+        // Select matching voice
         // ----------------------------------------------------
 
         const voice =
             options.voice ||
-            this.findVoice(language);
+            this.findVoice(
+                language
+            );
 
 
         if (voice) {
-            utterance.voice = voice;
+
+            utterance.voice =
+                voice;
         }
 
 
         // ----------------------------------------------------
-        // Lifecycle
+        // Register active utterance
         // ----------------------------------------------------
 
         this.currentUtterance =
             utterance;
 
-
         this.isSpeaking =
             true;
 
 
+        // ----------------------------------------------------
+        // Finalize speech lifecycle
+        // ----------------------------------------------------
+
         const finish =
-            () => {
+            (
+                reason = 'finished'
+            ) => {
+
+                // --------------------------------------------
+                // Ignore stale utterance callbacks.
+                //
+                // A previous utterance must never reset the
+                // state belonging to a newer utterance.
+                // --------------------------------------------
 
                 if (
-                    this.currentUtterance ===
+                    requestId !==
+                    this.speechRequestId
+                ) {
+                    return;
+                }
+
+
+                if (
+                    this.currentUtterance !==
                     utterance
                 ) {
-
-                    this.currentUtterance =
-                        null;
-
-                    this.isSpeaking =
-                        false;
+                    return;
                 }
+
+
+                this.currentUtterance =
+                    null;
+
+                this.isSpeaking =
+                    false;
+
+
+                // --------------------------------------------
+                // Tell VoiceEngine that protected TTS has
+                // completed.
+                //
+                // Do not import VoiceEngine here.
+                // --------------------------------------------
+
+                this.notifyEngineSpeechFinished(
+                    reason
+                );
             };
 
 
+        // ====================================================
+        // BROWSER EVENTS
+        // ====================================================
+
         utterance.onstart =
             () => {
+
+                if (
+                    requestId !==
+                    this.speechRequestId
+                ) {
+                    return;
+                }
+
 
                 this.isSpeaking =
                     true;
@@ -454,28 +606,42 @@ export const VoiceTTS = {
 
 
         utterance.onend =
-            finish;
+            () => {
+
+                finish(
+                    'end'
+                );
+            };
 
 
         utterance.onerror =
-            (event) => {
+            event => {
 
                 console.warn(
                     '[VoiceTTS] Speech error:',
-                    event?.error || event
+                    event?.error ||
+                    event
                 );
 
-                finish();
+
+                finish(
+                    'error'
+                );
             };
 
 
         utterance.oncancel =
-            finish;
+            () => {
+
+                finish(
+                    'cancel'
+                );
+            };
 
 
-        // ----------------------------------------------------
-        // Speak
-        // ----------------------------------------------------
+        // ====================================================
+        // START SPEECH
+        // ====================================================
 
         try {
 
@@ -494,7 +660,10 @@ export const VoiceTTS = {
             );
 
 
-            finish();
+            // Only finish this request if it is still active.
+            finish(
+                'exception'
+            );
 
 
             return false;
@@ -502,11 +671,50 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Default speech rate
-    // --------------------------------------------------------
+    // ========================================================
+    // NOTIFY VOICE ENGINE
+    // ========================================================
 
-    getDefaultRate(language) {
+    notifyEngineSpeechFinished(
+        reason = 'finished'
+    ) {
+
+        const engine =
+            window.App?.VoiceEngine;
+
+
+        if (
+            !engine ||
+            typeof engine.notifySpeechFinished !==
+                'function'
+        ) {
+            return;
+        }
+
+
+        try {
+
+            engine.notifySpeechFinished(
+                reason
+            );
+
+        } catch (error) {
+
+            console.warn(
+                '[VoiceTTS] Failed to notify VoiceEngine:',
+                error
+            );
+        }
+    },
+
+
+    // ========================================================
+    // DEFAULT SPEECH RATE
+    // ========================================================
+
+    getDefaultRate(
+        language
+    ) {
 
         switch (
             this.normalizeLanguage(
@@ -529,11 +737,14 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Speak Japanese
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAK JAPANESE
+    // ========================================================
 
-    speakJapanese(text, options = {}) {
+    speakJapanese(
+        text,
+        options = {}
+    ) {
 
         return this.speakText(
             text,
@@ -545,11 +756,14 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Speak Sinhala
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAK SINHALA
+    // ========================================================
 
-    speakSinhala(text, options = {}) {
+    speakSinhala(
+        text,
+        options = {}
+    ) {
 
         return this.speakText(
             text,
@@ -561,11 +775,14 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Speak English
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAK ENGLISH
+    // ========================================================
 
-    speakEnglish(text, options = {}) {
+    speakEnglish(
+        text,
+        options = {}
+    ) {
 
         return this.speakText(
             text,
@@ -577,11 +794,13 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Reply option
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAK REPLY OPTION
+    // ========================================================
 
-    speakReplyOption(japanese) {
+    speakReplyOption(
+        japanese
+    ) {
 
         if (
             typeof japanese !== 'string' ||
@@ -609,11 +828,21 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Stop
-    // --------------------------------------------------------
+    // ========================================================
+    // CANCEL CURRENT UTTERANCE
+    // ========================================================
+    //
+    // Internal cancellation helper.
+    //
+    // Does NOT call VoiceEngine notification.
+    //
+    // Why?
+    //
+    // If a new speech request replaces an old one, the engine
+    // must remain in "speaking" mode for the new utterance.
+    // ========================================================
 
-    stop() {
+    cancelCurrentUtterance() {
 
         try {
 
@@ -627,7 +856,7 @@ export const VoiceTTS = {
         } catch (error) {
 
             console.warn(
-                '[VoiceTTS] Stop failed:',
+                '[VoiceTTS] Cancel failed:',
                 error
             );
         }
@@ -641,9 +870,46 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Pause
-    // --------------------------------------------------------
+    // ========================================================
+    // STOP
+    // ========================================================
+
+    stop() {
+
+        // ----------------------------------------------------
+        // Invalidate current speech lifecycle first.
+        // ----------------------------------------------------
+
+        ++this.speechRequestId;
+
+
+        const wasSpeaking =
+            this.isSpeaking ||
+            Boolean(
+                this.currentUtterance
+            );
+
+
+        this.cancelCurrentUtterance();
+
+
+        // ----------------------------------------------------
+        // If stop() was explicitly called while speech was
+        // active, inform VoiceEngine.
+        // ----------------------------------------------------
+
+        if (wasSpeaking) {
+
+            this.notifyEngineSpeechFinished(
+                'stopped'
+            );
+        }
+    },
+
+
+    // ========================================================
+    // PAUSE
+    // ========================================================
 
     pause() {
 
@@ -672,9 +938,9 @@ export const VoiceTTS = {
     },
 
 
-    // --------------------------------------------------------
-    // Resume
-    // --------------------------------------------------------
+    // ========================================================
+    // RESUME
+    // ========================================================
 
     resume() {
 
