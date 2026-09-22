@@ -17,7 +17,7 @@ import { VoiceRenderer } from './voice/voiceRenderer.js';
 import { VoiceAI } from './voice/voiceAI.js';
 import { VoiceEngine } from './voice/voiceEngine.js';
 
-// Global window.App binding for backwards compatibility with HTML inline onclick events
+// Global window.App binding for HTML inline events compatibility
 window.App = {
     Config,
     State,
@@ -39,17 +39,17 @@ window.App = {
 window.addEventListener("DOMContentLoaded", () => {
     console.log("🚀 Hello Japan AI initialized successfully in Full Modular ES6 Mode!");
 
-    // Clock
+    // Clock init
     Navigation.tickClock();
     setInterval(() => Navigation.tickClock(), 1000);
 
-    // API UI Status
+    // API Status init
     UI.updateApiStatus();
 
-    // Voice Speech Synthesis
+    // Voice Speech Synthesis init
     VoiceTTS.init();
 
-    // Service Worker
+    // Service Worker registration
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
             .then(reg => console.log("Service Worker active:", reg.scope))
