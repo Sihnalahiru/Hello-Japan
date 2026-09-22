@@ -128,5 +128,14 @@ export const VoiceRenderer = {
     updateContextUI(context) {
         const label = document.getElementById("voice-env-display");
         if (label) label.textContent = `Context: ${context}`;
+
+        const buttons = document.querySelectorAll("#view-voice .ctx-pill");
+        buttons.forEach(btn => {
+            if (btn.getAttribute("onclick")?.includes(`'${context}'`)) {
+                btn.className = "ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
+            } else {
+                btn.className = "ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm";
+            }
+        });
     }
 };
