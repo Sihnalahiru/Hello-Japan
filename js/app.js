@@ -17,7 +17,7 @@ import { VoiceRenderer } from './voice/voiceRenderer.js';
 import { VoiceAI } from './voice/voiceAI.js';
 import { VoiceEngine } from './voice/voiceEngine.js';
 
-// Global window.App binding for HTML inline events compatibility
+// Global window.App binding
 window.App = {
     Config,
     State,
@@ -36,20 +36,68 @@ window.App = {
     VoiceEngine
 };
 
-window.addEventListener("DOMContentLoaded", () => {
-    console.log("🚀 Hello Japan AI initialized successfully in Full Modular ES6 Mode!");
+// DIRECT EVENT DELEGATION (Guarantees button clicks work 100%)
+document.addEventListener("click", (e) => {
+    // 1. Navigation Routes
+    const routeTarget = e.target.closest("[data-route]");
+    if (routeTarget) {
+        const route = routeTarget.getAttribute("data-route");
+        if (route) Navigation.switchView(route);
+        return;
+    }
 
-    // Clock init
+    // 2. Camera Controls
+    if (e.target.closest("#camera-scan-button")) {
+        CameraOCR.scanFrame();
+        return;
+    }
+    if (e.target.closest("#btn-toggle-facing")) {
+        CameraEngine.toggleFacing();
+        return;
+    }
+    if (e.target.closest("#btn-toggle-torch")) {
+        CameraEngine.toggleTorch();
+        return;
+    }
+    if (e.target.closest("#btn-ar-pronounce")) {
+        CameraRenderer.speakArDetected();
+        return;
+    }
+
+    // 3. Voice Controls
+    if (e.target.closest("#mic-avatar-btn")) {
+        VoiceEngine.toggleListening();
+        return;
+    }
+    if (e.target.closest("#btn-speaker-jp")) {
+        VoiceEngine.setSpeaker('ja-JP');
+        return;
+    }
+    if (e.target.closest("#btn-speaker-si")) {
+        VoiceEngine.setSpeaker('si-LK');
+        return;
+    }
+    if (e.target.closest("#btn-speaker-en")) {
+        VoiceEngine.setSpeaker('en-US');
+        return;
+    }
+    const ctxBtn = e.target.closest("[data-ctx]");
+    if (ctxBtn) {
+        const ctx = ctxBtn.getAttribute("data-ctx");
+        VoiceEngine.setContext(ctx);
+        return;
+    }
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+    console.log("🚀 Hello Japan AI initialized successfully in Full Modular Mode!");
+
     Navigation.tickClock();
     setInterval(() => Navigation.tickClock(), 1000);
 
-    // API Status init
     UI.updateApiStatus();
-
-    // Voice Speech Synthesis init
     VoiceTTS.init();
 
-    // Service Worker registration
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
             .then(reg => console.log("Service Worker active:", reg.scope))
