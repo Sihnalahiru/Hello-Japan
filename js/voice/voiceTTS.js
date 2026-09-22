@@ -1,4 +1,3 @@
-import { State } from '../state.js';
 import { Toast } from '../ui/toast.js';
 
 export const VoiceTTS = {
@@ -65,10 +64,6 @@ export const VoiceTTS = {
         try { window.speechSynthesis?.cancel?.(); } catch {}
         this.currentUtterance = null;
         this.isSpeaking = false;
-    },
-
-    speakCurrentDetected() {
-        if (State.currentVoiceJapanese) this.speakText(State.currentVoiceJapanese);
     },
 
     speakReplyOption(japanese) {
