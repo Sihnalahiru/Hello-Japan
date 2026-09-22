@@ -5,20 +5,29 @@ export const Prompts = {
         const safeTranscript = typeof heardText === "string" ? heardText.trim() : "";
 
         return `You are the LIVE Japanese communication assistant inside "Hello Japan".
-CONTEXT: ${safeContext}
+SELECTED CONTEXT MODE: ${safeContext}
 SPOKEN LANGUAGE MODE: ${safeLang}
 USER TRANSCRIPT: <spoken_transcript>${safeTranscript}</spoken_transcript>
 
-Provide the JSON response matching the required schema:
-1. Translate/Extract heard text: heard_japanese, heard_romaji, heard_sinhala, heard_english.
-2. Immediate recommended response for the user: response_japanese, response_romaji, response_sinhala, response_english.
-3. Array of 2-3 alternative short quick replies in 'replies' field with badge, jp, romaji, sinhala, english.
+INSTRUCTIONS:
+1. Automatically detect the environment/setting from the transcript (e.g. "Workplace (Keigo)", "Restaurant", "Store/Konbini", "Daily/Friendly") and put it in 'detected_environment'.
+2. Process/Translate spoken speech into:
+   - heard_japanese: exact spoken or natural Japanese translation
+   - heard_romaji: Hepburn reading
+   - heard_sinhala: natural Sinhala meaning
+   - heard_english: natural English meaning
+3. Provide the single BEST immediate Japanese response for the user (Ensure it is gentle, friendly, and polite as appropriate):
+   - response_japanese
+   - response_romaji
+   - response_sinhala
+   - response_english
+4. Provide 2-3 short, natural alternative quick replies in 'replies' array with badge, jp, romaji, sinhala, english.
 
-Return ONLY valid JSON matching the schema.`;
+Return ONLY valid JSON matching schema.`;
     },
 
     getVisionPrompt() {
-        return `You are the Japanese Vision Assistant inside "Hello Japan".
+        return `You are the Japanese Vision OCR Assistant inside "Hello Japan".
 Analyze ONLY Japanese text that is actually visible and readable in the supplied camera image.
 Provide:
 - japanese: exact visible Japanese text
@@ -27,6 +36,6 @@ Provide:
 - english: natural English meaning
 - guide: short practical explanation of what this sign/label means
 
-Return ONLY valid JSON matching the schema.`;
+Return ONLY valid JSON matching schema.`;
     }
 };
