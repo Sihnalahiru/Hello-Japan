@@ -1,6 +1,4 @@
-window.App = window.App || {};
-
-App.Schemas = {
+export const Schemas = {
     VOICE_RESPONSE_SCHEMA: {
         type: "OBJECT",
         properties: {
@@ -8,12 +6,10 @@ App.Schemas = {
             heard_romaji: { type: "STRING" },
             heard_sinhala: { type: "STRING" },
             heard_english: { type: "STRING" },
-
             response_japanese: { type: "STRING" },
             response_romaji: { type: "STRING" },
             response_sinhala: { type: "STRING" },
             response_english: { type: "STRING" },
-
             replies: {
                 type: "ARRAY",
                 items: {
@@ -25,30 +21,15 @@ App.Schemas = {
                         sinhala: { type: "STRING" },
                         english: { type: "STRING" }
                     },
-                    required: [
-                        "badge",
-                        "jp",
-                        "romaji",
-                        "sinhala",
-                        "english"
-                    ]
+                    required: ["badge", "jp", "romaji", "sinhala", "english"]
                 }
             }
         },
-
         required: [
-            "heard_japanese",
-            "heard_romaji",
-            "heard_sinhala",
-            "heard_english",
-            "response_japanese",
-            "response_romaji",
-            "response_sinhala",
-            "response_english",
-            "replies"
+            "heard_japanese", "heard_romaji", "heard_sinhala", "heard_english",
+            "response_japanese", "response_romaji", "response_sinhala", "response_english", "replies"
         ]
     },
-
     VISION_RESPONSE_SCHEMA: {
         type: "OBJECT",
         properties: {
@@ -58,12 +39,6 @@ App.Schemas = {
             english: { type: "STRING" },
             guide: { type: "STRING" }
         },
-        required: [
-            "japanese",
-            "romaji",
-            "sinhala",
-            "english",
-            "guide"
-        ]
+        required: ["japanese", "romaji", "sinhala", "english", "guide"]
     }
 };
