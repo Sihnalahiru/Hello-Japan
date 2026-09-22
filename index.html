@@ -5,14 +5,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#08170B">
-    <meta name="description" content="Hello Japan - Japanese Vision OCR and Hands-Free Voice Assistant">
     <title>Hello Japan ! - Camera AI Pro & Voice Assistant</title>
 
-    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
 
-    <!-- TAILWIND -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <!-- 1. CRITICAL INLINE STYLES (External CSS පරක්කු වුණත් UI එක කඩන්නේ නැත) -->
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #071109;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+        /* HIDE ALL INACTIVE VIEWS BY DEFAULT */
+        .screen-view {
+            display: none !important;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .screen-view.active {
+            display: flex !important;
+            opacity: 1;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-dock {
+            background: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+    </style>
+
+    <!-- 2. TAILWIND CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -22,24 +52,20 @@
                         mintBg: "#EDF8EE",
                         brandGreen: "#39D322",
                         brandNeon: "#20E300",
-                        deepCard: "#1C4D26",
-                        tilePurple: "#9353D3"
-                    },
-                    fontFamily: {
-                        sans: ["Plus Jakarta Sans", "Noto Sans JP", "sans-serif"]
+                        deepCard: "#1C4D26"
                     }
                 }
             }
         };
     </script>
 
-    <!-- FONTS & ICONS -->
-    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
-    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
-    <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap)" rel="stylesheet">
-    <script src="[https://unpkg.com/@phosphor-icons/web](https://unpkg.com/@phosphor-icons/web)"></script>
+    <!-- 3. FONTS & ICONS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- APPLICATION CSS -->
+    <!-- 4. CUSTOM APP CSS -->
     <link rel="stylesheet" href="css/app.css">
 </head>
 
@@ -47,15 +73,15 @@
 
 <main class="w-full max-w-md h-full md:h-[94vh] md:max-h-[890px] relative flex flex-col overflow-hidden shadow-2xl md:rounded-[48px] md:border-[8px] md:border-[#102414] bg-white">
 
-    <!-- VIEW 1: HERO -->
+    <!-- VIEW 1: HERO SCREEN -->
     <section id="view-hero" class="screen-view active flex-col flex-1 h-full w-full bg-darkForest p-5 relative overflow-y-auto no-scrollbar text-white">
         <div class="flex justify-between items-center text-xs text-white/80 mb-4 px-1 font-semibold">
             <span id="hero-clock">9:41</span>
             <div class="flex items-center gap-2">
-                <button id="api-key-btn-hero" onclick="App.UI.toggleApiKeyModal()" class="flex items-center gap-1 text-[10px] bg-white/10 hover:bg-brandGreen/20 px-2.5 py-0.5 rounded-full border border-white/20 text-brandGreen transition-all">
-                    <i class="ph ph-key"></i>
-                    <span id="api-status-hero">API Key</span>
-                </button>
+                <div class="flex items-center gap-1.5 text-[10px] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20 text-brandGreen font-bold">
+                    <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
+                    <span>AI Engine Active</span>
+                </div>
                 <div class="flex items-center gap-2">
                     <i class="ph ph-cell-signal-full text-sm"></i>
                     <i class="ph ph-wifi-high text-sm"></i>
@@ -81,7 +107,7 @@
                         <h2 class="text-2xl font-black text-white leading-tight">Camera AI Pro 📷</h2>
                         <p class="text-xs text-emerald-100 mt-1 max-w-[210px] leading-relaxed">Scan Japanese signs, menus, labels and workplace text with AI Vision.</p>
                     </div>
-                    <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner animate-float shrink-0">📸</div>
+                    <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0">📸</div>
                 </div>
                 <div class="mt-4 bg-black/25 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-between border border-white/15">
                     <div class="flex items-center gap-2">
@@ -106,18 +132,13 @@
                 </div>
                 <p class="text-xs text-gray-300 leading-relaxed mb-3">Speak naturally. The AI understands the situation and suggests the appropriate Japanese response.</p>
                 <div class="flex items-center justify-between bg-black/40 p-2.5 rounded-2xl border border-white/10">
-                    <div class="flex items-center gap-1">
-                        <div class="w-1 h-4 bg-brandGreen rounded-full audio-bar delay-1"></div>
-                        <div class="w-1 h-6 bg-brandGreen rounded-full audio-bar delay-2"></div>
-                        <div class="w-1 h-3 bg-brandGreen rounded-full audio-bar delay-3"></div>
-                        <div class="w-1 h-5 bg-brandGreen rounded-full audio-bar delay-4"></div>
-                    </div>
+                    <span class="text-[11px] font-bold text-brandGreen">🎙️ Real-time Translator</span>
                     <span class="text-[11px] font-bold text-white">Tap to Start Voice →</span>
                 </div>
             </div>
         </div>
 
-        <div class="mt-auto pb-4 space-y-2">
+        <div class="mt-auto pb-4">
             <button onclick="App.Navigation.switchView('camera')" class="w-full bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-3.5 rounded-full shadow-[0_0_25px_rgba(57,211,34,0.45)] transition-all active:scale-95 text-xs flex items-center justify-center gap-2">
                 <i class="ph ph-camera text-base font-bold"></i><span>OPEN CAMERA AI PRO NOW</span>
             </button>
@@ -129,13 +150,13 @@
     <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white pb-36">
         <video id="live-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
         <canvas id="snapshot-canvas" class="hidden"></canvas>
-        <div id="camera-status" class="absolute top-16 left-4 right-4 z-20 hidden bg-black/80 backdrop-blur-md p-3 rounded-xl text-center text-xs text-emerald-300 border border-brandGreen/40 shadow-lg" aria-live="polite">Camera ready</div>
+        <div id="camera-status" class="absolute top-16 left-4 right-4 z-20 hidden bg-black/80 backdrop-blur-md p-3 rounded-xl text-center text-xs text-emerald-300 border border-brandGreen/40 shadow-lg">Camera ready</div>
         
         <div class="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
             <div class="flex justify-between items-center pointer-events-auto pt-1 z-30">
-                <button onclick="App.Navigation.switchView('hero')" aria-label="Back to Home" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
+                <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
                 <span class="text-xs font-black bg-brandGreen text-darkForest px-3 py-1 rounded-full shadow-lg">📷 Camera AI Pro Live</span>
-                <button onclick="App.CameraEngine.toggleTorch()" aria-label="Toggle Camera Torch" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-flashlight text-lg"></i></button>
+                <button onclick="App.CameraEngine.toggleTorch()" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-flashlight text-lg"></i></button>
             </div>
 
             <div class="relative w-full max-w-[250px] aspect-square mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center my-auto">
@@ -143,14 +164,14 @@
                 <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
                 <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
                 <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brandGreen rounded-br-2xl"></div>
-                <div class="scanner-beam absolute w-full h-1 bg-gradient-to-r from-transparent via-brandGreen to-transparent shadow-[0_0_20px_#39D322]"></div>
                 <span class="text-[10px] bg-black/70 backdrop-blur-md text-emerald-300 font-bold px-3 py-1 rounded-full border border-white/10 pointer-events-none text-center">Point at Japanese Signs / Menus</span>
             </div>
 
-            <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[170px] overflow-y-auto no-scrollbar mb-2" aria-live="polite">
+            <!-- INSTANT BOTTOM PREVIEW SHEET -->
+            <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[170px] overflow-y-auto no-scrollbar mb-2">
                 <div class="flex justify-between items-center mb-1">
                     <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1"><i class="ph ph-eye"></i>Vision AI Result</span>
-                    <button onclick="App.CameraRenderer.speakArDetected()" aria-label="Pronounce Detected Japanese" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i>Pronounce</button>
+                    <button onclick="App.CameraRenderer.speakArDetected()" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i>Pronounce</button>
                 </div>
                 <div class="flex items-baseline gap-2">
                     <p id="ar-jp" class="text-xl font-black text-white leading-tight">Ready to scan</p>
@@ -166,10 +187,10 @@
             </div>
 
             <div class="flex items-center justify-center gap-8 pointer-events-auto z-30">
-                <button id="camera-scan-button" onclick="App.CameraOCR.scanFrame()" aria-label="Scan Camera Frame" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
+                <button id="camera-scan-button" onclick="App.CameraOCR.scanFrame()" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
                     <div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold"><i class="ph ph-scan"></i></div>
                 </button>
-                <button onclick="App.CameraEngine.toggleFacing()" title="Flip Camera" aria-label="Flip Camera" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
+                <button onclick="App.CameraEngine.toggleFacing()" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
             </div>
         </div>
     </section>
@@ -178,12 +199,12 @@
     <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-32 text-gray-900">
         <div class="p-4 flex flex-col flex-1">
             <div class="flex justify-between items-center pt-1 mb-2">
-                <button onclick="App.Navigation.switchView('hero')" aria-label="Back to Home" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
+                <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
                 <div class="text-center">
                     <h2 class="font-extrabold text-sm text-gray-900 flex items-center justify-center gap-1.5"><span>Hello Japan ! Voice AI</span><span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span></h2>
                     <p class="text-[10px] text-gray-500 font-semibold" id="voice-env-display">Context: Daily / Friendly</p>
                 </div>
-                <button onclick="App.UI.toggleApiKeyModal()" aria-label="Voice Settings" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-gear text-lg"></i></button>
+                <div class="w-9"></div>
             </div>
 
             <div class="flex items-center justify-between gap-1.5 mb-2.5 bg-white/80 p-1.5 rounded-2xl border border-emerald-100 shadow-sm">
@@ -203,35 +224,21 @@
             </div>
 
             <div class="flex flex-col items-center justify-center my-1 select-none">
-                <div class="flex items-center justify-center gap-3 w-full my-1">
-                    <div class="flex gap-1.5 h-12 items-center">
-                        <div class="w-1.5 h-5 bg-brandGreen rounded-full audio-bar delay-3"></div>
-                        <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-1"></div>
-                        <div class="w-1.5 h-12 bg-brandGreen rounded-full audio-bar delay-2"></div>
-                        <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-4"></div>
+                <button id="mic-avatar-btn" onclick="App.VoiceEngine.toggleListening()" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative my-1">
+                    <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-4xl shadow-inner relative">
+                        🤖<span id="listening-badge-dot" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
                     </div>
-                    <button id="mic-avatar-btn" onclick="App.VoiceEngine.toggleListening()" aria-label="Toggle Listening" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative">
-                        <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-4xl shadow-inner relative">
-                            🤖<span id="listening-badge-dot" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
-                        </div>
-                    </button>
-                    <div class="flex gap-1.5 h-12 items-center">
-                        <div class="w-1.5 h-6 bg-brandGreen rounded-full audio-bar delay-4"></div>
-                        <div class="w-1.5 h-12 bg-brandGreen rounded-full audio-bar delay-2"></div>
-                        <div class="w-1.5 h-8 bg-brandGreen rounded-full audio-bar delay-1"></div>
-                        <div class="w-1.5 h-5 bg-brandGreen rounded-full audio-bar delay-3"></div>
-                    </div>
-                </div>
+                </button>
                 <div class="bg-white/95 border border-emerald-200 text-emerald-900 text-[10px] font-bold px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 mt-1">
-                    <span id="mic-live-icon" class="w-2 h-2 rounded-full bg-gray-400"></span><span id="mic-status-label">Listening Paused</span>
+                    <span id="mic-live-icon" class="w-2 h-2 rounded-full bg-gray-400"></span><span id="mic-status-label">Tap Mic to Speak</span>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-2.5 mt-2" aria-live="polite">
+            <div class="flex flex-col gap-2.5 mt-2">
                 <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-emerald-100">
                     <div class="flex justify-between items-center mb-1">
                         <span id="detected-speaker-badge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-black">🎙️ YOUR SPEECH</span>
-                        <button onclick="App.VoiceTTS.speakCurrentDetected()" aria-label="Replay detected speech" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100"><i class="ph ph-speaker-high"></i></button>
+                        <button onclick="App.VoiceTTS.speakCurrentDetected()" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100"><i class="ph ph-speaker-high"></i></button>
                     </div>
                     <h3 id="detected-japanese" class="text-base font-black text-gray-900 leading-snug">Speak when you are ready...</h3>
                     <p id="detected-romaji" class="text-[11px] text-emerald-700 font-semibold mt-0.5">Your Japanese speech will appear here.</p>
@@ -253,29 +260,12 @@
         </div>
     </section>
 
-    <!-- FLOATING BOTTOM NAVIGATION -->
+    <!-- FLOATING BOTTOM NAVIGATION DOCK -->
     <nav id="bottom-nav-dock" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass-dock rounded-full px-6 py-2.5 flex justify-between items-center shadow-2xl border border-white/60 z-40">
-        <button onclick="App.Navigation.switchView('hero')" data-nav="hero" aria-label="Home Mode" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Mode"><i class="ph ph-house font-bold"></i></button>
-        <button onclick="App.Navigation.switchView('camera')" data-nav="camera" aria-label="Camera AI Pro" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Camera AI Pro OCR"><i class="ph ph-camera font-bold"></i></button>
-        <button onclick="App.Navigation.switchView('voice')" data-nav="voice" aria-label="Voice AI Assistant" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Voice AI Assistant"><i class="ph ph-microphone font-bold"></i></button>
-        <button onclick="App.UI.toggleApiKeyModal()" aria-label="Settings" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Settings"><i class="ph ph-gear font-bold"></i></button>
+        <button onclick="App.Navigation.switchView('hero')" data-nav="hero" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Mode"><i class="ph ph-house font-bold"></i></button>
+        <button onclick="App.Navigation.switchView('camera')" data-nav="camera" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Camera AI Pro OCR"><i class="ph ph-camera font-bold"></i></button>
+        <button onclick="App.Navigation.switchView('voice')" data-nav="voice" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Voice AI Assistant"><i class="ph ph-microphone font-bold"></i></button>
     </nav>
-
-    <!-- API KEY MODAL -->
-    <div id="apikey-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-[#0B1C0E] w-full max-w-sm p-5 rounded-3xl border border-brandGreen/40 shadow-2xl relative text-white">
-            <button onclick="App.UI.toggleApiKeyModal()" aria-label="Close Settings" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
-            <div class="flex items-center gap-2.5 mb-3">
-                <div class="w-9 h-9 rounded-full bg-brandGreen/20 flex items-center justify-center text-brandGreen"><i class="ph ph-key text-lg font-bold"></i></div>
-                <div><h3 class="text-sm font-bold text-white">Gemini API Key</h3><p class="text-[10px] text-gray-400">AI configuration</p></div>
-            </div>
-            <input type="password" id="gemini-key-input" autocomplete="off" placeholder="Gemini API key" class="w-full bg-black/60 border border-brandGreen/30 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-500 outline-none focus:border-brandGreen mb-3">
-            <div class="flex gap-2">
-                <button onclick="App.UI.saveApiKeyModal()" class="flex-1 bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-md">Save Key</button>
-                <button onclick="App.UI.clearApiKeyModal()" class="px-3 bg-red-500/20 hover:bg-red-500/30 text-red-300 font-bold py-2.5 rounded-xl text-xs transition-all">Clear</button>
-            </div>
-        </div>
-    </div>
 
     <!-- TOAST -->
     <div id="toast" class="hidden fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-darkForest/95 backdrop-blur-md px-4 py-2 rounded-full border border-brandGreen/50 text-brandGreen text-xs font-bold shadow-xl flex items-center gap-2 pointer-events-none transition-all">
@@ -285,9 +275,7 @@
 
 </main>
 
-<!-- =========================================================
-     APPLICATION JAVASCRIPT MODULES (ES6)
-========================================================== -->
+<!-- MAIN ES6 JAVASCRIPT MODULE -->
 <script type="module" src="js/app.js"></script>
 
 </body>
