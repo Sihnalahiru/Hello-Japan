@@ -1,4 +1,4 @@
-```js
+```javascript
 // ============================================================
 // Hello Japan AI
 // js/app.js
@@ -64,7 +64,8 @@ const Boot = {
     ready: false,
     eventsBound: false,
     clockTimer: null,
-    serviceWorker: null
+    serviceWorker: null,
+    errorHandlersBound: false
 };
 
 window.App.Boot = Boot;
@@ -77,14 +78,20 @@ window.App.Boot = Boot;
 function safeCall(name, fn) {
     try {
         if (typeof fn !== 'function') {
-            console.warn(`[Hello Japan] ${name}: unavailable`);
+            console.warn(
+                `[Hello Japan] ${name}: unavailable`
+            );
             return undefined;
         }
 
         return fn();
 
     } catch (error) {
-        console.error(`[Hello Japan] ${name} failed:`, error);
+        console.error(
+            `[Hello Japan] ${name} failed:`,
+            error
+        );
+
         return undefined;
     }
 }
@@ -93,14 +100,20 @@ function safeCall(name, fn) {
 async function safeAsync(name, fn) {
     try {
         if (typeof fn !== 'function') {
-            console.warn(`[Hello Japan] ${name}: unavailable`);
+            console.warn(
+                `[Hello Japan] ${name}: unavailable`
+            );
             return undefined;
         }
 
         return await fn();
 
     } catch (error) {
-        console.error(`[Hello Japan] ${name} failed:`, error);
+        console.error(
+            `[Hello Japan] ${name} failed:`,
+            error
+        );
+
         return undefined;
     }
 }
@@ -111,7 +124,8 @@ async function safeAsync(name, fn) {
 // ============================================================
 
 function handleNavigation(target) {
-    const route = target?.getAttribute('data-route');
+    const route =
+        target?.getAttribute('data-route');
 
     if (!route) {
         return;
@@ -216,7 +230,8 @@ function handleSpeaker(language) {
 
 
 function handleContext(target) {
-    const context = target?.getAttribute('data-ctx');
+    const context =
+        target?.getAttribute('data-ctx');
 
     if (!context) {
         return;
@@ -235,11 +250,10 @@ function handleContext(target) {
 
 
 // ============================================================
-// CENTRAL EVENT DELEGATION
+// CENTRAL DOCUMENT EVENT DELEGATION
 // ============================================================
 
 function handleDocumentClick(event) {
-
     const target = event.target;
 
     if (!(target instanceof Element)) {
@@ -256,77 +270,143 @@ function handleDocumentClick(event) {
 
     if (routeTarget) {
         event.preventDefault();
+
         handleNavigation(routeTarget);
+
         return;
     }
 
 
     // --------------------------------------------------------
-    // Camera
+    // Camera scan
     // --------------------------------------------------------
 
-    if (target.closest('#camera-scan-button')) {
+    const cameraScanTarget =
+        target.closest('#camera-scan-button');
+
+    if (cameraScanTarget) {
         event.preventDefault();
+
         handleCameraScan();
+
         return;
     }
 
 
-    if (target.closest('#btn-toggle-facing')) {
+    // --------------------------------------------------------
+    // Camera facing
+    // --------------------------------------------------------
+
+    const facingTarget =
+        target.closest('#btn-toggle-facing');
+
+    if (facingTarget) {
         event.preventDefault();
+
         handleFacingToggle();
+
         return;
     }
 
 
-    if (target.closest('#btn-toggle-torch')) {
+    // --------------------------------------------------------
+    // Camera torch
+    // --------------------------------------------------------
+
+    const torchTarget =
+        target.closest('#btn-toggle-torch');
+
+    if (torchTarget) {
         event.preventDefault();
+
         handleTorchToggle();
+
         return;
     }
 
 
-    if (target.closest('#btn-ar-pronounce')) {
+    // --------------------------------------------------------
+    // AR pronunciation
+    // --------------------------------------------------------
+
+    const arTarget =
+        target.closest('#btn-ar-pronounce');
+
+    if (arTarget) {
         event.preventDefault();
+
         handleARPronounce();
+
         return;
     }
 
 
     // --------------------------------------------------------
-    // Voice
+    // Voice microphone
     // --------------------------------------------------------
 
-    if (target.closest('#mic-avatar-btn')) {
+    const micTarget =
+        target.closest('#mic-avatar-btn');
+
+    if (micTarget) {
         event.preventDefault();
+
         handleMic();
-        return;
-    }
 
-
-    if (target.closest('#btn-speaker-jp')) {
-        event.preventDefault();
-        handleSpeaker('ja-JP');
-        return;
-    }
-
-
-    if (target.closest('#btn-speaker-si')) {
-        event.preventDefault();
-        handleSpeaker('si-LK');
-        return;
-    }
-
-
-    if (target.closest('#btn-speaker-en')) {
-        event.preventDefault();
-        handleSpeaker('en-US');
         return;
     }
 
 
     // --------------------------------------------------------
-    // Voice Context
+    // Voice speaker — Japanese
+    // --------------------------------------------------------
+
+    const japaneseSpeakerTarget =
+        target.closest('#btn-speaker-jp');
+
+    if (japaneseSpeakerTarget) {
+        event.preventDefault();
+
+        handleSpeaker('ja-JP');
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Voice speaker — Sinhala
+    // --------------------------------------------------------
+
+    const sinhalaSpeakerTarget =
+        target.closest('#btn-speaker-si');
+
+    if (sinhalaSpeakerTarget) {
+        event.preventDefault();
+
+        handleSpeaker('si-LK');
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Voice speaker — English
+    // --------------------------------------------------------
+
+    const englishSpeakerTarget =
+        target.closest('#btn-speaker-en');
+
+    if (englishSpeakerTarget) {
+        event.preventDefault();
+
+        handleSpeaker('en-US');
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Voice context
     // --------------------------------------------------------
 
     const contextTarget =
@@ -334,7 +414,9 @@ function handleDocumentClick(event) {
 
     if (contextTarget) {
         event.preventDefault();
+
         handleContext(contextTarget);
+
         return;
     }
 }
@@ -345,7 +427,6 @@ function handleDocumentClick(event) {
 // ============================================================
 
 function initializeEvents() {
-
     if (Boot.eventsBound) {
         return;
     }
@@ -369,15 +450,13 @@ function initializeEvents() {
 // ============================================================
 
 function initializeClock() {
-
     if (Boot.clockTimer) {
         clearInterval(Boot.clockTimer);
+
         Boot.clockTimer = null;
     }
 
-
     const tick = () => {
-
         if (
             Navigation &&
             typeof Navigation.tickClock === 'function'
@@ -390,15 +469,16 @@ function initializeClock() {
     };
 
 
-    // Immediate update.
+    // Immediate clock update.
     tick();
 
 
-    // Every second.
-    Boot.clockTimer = window.setInterval(
-        tick,
-        1000
-    );
+    // Update every second.
+    Boot.clockTimer =
+        window.setInterval(
+            tick,
+            1000
+        );
 }
 
 
@@ -407,7 +487,6 @@ function initializeClock() {
 // ============================================================
 
 function initializeAPI() {
-
     if (
         UI &&
         typeof UI.updateApiStatus === 'function'
@@ -421,11 +500,10 @@ function initializeAPI() {
 
 
 // ============================================================
-// TTS
+// TEXT-TO-SPEECH
 // ============================================================
 
 function initializeTTS() {
-
     if (
         VoiceTTS &&
         typeof VoiceTTS.init === 'function'
@@ -439,19 +517,56 @@ function initializeTTS() {
 
 
 // ============================================================
+// VOICE ENGINE
+// ============================================================
+
+function initializeVoiceEngine() {
+    if (
+        !VoiceEngine ||
+        typeof VoiceEngine.init !== 'function'
+    ) {
+        console.warn(
+            '[Hello Japan] VoiceEngine.init unavailable.'
+        );
+
+        return false;
+    }
+
+    const result =
+        safeCall(
+            'Voice Engine',
+            () => VoiceEngine.init()
+        );
+
+    if (result === false) {
+        console.warn(
+            '[Hello Japan] Voice Engine initialized but speech recognition is unavailable.'
+        );
+
+        return false;
+    }
+
+    console.log(
+        '[Hello Japan] Voice Engine ready.'
+    );
+
+    return true;
+}
+
+
+// ============================================================
 // STATE INITIALIZATION
 // ============================================================
 
 function initializeState() {
-
     try {
-
         if (
             State &&
             typeof State.init === 'function'
         ) {
             State.init();
-            return;
+
+            return true;
         }
 
 
@@ -460,7 +575,8 @@ function initializeState() {
             typeof State.initialize === 'function'
         ) {
             State.initialize();
-            return;
+
+            return true;
         }
 
 
@@ -468,12 +584,15 @@ function initializeState() {
             '[Hello Japan] State module loaded.'
         );
 
-    } catch (error) {
+        return true;
 
+    } catch (error) {
         console.error(
             '[Hello Japan] State initialization failed:',
             error
         );
+
+        return false;
     }
 }
 
@@ -483,9 +602,7 @@ function initializeState() {
 // ============================================================
 
 async function initializeServiceWorker() {
-
     if (!('serviceWorker' in navigator)) {
-
         console.warn(
             '[Hello Japan] Service Worker unsupported.'
         );
@@ -495,7 +612,6 @@ async function initializeServiceWorker() {
 
 
     try {
-
         const registration =
             await navigator.serviceWorker.register(
                 './sw.js',
@@ -504,23 +620,20 @@ async function initializeServiceWorker() {
                 }
             );
 
-
-        Boot.serviceWorker = registration;
+        Boot.serviceWorker =
+            registration;
 
 
         console.log(
-            '[Hello Japan] Service Worker active:',
+            '[Hello Japan] Service Worker registered:',
             registration.scope
         );
 
 
-        // Check for updates.
         try {
-
             await registration.update();
 
         } catch (updateError) {
-
             console.warn(
                 '[Hello Japan] Service Worker update check failed:',
                 updateError
@@ -531,7 +644,6 @@ async function initializeServiceWorker() {
         return registration;
 
     } catch (error) {
-
         console.warn(
             '[Hello Japan] Service Worker registration failed:',
             error
@@ -547,11 +659,14 @@ async function initializeServiceWorker() {
 // ============================================================
 
 function initializeErrorHandling() {
+    if (Boot.errorHandlersBound) {
+        return;
+    }
+
 
     window.addEventListener(
         'error',
         (event) => {
-
             console.error(
                 '[Hello Japan] Runtime error:',
                 event.error || event.message
@@ -563,13 +678,15 @@ function initializeErrorHandling() {
     window.addEventListener(
         'unhandledrejection',
         (event) => {
-
             console.error(
                 '[Hello Japan] Unhandled promise rejection:',
                 event.reason
             );
         }
     );
+
+
+    Boot.errorHandlersBound = true;
 }
 
 
@@ -578,7 +695,6 @@ function initializeErrorHandling() {
 // ============================================================
 
 async function boot() {
-
     if (Boot.started) {
         return;
     }
@@ -592,49 +708,61 @@ async function boot() {
 
 
     // --------------------------------------------------------
-    // Error monitoring
+    // 1. Error monitoring
     // --------------------------------------------------------
 
     initializeErrorHandling();
 
 
     // --------------------------------------------------------
-    // Global events
+    // 2. Global document events
     // --------------------------------------------------------
 
     initializeEvents();
 
 
     // --------------------------------------------------------
-    // Application state
+    // 3. Application state
     // --------------------------------------------------------
 
     initializeState();
 
 
     // --------------------------------------------------------
-    // Navigation clock
+    // 4. Navigation clock
     // --------------------------------------------------------
 
     initializeClock();
 
 
     // --------------------------------------------------------
-    // API status
+    // 5. API status
     // --------------------------------------------------------
 
     initializeAPI();
 
 
     // --------------------------------------------------------
-    // Text-to-speech
+    // 6. TTS
+    //
+    // Must be initialized before VoiceEngine because
+    // VoiceEngine can later coordinate with VoiceTTS.
     // --------------------------------------------------------
 
     initializeTTS();
 
 
     // --------------------------------------------------------
-    // Service Worker
+    // 7. Voice recognition
+    //
+    // THIS WAS MISSING FROM THE PREVIOUS APP.JS.
+    // --------------------------------------------------------
+
+    initializeVoiceEngine();
+
+
+    // --------------------------------------------------------
+    // 8. Service Worker
     // --------------------------------------------------------
 
     await initializeServiceWorker();
@@ -664,7 +792,6 @@ async function boot() {
 // ============================================================
 
 if (document.readyState === 'loading') {
-
     document.addEventListener(
         'DOMContentLoaded',
         () => {
@@ -676,27 +803,75 @@ if (document.readyState === 'loading') {
     );
 
 } else {
-
     void boot();
 }
 
 
 // ============================================================
-// CLEANUP
+// PAGE CLEANUP
 // ============================================================
 
 window.addEventListener(
     'pagehide',
     () => {
 
+        // Stop application clock.
         if (Boot.clockTimer) {
-
             clearInterval(
                 Boot.clockTimer
             );
 
             Boot.clockTimer = null;
         }
+
+
+        // Stop voice recognition.
+        if (
+            VoiceEngine &&
+            typeof VoiceEngine.stop === 'function'
+        ) {
+            try {
+                VoiceEngine.stop();
+            } catch (error) {
+                console.warn(
+                    '[Hello Japan] Voice cleanup failed:',
+                    error
+                );
+            }
+        }
+
+
+        // Stop TTS.
+        if (
+            VoiceTTS &&
+            typeof VoiceTTS.stop === 'function'
+        ) {
+            try {
+                VoiceTTS.stop();
+            } catch (error) {
+                console.warn(
+                    '[Hello Japan] TTS cleanup failed:',
+                    error
+                );
+            }
+        }
+
+
+        // Stop camera.
+        if (
+            CameraEngine &&
+            typeof CameraEngine.stop === 'function'
+        ) {
+            try {
+                CameraEngine.stop(true);
+            } catch (error) {
+                console.warn(
+                    '[Hello Japan] Camera cleanup failed:',
+                    error
+                );
+            }
+        }
+
     },
     {
         once: true
