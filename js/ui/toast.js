@@ -1,14 +1,15 @@
-window.App = window.App || {};
+let toastTimer = null;
 
-App.Toast = {
-    toastTimer: null,
+export const Toast = {
     show(message) {
         const toast = document.getElementById('toast');
         const text = document.getElementById('toast-text');
         if (!toast || !text) return;
+        
         text.textContent = message;
         toast.classList.remove('hidden');
-        if (this.toastTimer) clearTimeout(this.toastTimer);
-        this.toastTimer = setTimeout(() => toast.classList.add('hidden'), 2400);
+        
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.add('hidden'), 2400);
     }
 };
