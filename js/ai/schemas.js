@@ -2,6 +2,7 @@ export const Schemas = {
     VOICE_RESPONSE_SCHEMA: {
         type: "OBJECT",
         properties: {
+            detected_environment: { type: "STRING" },
             heard_japanese: { type: "STRING" },
             heard_romaji: { type: "STRING" },
             heard_sinhala: { type: "STRING" },
@@ -26,6 +27,7 @@ export const Schemas = {
             }
         },
         required: [
+            "detected_environment",
             "heard_japanese", "heard_romaji", "heard_sinhala", "heard_english",
             "response_japanese", "response_romaji", "response_sinhala", "response_english", "replies"
         ]
