@@ -3,6 +3,25 @@
 // js/voice/voiceRenderer.js
 // Voice Assistant UI Renderer
 // ============================================================
+//
+// RESPONSIBILITY
+//
+// Voice AI data
+//      ↓
+// VoiceRenderer
+//      ↓
+// UI rendering
+//
+// User-triggered voice replay / suggestion playback
+//      ↓
+// VoiceEngine.speakWithProtection()
+//      ↓
+// VoiceTTS
+//
+// IMPORTANT:
+// This module MUST NOT call VoiceTTS directly.
+// VoiceEngine owns the microphone/TTS lifecycle.
+// ============================================================
 
 import { State } from '../state.js';
 import { Toast } from '../ui/toast.js';
@@ -35,30 +54,82 @@ function escapeHtml(value) {
 
 
 // ============================================================
+// VOICE ENGINE ACCESS
+// ============================================================
+//
+// VoiceRenderer intentionally does not import VoiceEngine.
+//
+// Why?
+//
+// VoiceEngine imports VoiceRenderer.
+//
+// Direct import would create:
+//
+// VoiceEngine
+//     ↓
+// VoiceRenderer
+//     ↓
+// VoiceEngine
+//
+// Instead the already-registered global App namespace is used.
+// ============================================================
+
+function getVoiceEngine() {
+
+    const engine =
+        window.App?.VoiceEngine;
+
+    if (
+        !engine ||
+        typeof engine.speakWithProtection !== 'function'
+    ) {
+        return null;
+    }
+
+    return engine;
+}
+
+
+// ============================================================
 // VOICE RENDERER
 // ============================================================
 
 export const VoiceRenderer = {
 
-    // --------------------------------------------------------
-    // Listening state
-    // --------------------------------------------------------
+    // ========================================================
+    // LISTENING STATE
+    // ========================================================
 
-    setListeningState(isListening, message = '') {
+    setListeningState(
+        isListening,
+        message = ''
+    ) {
 
-        const label = get('mic-status-label');
-        const icon = get('mic-live-icon');
-        const badge = get('listening-badge-dot');
-        const button = get('mic-avatar-btn');
+        const label =
+            get('mic-status-label');
 
-        const text = message ||
-            (isListening
-                ? 'Listening...'
-                : 'Tap Mic to Speak');
+        const icon =
+            get('mic-live-icon');
+
+        const badge =
+            get('listening-badge-dot');
+
+        const button =
+            get('mic-avatar-btn');
+
+
+        const text =
+            message ||
+            (
+                isListening
+                    ? 'Listening...'
+                    : 'Tap Mic to Speak'
+            );
 
 
         if (label) {
-            label.textContent = text;
+            label.textContent =
+                text;
         }
 
 
@@ -94,7 +165,9 @@ export const VoiceRenderer = {
 
             button.setAttribute(
                 'aria-pressed',
-                isListening ? 'true' : 'false'
+                isListening
+                    ? 'true'
+                    : 'false'
             );
 
             button.classList.toggle(
@@ -105,11 +178,13 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Processing state
-    // --------------------------------------------------------
+    // ========================================================
+    // PROCESSING STATE
+    // ========================================================
 
-    showProcessing(transcript = '') {
+    showProcessing(
+        transcript = ''
+    ) {
 
         this.setListeningState(
             false,
@@ -117,29 +192,43 @@ export const VoiceRenderer = {
         );
 
 
-        const japanese = get('detected-japanese');
-        const romaji = get('detected-romaji');
-        const sinhala = get('detected-sinhala');
-        const english = get('detected-english');
+        const japanese =
+            get('detected-japanese');
+
+        const romaji =
+            get('detected-romaji');
+
+        const sinhala =
+            get('detected-sinhala');
+
+        const english =
+            get('detected-english');
 
 
-        if (japanese && transcript) {
-            japanese.textContent = transcript;
+        if (
+            japanese &&
+            transcript
+        ) {
+            japanese.textContent =
+                transcript;
         }
 
 
         if (romaji) {
-            romaji.textContent = 'Processing your speech...';
+            romaji.textContent =
+                'Processing your speech...';
         }
 
 
         if (sinhala) {
-            sinhala.textContent = 'AI ඔබේ කතාව තේරුම් ගනිමින් පවතී...';
+            sinhala.textContent =
+                'AI ඔබේ කතාව තේරුම් ගනිමින් පවතී...';
         }
 
 
         if (english) {
-            english.textContent = 'The AI is understanding your speech...';
+            english.textContent =
+                'The AI is understanding your speech...';
         }
 
 
@@ -147,36 +236,54 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Conversation renderer
-    // --------------------------------------------------------
+    // ========================================================
+    // CONVERSATION RENDERER
+    // ========================================================
 
-    renderConversation(data = {}) {
+    renderConversation(
+        data = {}
+    ) {
 
         const heardJapanese =
-            safeText(data.heardJapanese);
+            safeText(
+                data.heardJapanese
+            );
 
         const heardRomaji =
-            safeText(data.heardRomaji);
+            safeText(
+                data.heardRomaji
+            );
 
         const heardSinhala =
-            safeText(data.heardSinhala);
+            safeText(
+                data.heardSinhala
+            );
 
         const heardEnglish =
-            safeText(data.heardEnglish);
+            safeText(
+                data.heardEnglish
+            );
 
 
         const responseJapanese =
-            safeText(data.responseJapanese);
+            safeText(
+                data.responseJapanese
+            );
 
         const responseRomaji =
-            safeText(data.responseRomaji);
+            safeText(
+                data.responseRomaji
+            );
 
         const responseSinhala =
-            safeText(data.responseSinhala);
+            safeText(
+                data.responseSinhala
+            );
 
         const responseEnglish =
-            safeText(data.responseEnglish);
+            safeText(
+                data.responseEnglish
+            );
 
 
         const environment =
@@ -187,10 +294,11 @@ export const VoiceRenderer = {
 
 
         // ----------------------------------------------------
-        // User speech
+        // USER SPEECH
         // ----------------------------------------------------
 
-        const japanese = get('detected-japanese');
+        const japanese =
+            get('detected-japanese');
 
         if (japanese) {
 
@@ -200,17 +308,18 @@ export const VoiceRenderer = {
         }
 
 
-        const romaji = get('detected-romaji');
+        const romaji =
+            get('detected-romaji');
 
         if (romaji) {
 
             romaji.textContent =
-                heardRomaji ||
-                '';
+                heardRomaji;
         }
 
 
-        const sinhala = get('detected-sinhala');
+        const sinhala =
+            get('detected-sinhala');
 
         if (sinhala) {
 
@@ -220,7 +329,8 @@ export const VoiceRenderer = {
         }
 
 
-        const english = get('detected-english');
+        const english =
+            get('detected-english');
 
         if (english) {
 
@@ -231,7 +341,7 @@ export const VoiceRenderer = {
 
 
         // ----------------------------------------------------
-        // Environment
+        // ENVIRONMENT
         // ----------------------------------------------------
 
         const envDisplay =
@@ -245,7 +355,7 @@ export const VoiceRenderer = {
 
 
         // ----------------------------------------------------
-        // Suggested responses
+        // SUGGESTED RESPONSES
         // ----------------------------------------------------
 
         const replies =
@@ -256,12 +366,17 @@ export const VoiceRenderer = {
 
         const normalizedReplies =
             replies
-                .map((reply) => this.normalizeReply(reply))
+                .map(
+                    reply =>
+                        this.normalizeReply(reply)
+                )
                 .filter(Boolean);
 
 
-        // If the AI returned the main response but no
-        // structured replies, create one suggestion.
+        // ----------------------------------------------------
+        // FALLBACK SUGGESTION
+        // ----------------------------------------------------
+
         if (
             normalizedReplies.length === 0 &&
             (
@@ -273,10 +388,18 @@ export const VoiceRenderer = {
         ) {
 
             normalizedReplies.push({
-                japanese: responseJapanese,
-                romaji: responseRomaji,
-                sinhala: responseSinhala,
-                english: responseEnglish
+
+                japanese:
+                    responseJapanese,
+
+                romaji:
+                    responseRomaji,
+
+                sinhala:
+                    responseSinhala,
+
+                english:
+                    responseEnglish
             });
         }
 
@@ -287,10 +410,11 @@ export const VoiceRenderer = {
 
 
         // ----------------------------------------------------
-        // Save latest response
+        // SAVE LAST RESPONSE
         // ----------------------------------------------------
 
         State.lastVoiceResponse = {
+
             heardJapanese,
             heardRomaji,
             heardSinhala,
@@ -301,9 +425,11 @@ export const VoiceRenderer = {
             responseSinhala,
             responseEnglish,
 
-            detectedEnvironment: environment,
+            detectedEnvironment:
+                environment,
 
-            replies: normalizedReplies
+            replies:
+                normalizedReplies
         };
 
 
@@ -314,9 +440,9 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Reply normalization
-    // --------------------------------------------------------
+    // ========================================================
+    // REPLY NORMALIZATION
+    // ========================================================
 
     normalizeReply(reply) {
 
@@ -326,10 +452,12 @@ export const VoiceRenderer = {
 
 
         // ----------------------------------------------------
-        // String reply
+        // STRING
         // ----------------------------------------------------
 
-        if (typeof reply === 'string') {
+        if (
+            typeof reply === 'string'
+        ) {
 
             const japanese =
                 reply.trim();
@@ -338,20 +466,27 @@ export const VoiceRenderer = {
                 return null;
             }
 
+
             return {
+
                 japanese,
+
                 romaji: '',
+
                 sinhala: '',
+
                 english: ''
             };
         }
 
 
         // ----------------------------------------------------
-        // Object reply
+        // OBJECT
         // ----------------------------------------------------
 
-        if (typeof reply !== 'object') {
+        if (
+            typeof reply !== 'object'
+        ) {
             return null;
         }
 
@@ -359,6 +494,7 @@ export const VoiceRenderer = {
         const japanese =
             safeText(
                 reply.japanese ||
+                reply.jp ||
                 reply.response_japanese ||
                 reply.responseJapanese
             );
@@ -399,19 +535,25 @@ export const VoiceRenderer = {
 
 
         return {
+
             japanese,
+
             romaji,
+
             sinhala,
+
             english
         };
     },
 
 
-    // --------------------------------------------------------
-    // Suggestions
-    // --------------------------------------------------------
+    // ========================================================
+    // SUGGESTIONS
+    // ========================================================
 
-    renderSuggestions(replies = []) {
+    renderSuggestions(
+        replies = []
+    ) {
 
         const container =
             get('suggestions-list');
@@ -428,10 +570,15 @@ export const VoiceRenderer = {
         container.innerHTML = '';
 
 
-        if (!Array.isArray(replies) || replies.length === 0) {
+        if (
+            !Array.isArray(replies) ||
+            replies.length === 0
+        ) {
 
             if (empty) {
-                empty.classList.remove('hidden');
+                empty.classList.remove(
+                    'hidden'
+                );
             }
 
             return;
@@ -439,18 +586,26 @@ export const VoiceRenderer = {
 
 
         if (empty) {
-            empty.classList.add('hidden');
+            empty.classList.add(
+                'hidden'
+            );
         }
 
 
         replies.forEach(
-            (reply, index) => {
+            (
+                reply,
+                index
+            ) => {
 
                 const card =
-                    document.createElement('button');
+                    document.createElement(
+                        'button'
+                    );
 
 
-                card.type = 'button';
+                card.type =
+                    'button';
 
                 card.className =
                     'voice-suggestion-card w-full text-left bg-white border border-emerald-100 rounded-xl p-3 shadow-sm hover:border-brandGreen hover:bg-emerald-50 active:scale-[0.99] transition-all';
@@ -489,7 +644,9 @@ export const VoiceRenderer = {
 
 
                 card.innerHTML = `
+
                     <div class="flex items-start justify-between gap-2">
+
                         <div class="min-w-0 flex-1">
 
                             ${
@@ -535,8 +692,11 @@ export const VoiceRenderer = {
                         </div>
 
                         <span class="shrink-0 w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+
                             <i class="ph ph-speaker-high"></i>
+
                         </span>
+
                     </div>
                 `;
 
@@ -560,14 +720,32 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Suggestion tap
-    // --------------------------------------------------------
+    // ========================================================
+    // SUGGESTION TAP
+    // ========================================================
+    //
+    // IMPORTANT:
+    //
+    // NEVER call VoiceTTS directly here.
+    //
+    // Correct:
+    //
+    // VoiceRenderer
+    //      ↓
+    // VoiceEngine
+    //      ↓
+    // protected TTS
+    //
+    // ========================================================
 
-    handleSuggestionTap(reply) {
+    async handleSuggestionTap(
+        reply
+    ) {
 
         const japanese =
-            safeText(reply?.japanese);
+            safeText(
+                reply?.japanese
+            );
 
 
         if (!japanese) {
@@ -576,41 +754,75 @@ export const VoiceRenderer = {
                 'No Japanese response available.'
             );
 
-            return;
+            return false;
         }
 
 
+        // ----------------------------------------------------
         // Save selected response.
+        // ----------------------------------------------------
+
         State.selectedVoiceResponse =
             {
                 ...reply
             };
 
 
-        // Use global VoiceTTS so this renderer
-        // does not create circular imports.
-        if (
-            window.App?.VoiceTTS &&
-            typeof window.App.VoiceTTS.speakText === 'function'
-        ) {
+        // ----------------------------------------------------
+        // Get protected voice engine.
+        // ----------------------------------------------------
 
-            window.App.VoiceTTS.speakText(
-                japanese
+        const engine =
+            getVoiceEngine();
+
+
+        if (!engine) {
+
+            console.warn(
+                '[VoiceRenderer] VoiceEngine TTS protection unavailable.'
             );
 
-            return;
+
+            Toast.show(
+                'Voice output is not ready.'
+            );
+
+            return false;
         }
 
 
-        Toast.show(
-            'Voice output is not ready.'
-        );
+        // ----------------------------------------------------
+        // Speak through VoiceEngine.
+        // ----------------------------------------------------
+
+        const result =
+            await Promise.resolve(
+                engine.speakWithProtection(
+                    japanese,
+                    {
+                        lang: 'ja-JP'
+                    }
+                )
+            );
+
+
+        if (result === false) {
+
+            Toast.show(
+                'Voice output failed.'
+            );
+
+            return false;
+        }
+
+
+        return true;
     },
 
 
-    // --------------------------------------------------------
-    // Clear suggestions
-    // --------------------------------------------------------
+    // ========================================================
+    // CLEAR SUGGESTIONS
+    // ========================================================
 
     clearSuggestions() {
 
@@ -622,21 +834,28 @@ export const VoiceRenderer = {
 
 
         if (container) {
-            container.innerHTML = '';
+
+            container.innerHTML =
+                '';
         }
 
 
         if (empty) {
-            empty.classList.remove('hidden');
+
+            empty.classList.remove(
+                'hidden'
+            );
         }
     },
 
 
-    // --------------------------------------------------------
-    // Error
-    // --------------------------------------------------------
+    // ========================================================
+    // ERROR
+    // ========================================================
 
-    showError(message = '') {
+    showError(
+        message = ''
+    ) {
 
         const japanese =
             get('detected-japanese');
@@ -652,24 +871,28 @@ export const VoiceRenderer = {
 
 
         if (japanese) {
+
             japanese.textContent =
                 'Voice AI error';
         }
 
 
         if (romaji) {
+
             romaji.textContent =
                 'Please speak again.';
         }
 
 
         if (sinhala) {
+
             sinhala.textContent =
                 'කරුණාකර නැවත කතා කරන්න.';
         }
 
 
         if (english) {
+
             english.textContent =
                 message ||
                 'Please try speaking again.';
@@ -686,21 +909,33 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Speaker UI
-    // --------------------------------------------------------
+    // ========================================================
+    // SPEAKER UI
+    // ========================================================
 
-    updateSpeakerUI(language) {
+    updateSpeakerUI(
+        language
+    ) {
 
         const buttons = {
-            'ja-JP': get('btn-speaker-jp'),
-            'si-LK': get('btn-speaker-si'),
-            'en-US': get('btn-speaker-en')
+
+            'ja-JP':
+                get('btn-speaker-jp'),
+
+            'si-LK':
+                get('btn-speaker-si'),
+
+            'en-US':
+                get('btn-speaker-en')
         };
 
 
-        Object.entries(buttons).forEach(
-            ([lang, button]) => {
+        Object.entries(
+            buttons
+        ).forEach(
+            (
+                [lang, button]
+            ) => {
 
                 if (!button) {
                     return;
@@ -744,11 +979,13 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Context UI
-    // --------------------------------------------------------
+    // ========================================================
+    // CONTEXT UI
+    // ========================================================
 
-    updateContextUI(context) {
+    updateContextUI(
+        context
+    ) {
 
         const buttons =
             document.querySelectorAll(
@@ -757,7 +994,7 @@ export const VoiceRenderer = {
 
 
         buttons.forEach(
-            (button) => {
+            button => {
 
                 const active =
                     button.getAttribute(
@@ -804,10 +1041,18 @@ export const VoiceRenderer = {
 
 
         const labels = {
-            daily: 'Daily / Friendly',
-            workplace: 'Workplace (Keigo)',
-            restaurant: 'Restaurant',
-            konbini: 'Store / Konbini'
+
+            daily:
+                'Daily / Friendly',
+
+            workplace:
+                'Workplace (Keigo)',
+
+            restaurant:
+                'Restaurant',
+
+            konbini:
+                'Store / Konbini'
         };
 
 
@@ -823,11 +1068,15 @@ export const VoiceRenderer = {
     },
 
 
-    // --------------------------------------------------------
-    // Replay detected speech
-    // --------------------------------------------------------
+    // ========================================================
+    // REPLAY DETECTED SPEECH
+    // ========================================================
+    //
+    // This MUST also use VoiceEngine protection.
+    //
+    // ========================================================
 
-    replayDetected() {
+    async replayDetected() {
 
         const data =
             State.lastVoiceResponse;
@@ -845,32 +1094,57 @@ export const VoiceRenderer = {
                 'No detected Japanese speech yet.'
             );
 
-            return;
+            return false;
         }
 
 
-        if (
-            window.App?.VoiceTTS &&
-            typeof window.App.VoiceTTS.speakText === 'function'
-        ) {
+        const engine =
+            getVoiceEngine();
 
-            window.App.VoiceTTS.speakText(
-                text
+
+        if (!engine) {
+
+            console.warn(
+                '[VoiceRenderer] VoiceEngine TTS protection unavailable.'
             );
 
-            return;
+
+            Toast.show(
+                'Voice output is not ready.'
+            );
+
+            return false;
         }
 
 
-        Toast.show(
-            'Voice output is not ready.'
-        );
+        const result =
+            await Promise.resolve(
+                engine.speakWithProtection(
+                    text,
+                    {
+                        lang: 'ja-JP'
+                    }
+                )
+            );
+
+
+        if (result === false) {
+
+            Toast.show(
+                'Voice replay failed.'
+            );
+
+            return false;
+        }
+
+
+        return true;
     },
 
 
-    // --------------------------------------------------------
-    // Clear complete voice screen
-    // --------------------------------------------------------
+    // ========================================================
+    // CLEAR COMPLETE VOICE SCREEN
+    // ========================================================
 
     clearConversation() {
 
@@ -888,24 +1162,28 @@ export const VoiceRenderer = {
 
 
         if (japanese) {
+
             japanese.textContent =
                 'Speak when you are ready...';
         }
 
 
         if (romaji) {
+
             romaji.textContent =
                 'Your Japanese speech will appear here.';
         }
 
 
         if (sinhala) {
+
             sinhala.textContent =
                 'ඔබ කතා කරන Japanese වාක්‍යයේ තේරුම මෙහි පෙන්වයි.';
         }
 
 
         if (english) {
+
             english.textContent =
                 'Your recognized speech will be translated here.';
         }
@@ -917,7 +1195,6 @@ export const VoiceRenderer = {
         State.lastVoiceResponse =
             null;
 
-
         State.selectedVoiceResponse =
             null;
     }
@@ -927,10 +1204,15 @@ export const VoiceRenderer = {
 // ============================================================
 // REPLAY BUTTON
 // ============================================================
+//
+// Kept as a defensive listener because existing HTML may use
+// this button directly.
+//
+// ============================================================
 
 document.addEventListener(
     'click',
-    (event) => {
+    event => {
 
         const target =
             event.target instanceof Element
@@ -949,11 +1231,14 @@ document.addEventListener(
             );
 
 
-        if (replay) {
-
-            event.preventDefault();
-
-            VoiceRenderer.replayDetected();
+        if (!replay) {
+            return;
         }
+
+
+        event.preventDefault();
+
+
+        void VoiceRenderer.replayDetected();
     }
 );
