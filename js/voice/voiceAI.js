@@ -1,32 +1,7 @@
 // ============================================================
 // Hello Japan AI
 // js/voice/voiceAI.js
-// Voice AI orchestration layer
-// ============================================================
-//
-// Responsibility:
-//
-// User speech
-//    ↓
-// VoiceEngine
-//    ↓
-// VoiceAI
-//    ↓
-// Gemini
-//    ↓
-// Schema validation
-//    ↓
-// VoiceRenderer
-//    ↓
-// VoiceEngine.speakWithProtection()
-//    ↓
-// VoiceTTS
-//
-// IMPORTANT:
-// VoiceAI must NOT import VoiceTTS directly.
-//
-// VoiceEngine owns the microphone/TTS lifecycle so that
-// recognition cannot hear the AI's own speech.
+// Voice AI Orchestrator
 // ============================================================
 
 import { State } from '../state.js';
@@ -39,44 +14,22 @@ import { Toast } from '../ui/toast.js';
 
 
 // ============================================================
-// INTERNAL HELPERS
-// ============================================================
-
-function cleanString(value) {
-    return typeof value === 'string'
-        ? value.trim()
-        : '';
-}
-
-
-function getVoiceEngine() {
-    const engine = window.App?.VoiceEngine;
-
-    if (
-        !engine ||
-        typeof engine.speakWithProtection !== 'function'
-    ) {
-        return null;
-    }
-
-    return engine;
-}
-
-
-// ============================================================
 // VOICE AI
 // ============================================================
 
 export const VoiceAI = {
 
     // ========================================================
-    // HANDLE SPOKEN VOICE
+    // MAIN VOICE REQUEST
     // ========================================================
 
     async handleSpokenVoice(heardText) {
 
         const transcript =
-            cleanString(heardText);
+            typeof heardText === 'string'
+                ? heardText.trim()
+                : '';
+
 
         if (!transcript) {
             return false;
@@ -84,11 +37,10 @@ export const VoiceAI = {
 
 
         // ----------------------------------------------------
-        // Create a unique request ID.
+        // Request ID
         //
-        // If another request becomes active before this one
-        // finishes, the older response must never update the UI
-        // or trigger TTS.
+        // Prevents an old Gemini response from overwriting
+        // a newer voice request.
         // ----------------------------------------------------
 
         const requestId =
@@ -96,21 +48,15 @@ export const VoiceAI = {
 
 
         // ----------------------------------------------------
-        // Save latest transcript into state.
+        // Save transcript
         // ----------------------------------------------------
-
-        State.lastTranscript =
-            transcript;
-
-        State.lastTranscriptTime =
-            Date.now();
 
         State.currentVoiceTranscript =
             transcript;
 
 
         // ----------------------------------------------------
-        // Show processing UI.
+        // Processing UI
         // ----------------------------------------------------
 
         VoiceRenderer.showProcessing(
@@ -120,9 +66,9 @@ export const VoiceAI = {
 
         try {
 
-            // ==================================================
-            // BUILD PROMPT
-            // ==================================================
+            // ------------------------------------------------
+            // Build prompt
+            // ------------------------------------------------
 
             const prompt =
                 Prompts.getVoicePrompt(
@@ -132,23 +78,12 @@ export const VoiceAI = {
                 );
 
 
-            if (
-                typeof prompt !== 'string' ||
-                !prompt.trim()
-            ) {
-                throw new Error(
-                    'VOICE_PROMPT_EMPTY'
-                );
-            }
-
-
-            // ==================================================
-            // GEMINI REQUEST
-            // ==================================================
+            // ------------------------------------------------
+            // Gemini
+            // ------------------------------------------------
 
             const result =
                 await Gemini.callContent(
-
                     {
                         contents: [
                             {
@@ -160,28 +95,14 @@ export const VoiceAI = {
                             }
                         ]
                     },
-
-                    Config.DEFAULT_TIMEOUT_MS ||
-                    12000,
-
+                    Config.DEFAULT_TIMEOUT_MS || 12000,
                     Schemas.VOICE_RESPONSE_SCHEMA
                 );
 
 
-            // ==================================================
-            // STALE REQUEST PROTECTION
-            // ==================================================
-            //
-            // A newer voice request may have started while
-            // Gemini was processing this one.
-            //
-            // Never allow an old request to:
-            // - overwrite the UI
-            // - speak old text
-            // - overwrite State
-            //
-            // This check MUST happen before validation/rendering.
-            // ==================================================
+            // ------------------------------------------------
+            // Stale request protection
+            // ------------------------------------------------
 
             if (
                 requestId !==
@@ -191,9 +112,9 @@ export const VoiceAI = {
             }
 
 
-            // ==================================================
-            // VALIDATE / NORMALIZE RESPONSE
-            // ==================================================
+            // ------------------------------------------------
+            // Validate / normalize
+            // ------------------------------------------------
 
             const validated =
                 this.validateResponse(
@@ -208,9 +129,9 @@ export const VoiceAI = {
             }
 
 
-            // ==================================================
-            // UPDATE STATE
-            // ==================================================
+            // ------------------------------------------------
+            // Save response to State
+            // ------------------------------------------------
 
             State.detectedEnvironment =
                 validated.detectedEnvironment;
@@ -243,114 +164,65 @@ export const VoiceAI = {
                 validated.replies;
 
 
-            // ==================================================
-            // RENDER RESPONSE
-            // ==================================================
+            // ------------------------------------------------
+            // Render conversation
+            // ------------------------------------------------
 
             VoiceRenderer.renderConversation(
                 validated
             );
 
 
-            // ==================================================
-            // FINAL STALE CHECK
-            // ==================================================
+            // ------------------------------------------------
+            // AI Japanese response → TTS
             //
-            // Rendering can theoretically trigger another
-            // interaction synchronously/asynchronously.
+            // IMPORTANT:
             //
-            // Never speak if this request is no longer current.
-            // ==================================================
+            // Do NOT import VoiceTTS here.
+            //
+            // VoiceEngine owns TTS protection.
+            //
+            // This prevents:
+            //
+            // VoiceAI → TTS
+            //
+            // and instead creates:
+            //
+            // VoiceAI
+            //    ↓
+            // VoiceEngine
+            //    ↓
+            // VoiceTTS
+            // ------------------------------------------------
 
             if (
-                requestId !==
-                State.voiceRequestId
+                validated.responseJapanese
             ) {
-                return false;
-            }
+
+                const engine =
+                    window.App?.VoiceEngine;
 
 
-            // ==================================================
-            // SPEAK AI RESPONSE
-            // ==================================================
+                if (
+                    engine &&
+                    typeof engine.speakWithProtection ===
+                        'function'
+                ) {
 
-            const responseJapanese =
-                validated.responseJapanese;
-
-
-            if (!responseJapanese) {
-                return true;
-            }
-
-
-            // --------------------------------------------------
-            // IMPORTANT
-            // --------------------------------------------------
-            //
-            // Do NOT do this:
-            //
-            // VoiceTTS.speakText(...)
-            //
-            // VoiceAI is not allowed to bypass VoiceEngine.
-            //
-            // VoiceEngine must:
-            //
-            // 1. stop/protect recognition
-            // 2. mark speaking state
-            // 3. call VoiceTTS
-            // 4. prevent recognition feedback
-            // 5. restore safe idle state
-            //
-            // --------------------------------------------------
-
-            const voiceEngine =
-                getVoiceEngine();
-
-
-            if (!voiceEngine) {
-
-                console.warn(
-                    '[VoiceAI] VoiceEngine TTS protection is unavailable.'
-                );
-
-                Toast.show(
-                    'Voice output is not ready.'
-                );
-
-                return true;
-            }
-
-
-            // ==================================================
-            // SPEAK THROUGH PROTECTED ENGINE
-            // ==================================================
-
-            const speechResult =
-                await Promise.resolve(
-                    voiceEngine.speakWithProtection(
-                        responseJapanese,
+                    await engine.speakWithProtection(
+                        validated.responseJapanese,
                         {
-                            lang:
-                                'ja-JP'
+                            lang: 'ja-JP'
                         }
-                    )
-                );
+                    );
 
+                } else {
 
-            // --------------------------------------------------
-            // The TTS engine may return false if speech
-            // synthesis is unavailable.
-            // --------------------------------------------------
+                    console.warn(
+                        '[VoiceAI] VoiceEngine.speakWithProtection unavailable.'
+                    );
 
-            if (
-                speechResult === false
-            ) {
-
-                console.warn(
-                    '[VoiceAI] Protected TTS request failed.'
-                );
-
-                return true;
+                }
             }
 
 
@@ -358,9 +230,9 @@ export const VoiceAI = {
 
         } catch (error) {
 
-            // ==================================================
-            // STALE ERROR PROTECTION
-            // ==================================================
+            // ------------------------------------------------
+            // Ignore stale errors
+            // ------------------------------------------------
 
             if (
                 requestId !==
@@ -387,20 +259,14 @@ export const VoiceAI = {
 
 
     // ========================================================
-    // RESPONSE VALIDATION
-    // ========================================================
-    //
-    // Gemini is schema-constrained, but we still normalize
-    // defensively because runtime data should never be trusted
-    // blindly.
+    // VALIDATE RESPONSE
     // ========================================================
 
     validateResponse(data) {
 
         if (
             !data ||
-            typeof data !== 'object' ||
-            Array.isArray(data)
+            typeof data !== 'object'
         ) {
             return null;
         }
@@ -408,126 +274,54 @@ export const VoiceAI = {
 
         const text = (key) => {
 
-            return cleanString(
-                data[key]
-            );
+            const value =
+                data[key];
 
+            return typeof value === 'string'
+                ? value.trim()
+                : '';
         };
 
 
-        // ----------------------------------------------------
-        // Normalize replies.
-        //
-        // We preserve the existing reply structure:
-        //
-        // {
-        //   badge,
-        //   jp,
-        //   romaji,
-        //   sinhala,
-        //   english
-        // }
-        //
-        // VoiceRenderer already knows how to normalize both
-        // schema-style and UI-style reply objects.
-        // ----------------------------------------------------
-
         const replies =
-            Array.isArray(
-                data.replies
-            )
+            Array.isArray(data.replies)
                 ? data.replies
-                    .filter(
-                        reply =>
-                            reply &&
-                            typeof reply === 'object'
+                    .map((reply) =>
+                        this.normalizeReply(reply)
                     )
-                    .map(
-                        reply => ({
-                            badge:
-                                cleanString(
-                                    reply.badge
-                                ),
-
-                            jp:
-                                cleanString(
-                                    reply.jp
-                                ),
-
-                            romaji:
-                                cleanString(
-                                    reply.romaji
-                                ),
-
-                            sinhala:
-                                cleanString(
-                                    reply.sinhala
-                                ),
-
-                            english:
-                                cleanString(
-                                    reply.english
-                                )
-                        })
-                    )
+                    .filter(Boolean)
                 : [];
 
-
-        // ----------------------------------------------------
-        // Required response fields.
-        //
-        // The schema requires them, but defensive normalization
-        // keeps the application stable if Gemini/backend
-        // returns an incomplete object.
-        // ----------------------------------------------------
 
         return {
 
             detectedEnvironment:
-                text(
-                    'detected_environment'
-                ) ||
+                text('detected_environment') ||
                 'Daily / Friendly',
 
             heardJapanese:
-                text(
-                    'heard_japanese'
-                ),
+                text('heard_japanese'),
 
             heardRomaji:
-                text(
-                    'heard_romaji'
-                ),
+                text('heard_romaji'),
 
             heardSinhala:
-                text(
-                    'heard_sinhala'
-                ),
+                text('heard_sinhala'),
 
             heardEnglish:
-                text(
-                    'heard_english'
-                ),
+                text('heard_english'),
 
             responseJapanese:
-                text(
-                    'response_japanese'
-                ),
+                text('response_japanese'),
 
             responseRomaji:
-                text(
-                    'response_romaji'
-                ),
+                text('response_romaji'),
 
             responseSinhala:
-                text(
-                    'response_sinhala'
-                ),
+                text('response_sinhala'),
 
             responseEnglish:
-                text(
-                    'response_english'
-                ),
+                text('response_english'),
 
             replies
         };
@@ -535,65 +329,98 @@ export const VoiceAI = {
 
 
     // ========================================================
-    // ERROR HANDLING
+    // NORMALIZE REPLY
+    // ========================================================
+
+    normalizeReply(reply) {
+
+        if (
+            !reply ||
+            typeof reply !== 'object'
+        ) {
+            return null;
+        }
+
+
+        const textFrom =
+            (...keys) => {
+
+                for (const key of keys) {
+
+                    if (
+                        typeof reply[key] ===
+                            'string' &&
+                        reply[key].trim()
+                    ) {
+                        return reply[key].trim();
+                    }
+                }
+
+                return '';
+            };
+
+
+        return {
+
+            badge:
+                textFrom(
+                    'badge',
+                    'label',
+                    'title'
+                ),
+
+            jp:
+                textFrom(
+                    'jp',
+                    'japanese',
+                    'response_japanese',
+                    'responseJapanese'
+                ),
+
+            romaji:
+                textFrom(
+                    'romaji',
+                    'response_romaji',
+                    'responseRomaji'
+                ),
+
+            sinhala:
+                textFrom(
+                    'sinhala',
+                    'response_sinhala',
+                    'responseSinhala'
+                ),
+
+            english:
+                textFrom(
+                    'english',
+                    'response_english',
+                    'responseEnglish'
+                )
+        };
+    },
+
+
+    // ========================================================
+    // ERROR
     // ========================================================
 
     showError(error) {
 
-        let message =
+        console.error(
+            '[VoiceAI] Request failed:',
+            error
+        );
+
+
+        const message =
             '❌ Voice AI failed. Please speak again.';
-
-
-        // ----------------------------------------------------
-        // Keep the user-facing message simple.
-        //
-        // Detailed technical errors stay in console.
-        // ----------------------------------------------------
-
-        if (
-            error?.message ===
-            'VOICE_PROMPT_EMPTY'
-        ) {
-            message =
-                '❌ Voice request could not be prepared. Please try again.';
-        }
-
-        else if (
-            error?.message ===
-            'INVALID_VOICE_RESPONSE'
-        ) {
-            message =
-                '❌ AI response was incomplete. Please speak again.';
-        }
-
-        else if (
-            error?.message ===
-            'RATE_LIMIT'
-        ) {
-            message =
-                '⏳ Too many requests. Please wait a moment and try again.';
-        }
-
-        else if (
-            error?.message ===
-            'API_KEY_INVALID'
-        ) {
-            message =
-                '❌ AI service authentication failed.';
-        }
-
-        else if (
-            error?.message ===
-            'WORKER_ENDPOINT_MISSING'
-        ) {
-            message =
-                '❌ AI service is not configured.';
-        }
 
 
         Toast.show(
             message
         );
+
 
         VoiceRenderer.showError(
             message
