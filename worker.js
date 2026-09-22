@@ -18,16 +18,24 @@ const GEMINI_API_URL =
 function corsHeaders() {
 
     return {
+
         'Access-Control-Allow-Origin': '*',
+
         'Access-Control-Allow-Methods':
             'GET, POST, OPTIONS',
+
         'Access-Control-Allow-Headers':
             'Content-Type, x-goog-api-key',
+
         'Access-Control-Max-Age':
             '86400'
     };
 }
 
+
+// ============================================================
+// JSON RESPONSE
+// ============================================================
 
 function jsonResponse(
     data,
@@ -39,10 +47,13 @@ function jsonResponse(
         JSON.stringify(data),
         {
             status,
+
             headers: {
                 'Content-Type':
                     'application/json; charset=utf-8',
+
                 ...corsHeaders(),
+
                 ...extraHeaders
             }
         }
@@ -67,62 +78,38 @@ function handleOptions() {
 
 
 // ============================================================
-// GET
+// HEALTH
 // ============================================================
 
-async function handleGet(
-    request,
-    env
-) {
-
-    const url =
-        new URL(request.url);
-
-
-    if (
-        url.pathname === '/api/health' ||
-        url.pathname === '/health'
-    ) {
-
-        return jsonResponse(
-            {
-                ok: true,
-                worker: 'hello-japan',
-                geminiModel:
-                    GEMINI_MODEL,
-                apiKeyConfigured:
-                    Boolean(
-                        env?.GEMINI_API_KEY
-                    )
-            }
-        );
-    }
-
+function handleHealth(env) {
 
     return jsonResponse(
         {
             ok: true,
-            service:
-                'Hello Japan AI Gemini Worker',
-            model:
-                GEMINI_MODEL
+
+            worker:
+                'hello-japan',
+
+            geminiModel:
+                GEMINI_MODEL,
+
+            apiKeyConfigured:
+                Boolean(
+                    env?.GEMINI_API_KEY
+                )
         }
     );
 }
 
 
 // ============================================================
-// POST
+// GEMINI POST
 // ============================================================
 
 async function handlePost(
     request,
     env
 ) {
-
-    // --------------------------------------------------------
-    // API key
-    // --------------------------------------------------------
 
     const clientKey =
         request.headers.get(
@@ -148,10 +135,6 @@ async function handlePost(
         );
     }
 
-
-    // --------------------------------------------------------
-    // Parse request
-    // --------------------------------------------------------
 
     let payload;
 
@@ -187,10 +170,6 @@ async function handlePost(
     }
 
 
-    // --------------------------------------------------------
-    // Gemini generation config
-    // --------------------------------------------------------
-
     const incomingGenerationConfig =
         payload.generationConfig &&
         typeof payload.generationConfig ===
@@ -201,13 +180,13 @@ async function handlePost(
 
     const generationConfig = {
         ...incomingGenerationConfig,
+
         responseMimeType:
             'application/json'
     };
 
 
-    // Gemini 3.8 migration:
-    // Do not forward obsolete sampling settings.
+    // Remove obsolete sampling controls.
     delete generationConfig.temperature;
     delete generationConfig.topP;
     delete generationConfig.topK;
@@ -218,13 +197,10 @@ async function handlePost(
 
     const requestBody = {
         ...payload,
+
         generationConfig
     };
 
-
-    // --------------------------------------------------------
-    // Gemini request
-    // --------------------------------------------------------
 
     let response;
 
@@ -239,6 +215,7 @@ async function handlePost(
                     headers: {
                         'Content-Type':
                             'application/json',
+
                         'x-goog-api-key':
                             apiKey
                     },
@@ -267,10 +244,6 @@ async function handlePost(
     }
 
 
-    // --------------------------------------------------------
-    // Read response
-    // --------------------------------------------------------
-
     const responseText =
         await response.text();
 
@@ -294,10 +267,6 @@ async function handlePost(
     }
 
 
-    // --------------------------------------------------------
-    // Map common errors
-    // --------------------------------------------------------
-
     if (!response.ok) {
 
         console.error(
@@ -314,28 +283,35 @@ async function handlePost(
         if (
             response.status === 400
         ) {
+
             message =
                 'Invalid Gemini request.';
         }
+
 
         if (
             response.status === 401 ||
             response.status === 403
         ) {
+
             message =
                 'Gemini API authentication failed.';
         }
 
+
         if (
             response.status === 429
         ) {
+
             message =
                 'Gemini API rate limit reached.';
         }
 
+
         if (
             response.status >= 500
         ) {
+
             message =
                 'Gemini service is temporarily unavailable.';
         }
@@ -343,20 +319,20 @@ async function handlePost(
 
         return jsonResponse(
             {
-                error: message,
+                error:
+                    message,
+
                 status:
                     response.status,
+
                 details:
                     responseData
             },
+
             response.status
         );
     }
 
-
-    // --------------------------------------------------------
-    // Success
-    // --------------------------------------------------------
 
     return new Response(
         JSON.stringify(
@@ -364,9 +340,12 @@ async function handlePost(
         ),
         {
             status: 200,
+
             headers: {
+
                 'Content-Type':
                     'application/json; charset=utf-8',
+
                 ...corsHeaders()
             }
         }
@@ -375,7 +354,7 @@ async function handlePost(
 
 
 // ============================================================
-// MAIN FETCH
+// MAIN WORKER
 // ============================================================
 
 export default {
@@ -390,34 +369,77 @@ export default {
 
 
         // ----------------------------------------------------
-        // CORS preflight
+        // CORS PREFLIGHT
         // ----------------------------------------------------
 
         if (
             request.method ===
             'OPTIONS'
         ) {
+
             return handleOptions();
         }
 
 
         // ----------------------------------------------------
-        // Health / GET
+        // GET
         // ----------------------------------------------------
 
         if (
             request.method ===
             'GET'
         ) {
-            return handleGet(
-                request,
-                env
+
+            // Health endpoint.
+            if (
+                url.pathname ===
+                    '/api/health' ||
+                url.pathname ===
+                    '/health'
+            ) {
+
+                return handleHealth(
+                    env
+                );
+            }
+
+
+            // ------------------------------------------------
+            // IMPORTANT:
+            //
+            // All non-API GET requests are static assets.
+            // wrangler.jsonc provides:
+            //
+            // binding: "ASSETS"
+            //
+            // Therefore index.html, JS, CSS, manifest,
+            // icons, etc. must be served through ASSETS.
+            // ------------------------------------------------
+
+            if (
+                env?.ASSETS &&
+                typeof env.ASSETS.fetch ===
+                    'function'
+            ) {
+
+                return env.ASSETS.fetch(
+                    request
+                );
+            }
+
+
+            return jsonResponse(
+                {
+                    error:
+                        'Cloudflare ASSETS binding is unavailable.'
+                },
+                503
             );
         }
 
 
         // ----------------------------------------------------
-        // Gemini API
+        // POST -> GEMINI
         // ----------------------------------------------------
 
         if (
@@ -433,7 +455,7 @@ export default {
 
 
         // ----------------------------------------------------
-        // Unsupported method
+        // OTHER METHODS
         // ----------------------------------------------------
 
         return jsonResponse(
