@@ -1,7 +1,7 @@
 // ============================================================
 // Hello Japan AI
 // js/voice/voiceEngine.js
-// Speech Recognition Engine
+// Speech Recognition + Voice Lifecycle Controller
 // ============================================================
 
 import { State } from '../state.js';
@@ -12,7 +12,7 @@ import { VoiceAI } from './voiceAI.js';
 export const VoiceEngine = {
 
     // ========================================================
-    // STATE
+    // INTERNAL STATE
     // ========================================================
 
     recognition: null,
@@ -27,13 +27,13 @@ export const VoiceEngine = {
 
     isSpeaking: false,
 
-    restartTimer: null,
-
     requestInProgress: false,
 
     starting: false,
 
     stopping: false,
+
+    restartTimer: null,
 
     activeSessionId: 0,
 
@@ -50,11 +50,9 @@ export const VoiceEngine = {
             return this.isSupported;
         }
 
-
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
-
 
         if (!SpeechRecognition) {
 
@@ -68,58 +66,36 @@ export const VoiceEngine = {
             return false;
         }
 
-
         this.isSupported = true;
-
 
         const recognition =
             new SpeechRecognition();
 
-
-        // ----------------------------------------------------
-        // Configuration
-        // ----------------------------------------------------
-
-        // We deliberately use non-continuous recognition.
-        //
-        // One user utterance -> one AI request.
-        //
-        // This dramatically reduces:
-        // - duplicate results
-        // - restart races
-        // - TTS feedback loops
-        // - browser recognition crashes
-
         recognition.continuous = false;
-
         recognition.interimResults = false;
-
         recognition.maxAlternatives = 1;
-
 
         this.speechLanguage =
             this.normalizeLanguage(
-                State.activeSpeakerLang ||
-                'ja-JP'
+                State.activeSpeakerLang || 'ja-JP'
             );
-
 
         recognition.lang =
             this.speechLanguage;
 
 
-        // ----------------------------------------------------
+        // ====================================================
         // START
-        // ----------------------------------------------------
+        // ====================================================
 
         recognition.onstart = () => {
 
             this.starting = false;
-
             this.stopping = false;
-
             this.isListening = true;
 
+            State.currentVoiceState =
+                State.VoiceState.LISTENING;
 
             VoiceRenderer.setListeningState(
                 true,
@@ -128,54 +104,50 @@ export const VoiceEngine = {
         };
 
 
-        // ----------------------------------------------------
+        // ====================================================
         // RESULT
-        // ----------------------------------------------------
+        // ====================================================
 
         recognition.onresult = async (event) => {
 
-            // Ignore stale sessions.
             const sessionId =
                 this.activeSessionId;
-
 
             if (!this.shouldListen) {
                 return;
             }
 
-
             if (sessionId !== this.activeSessionId) {
                 return;
             }
 
-
             const lastIndex =
                 event.results.length - 1;
 
-
             const transcript =
-                event.results[
-                    lastIndex
-                ]?.[0]?.transcript?.trim();
-
+                event.results[lastIndex]?.[0]?.transcript?.trim();
 
             if (!transcript) {
                 return;
             }
 
 
-            // ------------------------------------------------
-            // Stop listening immediately.
-            // ------------------------------------------------
-
             this.isListening = false;
-
-            this.isProcessing = true;
-
-
-            // Prevent onend from restarting recognition
-            // while Gemini is processing this request.
             this.shouldListen = false;
+            this.isProcessing = true;
+            this.requestInProgress = true;
+
+            State.currentVoiceState =
+                State.VoiceState.PROCESSING;
+
+            State.currentVoiceTranscript =
+                transcript;
+
+            State.lastTranscript =
+                transcript;
+
+            State.lastTranscriptTime =
+                Date.now();
 
 
             VoiceRenderer.setListeningState(
@@ -184,7 +156,6 @@ export const VoiceEngine = {
             );
 
 
-            // Make sure browser recognition is actually stopped.
             try {
                 recognition.stop();
             } catch {
@@ -192,86 +163,54 @@ export const VoiceEngine = {
             }
 
 
-            // ------------------------------------------------
-            // AI request
-            // ------------------------------------------------
-
             try {
-
-                this.requestInProgress = true;
 
                 await VoiceAI.handleSpokenVoice(
                     transcript
                 );
 
+            } catch (error) {
+
+                console.error(
+                    '[VoiceEngine] Voice AI failed:',
+                    error
+                );
+
+                VoiceRenderer.showError(
+                    'Voice AI failed. Please speak again.'
+                );
+
             } finally {
 
                 this.requestInProgress = false;
-
                 this.isProcessing = false;
+
+                if (!this.isSpeaking) {
+                    State.currentVoiceState =
+                        State.VoiceState.IDLE;
+                }
             }
         };
 
 
-        // ----------------------------------------------------
+        // ====================================================
         // ERROR
-        // ----------------------------------------------------
+        // ====================================================
 
         recognition.onerror = (event) => {
 
-            this.starting = false;
+            const error =
+                String(event?.error || '');
 
+            this.starting = false;
             this.isListening = false;
 
-            this.stopping = false;
-
-
-            const error =
-                event?.error || 'unknown';
-
-
-            console.warn(
-                '[VoiceEngine] Recognition error:',
-                error
-            );
-
-
-            // ----------------------------------------------
-            // Normal browser conditions
-            // ----------------------------------------------
-
             if (
-                error === 'aborted'
+                error === 'aborted' &&
+                this.stopping
             ) {
                 return;
             }
-
-
-            if (
-                error === 'no-speech'
-            ) {
-
-                VoiceRenderer.setListeningState(
-                    false,
-                    'No speech detected.'
-                );
-
-                return;
-            }
-
-
-            if (
-                error === 'audio-capture'
-            ) {
-
-                VoiceRenderer.setListeningState(
-                    false,
-                    'Microphone unavailable.'
-                );
-
-                return;
-            }
-
 
             if (
                 error === 'not-allowed' ||
@@ -280,134 +219,132 @@ export const VoiceEngine = {
 
                 this.shouldListen = false;
 
-
                 VoiceRenderer.setListeningState(
                     false,
-                    'Microphone permission denied.'
+                    'Microphone permission required.'
                 );
 
                 return;
             }
 
+            if (error === 'no-speech') {
 
-            // ----------------------------------------------
-            // Unknown error
-            // ----------------------------------------------
+                this.shouldListen = false;
 
-            VoiceRenderer.setListeningState(
-                false,
-                'Mic error. Please try again.'
-            );
-        };
-
-
-        // ----------------------------------------------------
-        // END
-        // ----------------------------------------------------
-
-        recognition.onend = () => {
-
-            this.starting = false;
-
-            this.isListening = false;
-
-            this.stopping = false;
-
-
-            // ----------------------------------------------
-            // NEVER restart while:
-            // - AI is processing
-            // - TTS is speaking
-            // - user intentionally stopped
-            // ----------------------------------------------
-
-            if (
-                this.isProcessing ||
-                this.requestInProgress ||
-                this.isSpeaking ||
-                !this.shouldListen
-            ) {
-
-                if (!this.isProcessing) {
-
-                    VoiceRenderer.setListeningState(
-                        false,
-                        'Tap microphone to speak.'
-                    );
-                }
+                VoiceRenderer.setListeningState(
+                    false,
+                    'No speech detected. Tap Mic again.'
+                );
 
                 return;
             }
 
+            if (error === 'audio-capture') {
 
-            // Normally this branch should rarely be needed
-            // because recognition is non-continuous.
+                this.shouldListen = false;
+
+                VoiceRenderer.setListeningState(
+                    false,
+                    'Microphone is unavailable.'
+                );
+
+                return;
+            }
+
+            if (
+                this.isProcessing ||
+                this.requestInProgress ||
+                this.isSpeaking
+            ) {
+                return;
+            }
+
+            console.warn(
+                '[VoiceEngine] Recognition error:',
+                error
+            );
+
+            this.shouldListen = false;
+
+            VoiceRenderer.setListeningState(
+                false,
+                'Voice recognition error. Tap Mic again.'
+            );
+        };
+
+
+        // ====================================================
+        // END
+        // ====================================================
+
+        recognition.onend = () => {
+
+            this.isListening = false;
+            this.starting = false;
+
+            if (
+                this.stopping ||
+                !this.shouldListen ||
+                this.isProcessing ||
+                this.requestInProgress ||
+                this.isSpeaking
+            ) {
+                this.stopping = false;
+                return;
+            }
+
             this.scheduleRestart();
         };
 
 
-        // ----------------------------------------------------
-        // Save recognition
-        // ----------------------------------------------------
-
-        this.recognition =
-            recognition;
-
+        this.recognition = recognition;
 
         return true;
     },
 
 
     // ========================================================
-    // START
+    // START LISTENING
     // ========================================================
 
     start() {
+
+        if (
+            State.currentActiveView &&
+            State.currentActiveView !== 'voice'
+        ) {
+            return false;
+        }
 
         if (!this.init()) {
             return false;
         }
 
-
-        // Do not start while:
-        // AI is processing or TTS is speaking.
         if (
+            this.isListening ||
+            this.starting ||
             this.isProcessing ||
             this.requestInProgress ||
             this.isSpeaking
         ) {
-
             return false;
         }
 
-
-        // Already listening.
-        if (
-            this.isListening ||
-            this.starting
-        ) {
-
-            return true;
-        }
-
-
         this.clearRestartTimer();
 
-
         this.shouldListen = true;
-
         this.stopping = false;
+        this.starting = true;
 
-        this.activeSessionId++;
+        this.activeSessionId += 1;
 
-
-        this.recognition.lang =
-            this.speechLanguage;
-
+        State.currentVoiceState =
+            State.VoiceState.STARTING;
 
         try {
 
-            this.starting = true;
+            this.recognition.lang =
+                this.speechLanguage;
 
             this.recognition.start();
 
@@ -416,15 +353,17 @@ export const VoiceEngine = {
         } catch (error) {
 
             this.starting = false;
+            this.shouldListen = false;
 
-
-            // Browser throws InvalidStateError if
-            // recognition is already starting/running.
             console.warn(
                 '[VoiceEngine] Start failed:',
                 error
             );
 
+            VoiceRenderer.setListeningState(
+                false,
+                'Tap Mic to try again.'
+            );
 
             return false;
         }
@@ -432,22 +371,18 @@ export const VoiceEngine = {
 
 
     // ========================================================
-    // STOP
+    // STOP LISTENING
     // ========================================================
 
     stop() {
 
         this.shouldListen = false;
-
         this.starting = false;
-
         this.stopping = true;
 
-        this.activeSessionId++;
-
+        this.activeSessionId += 1;
 
         this.clearRestartTimer();
-
 
         if (this.recognition) {
 
@@ -458,13 +393,32 @@ export const VoiceEngine = {
             }
         }
 
-
         this.isListening = false;
 
+        if (this.isSpeaking) {
+
+            const tts =
+                window.App?.VoiceTTS;
+
+            if (
+                tts &&
+                typeof tts.stop === 'function'
+            ) {
+                tts.stop();
+            }
+
+            this.isSpeaking = false;
+        }
+
+        this.isProcessing = false;
+        this.requestInProgress = false;
+
+        State.currentVoiceState =
+            State.VoiceState.IDLE;
 
         VoiceRenderer.setListeningState(
             false,
-            'Tap microphone to speak.'
+            'Tap Mic to Speak'
         );
     },
 
@@ -475,65 +429,56 @@ export const VoiceEngine = {
 
     toggleListening() {
 
-        if (
-            this.isListening ||
-            this.starting ||
-            this.shouldListen
-        ) {
-
+        if (this.isListening || this.starting) {
             this.stop();
-
             return false;
         }
 
+        if (this.isProcessing || this.requestInProgress) {
+            return false;
+        }
+
+        if (this.isSpeaking) {
+            return false;
+        }
 
         return this.start();
     },
 
 
     // ========================================================
-    // SET SPEAKER / RECOGNITION LANGUAGE
+    // SPEAKER LANGUAGE
     // ========================================================
 
-    setSpeaker(lang) {
+    setSpeaker(language) {
 
         const normalized =
-            this.normalizeLanguage(
-                lang
-            );
+            this.normalizeLanguage(language);
 
-
-        // Stop any active recognition first.
         this.stop();
-
 
         this.speechLanguage =
             normalized;
 
-
         State.activeSpeakerLang =
             normalized;
 
+        this.init();
 
         if (this.recognition) {
-
             this.recognition.lang =
                 normalized;
         }
 
+        const tts =
+            window.App?.VoiceTTS;
 
-        // Keep TTS language synchronized.
         if (
-            window.App?.VoiceTTS &&
-            typeof window.App.VoiceTTS.setLanguage ===
-                'function'
+            tts &&
+            typeof tts.setLanguage === 'function'
         ) {
-
-            window.App.VoiceTTS.setLanguage(
-                normalized
-            );
+            tts.setLanguage(normalized);
         }
-
 
         VoiceRenderer.updateSpeakerUI(
             normalized
@@ -547,17 +492,23 @@ export const VoiceEngine = {
 
     setContext(context) {
 
-        if (!context) {
-            return;
-        }
+        const validContexts = [
+            'daily',
+            'workplace',
+            'restaurant',
+            'konbini'
+        ];
 
+        const normalized =
+            validContexts.includes(context)
+                ? context
+                : 'daily';
 
         State.activeVoiceContext =
-            context;
-
+            normalized;
 
         VoiceRenderer.updateContextUI(
-            context
+            normalized
         );
     },
 
@@ -568,15 +519,13 @@ export const VoiceEngine = {
 
     pauseForSpeech() {
 
-        // User's microphone must not remain active while
-        // AI voice is speaking.
-
         this.isSpeaking = true;
 
         this.shouldListen = false;
 
         this.clearRestartTimer();
 
+        this.activeSessionId += 1;
 
         if (this.recognition) {
 
@@ -587,110 +536,92 @@ export const VoiceEngine = {
             }
         }
 
-
         this.isListening = false;
+
+        State.currentVoiceState =
+            State.VoiceState.IDLE;
     },
 
-
-    // ========================================================
-    // RESUME AFTER TTS
-    // ========================================================
 
     resumeAfterSpeech() {
 
         this.isSpeaking = false;
 
-
-        // IMPORTANT:
-        //
-        // We do NOT automatically restart the microphone.
-        //
-        // User must explicitly tap the microphone again.
-        //
-        // This avoids:
-        //
-        // AI speaks
-        // ↓
-        // microphone starts
-        // ↓
-        // microphone hears AI
-        // ↓
-        // Gemini receives AI voice
-        // ↓
-        // AI speaks again
-        // ↓
-        // infinite loop
-
         this.shouldListen = false;
 
+        this.isListening = false;
+
+        this.starting = false;
+
+        this.stopping = false;
+
+        State.currentVoiceState =
+            State.VoiceState.IDLE;
 
         VoiceRenderer.setListeningState(
             false,
-            'Tap microphone to speak.'
+            'Tap Mic to Speak'
         );
     },
 
 
-    // ========================================================
-    // RUN TTS SAFELY
-    // ========================================================
+    speakWithProtection(text, options = {}) {
 
-    async speakWithProtection(
-        text,
-        options = {}
-    ) {
+        const cleanText =
+            typeof text === 'string'
+                ? text.trim()
+                : '';
 
-        if (
-            !text ||
-            typeof text !== 'string'
-        ) {
+        if (!cleanText) {
             return false;
         }
 
-
         const tts =
             window.App?.VoiceTTS;
-
 
         if (
             !tts ||
             typeof tts.speakText !== 'function'
         ) {
+            this.notifySpeechFinished(
+                'tts-unavailable'
+            );
 
             return false;
         }
 
-
         this.pauseForSpeech();
 
+        const success =
+            tts.speakText(
+                cleanText,
+                {
+                    ...options,
+                    lang:
+                        options.lang ||
+                        'ja-JP'
+                }
+            );
 
-        try {
-
-            const result =
-                tts.speakText(
-                    text,
-                    options
-                );
-
-
-            return result;
-
-        } finally {
-
-            // Do not immediately resume recognition.
-            //
-            // VoiceTTS handles its own speech lifecycle.
-            //
-            // The user will tap the microphone again.
+        if (!success) {
+            this.notifySpeechFinished(
+                'tts-failed'
+            );
         }
+
+        return success;
     },
 
 
-    // ========================================================
-    // TTS FINISHED
-    // ========================================================
+    notifySpeechFinished(reason = 'finished') {
 
-    notifySpeechFinished() {
+        if (!this.isSpeaking) {
+            return;
+        }
+
+        console.log(
+            `[VoiceEngine] Speech finished: ${reason}`
+        );
 
         this.resumeAfterSpeech();
     },
@@ -704,57 +635,42 @@ export const VoiceEngine = {
 
         this.clearRestartTimer();
 
-
         if (
             !this.shouldListen ||
             this.isProcessing ||
             this.requestInProgress ||
-            this.isSpeaking
+            this.isSpeaking ||
+            this.starting ||
+            this.stopping
         ) {
             return;
         }
-
 
         this.restartTimer =
             window.setTimeout(
                 () => {
 
-                    this.restartTimer =
-                        null;
-
+                    this.restartTimer = null;
 
                     if (
-                        !this.shouldListen ||
-                        this.isProcessing ||
-                        this.requestInProgress ||
-                        this.isSpeaking
+                        this.shouldListen &&
+                        !this.isProcessing &&
+                        !this.requestInProgress &&
+                        !this.isSpeaking
                     ) {
-                        return;
+                        this.start();
                     }
-
-
-                    this.start();
-
                 },
                 250
             );
     },
 
 
-    // ========================================================
-    // CLEAR RESTART TIMER
-    // ========================================================
-
     clearRestartTimer() {
 
         if (this.restartTimer) {
-
-            window.clearTimeout(
-                this.restartTimer
-            );
-
-            this.restartTimer =
-                null;
+            clearTimeout(this.restartTimer);
+            this.restartTimer = null;
         }
     },
 
@@ -767,18 +683,15 @@ export const VoiceEngine = {
 
         const value =
             String(
-                language ||
-                'ja-JP'
+                language || 'ja-JP'
             )
                 .trim()
                 .replace('_', '-')
                 .toLowerCase();
 
-
         if (value.startsWith('ja')) {
             return 'ja-JP';
         }
-
 
         if (
             value.startsWith('si') ||
@@ -787,39 +700,10 @@ export const VoiceEngine = {
             return 'si-LK';
         }
 
-
         if (value.startsWith('en')) {
             return 'en-US';
         }
 
-
         return 'ja-JP';
     }
 };
-
-
-// ============================================================
-// OPTIONAL TTS EVENT BRIDGE
-// ============================================================
-//
-// VoiceTTS uses the browser speechSynthesis lifecycle.
-// We listen globally here so the engine knows when AI
-// speech has finished.
-//
-// This is intentionally defensive.
-// It does not assume VoiceTTS implementation details.
-//
-
-if (
-    'speechSynthesis' in window
-) {
-
-    window.addEventListener(
-        'voiceschanged',
-        () => {
-
-            // Voices becoming available is not speech ending.
-            // Nothing to do here.
-        }
-    );
-}
