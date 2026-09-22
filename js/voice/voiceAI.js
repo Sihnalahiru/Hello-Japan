@@ -1,7 +1,7 @@
 // ============================================================
 // Hello Japan AI
 // js/voice/voiceAI.js
-// Voice AI Orchestrator
+// Voice AI Controller
 // ============================================================
 
 import { State } from '../state.js';
@@ -12,10 +12,6 @@ import { Gemini } from '../ai/gemini.js';
 import { VoiceRenderer } from './voiceRenderer.js';
 import { Toast } from '../ui/toast.js';
 
-
-// ============================================================
-// VOICE AI
-// ============================================================
 
 export const VoiceAI = {
 
@@ -30,34 +26,21 @@ export const VoiceAI = {
                 ? heardText.trim()
                 : '';
 
-
         if (!transcript) {
             return false;
         }
 
-
-        // ----------------------------------------------------
-        // Request ID
-        //
-        // Prevents an old Gemini response from overwriting
-        // a newer voice request.
-        // ----------------------------------------------------
-
         const requestId =
             ++State.voiceRequestId;
-
-
-        // ----------------------------------------------------
-        // Save transcript
-        // ----------------------------------------------------
 
         State.currentVoiceTranscript =
             transcript;
 
+        State.lastTranscript =
+            transcript;
 
-        // ----------------------------------------------------
-        // Processing UI
-        // ----------------------------------------------------
+        State.lastTranscriptTime =
+            Date.now();
 
         VoiceRenderer.showProcessing(
             transcript
@@ -66,10 +49,6 @@ export const VoiceAI = {
 
         try {
 
-            // ------------------------------------------------
-            // Build prompt
-            // ------------------------------------------------
-
             const prompt =
                 Prompts.getVoicePrompt(
                     State.activeVoiceContext,
@@ -77,10 +56,6 @@ export const VoiceAI = {
                     transcript
                 );
 
-
-            // ------------------------------------------------
-            // Gemini
-            // ------------------------------------------------
 
             const result =
                 await Gemini.callContent(
@@ -100,10 +75,7 @@ export const VoiceAI = {
                 );
 
 
-            // ------------------------------------------------
-            // Stale request protection
-            // ------------------------------------------------
-
+            // Ignore stale AI responses.
             if (
                 requestId !==
                 State.voiceRequestId
@@ -112,14 +84,8 @@ export const VoiceAI = {
             }
 
 
-            // ------------------------------------------------
-            // Validate / normalize
-            // ------------------------------------------------
-
             const validated =
-                this.validateResponse(
-                    result
-                );
+                this.validateResponse(result);
 
 
             if (!validated) {
@@ -130,7 +96,7 @@ export const VoiceAI = {
 
 
             // ------------------------------------------------
-            // Save response to State
+            // Save state
             // ------------------------------------------------
 
             State.detectedEnvironment =
@@ -165,7 +131,7 @@ export const VoiceAI = {
 
 
             // ------------------------------------------------
-            // Render conversation
+            // Render
             // ------------------------------------------------
 
             VoiceRenderer.renderConversation(
@@ -174,25 +140,34 @@ export const VoiceAI = {
 
 
             // ------------------------------------------------
-            // AI Japanese response → TTS
-            //
-            // IMPORTANT:
-            //
-            // Do NOT import VoiceTTS here.
-            //
-            // VoiceEngine owns TTS protection.
-            //
-            // This prevents:
-            //
-            // VoiceAI → TTS
-            //
-            // and instead creates:
-            //
-            // VoiceAI
-            //    ↓
-            // VoiceEngine
-            //    ↓
-            // VoiceTTS
+            // Save conversation record
+            // ------------------------------------------------
+
+            State.lastVoiceResponse = {
+                ...validated,
+                timestamp: Date.now()
+            };
+
+
+            State.conversationHistory.push(
+                {
+                    transcript,
+                    ...validated,
+                    timestamp: Date.now()
+                }
+            );
+
+            // Keep memory bounded.
+            if (
+                State.conversationHistory.length > 50
+            ) {
+                State.conversationHistory =
+                    State.conversationHistory.slice(-50);
+            }
+
+
+            // ------------------------------------------------
+            // SAFE TTS
             // ------------------------------------------------
 
             if (
@@ -202,14 +177,13 @@ export const VoiceAI = {
                 const engine =
                     window.App?.VoiceEngine;
 
-
                 if (
                     engine &&
                     typeof engine.speakWithProtection ===
                         'function'
                 ) {
 
-                    await engine.speakWithProtection(
+                    engine.speakWithProtection(
                         validated.responseJapanese,
                         {
                             lang: 'ja-JP'
@@ -218,21 +192,15 @@ export const VoiceAI = {
 
                 } else {
 
-                    console.warn(
-                        '[VoiceAI] VoiceEngine.speakWithProtection unavailable.'
+                    throw new Error(
+                        'VOICE_ENGINE_UNAVAILABLE'
                     );
-
                 }
             }
-
 
             return true;
 
         } catch (error) {
-
-            // ------------------------------------------------
-            // Ignore stale errors
-            // ------------------------------------------------
 
             if (
                 requestId !==
@@ -241,17 +209,12 @@ export const VoiceAI = {
                 return false;
             }
 
-
             console.error(
-                '[VoiceAI] Voice AI Error:',
+                '[VoiceAI] Error:',
                 error
             );
 
-
-            this.showError(
-                error
-            );
-
+            this.showError(error);
 
             return false;
         }
@@ -259,7 +222,7 @@ export const VoiceAI = {
 
 
     // ========================================================
-    // VALIDATE RESPONSE
+    // RESPONSE VALIDATION / NORMALIZATION
     // ========================================================
 
     validateResponse(data) {
@@ -272,22 +235,18 @@ export const VoiceAI = {
         }
 
 
-        const text = (key) => {
-
-            const value =
-                data[key];
-
-            return typeof value === 'string'
-                ? value.trim()
+        const text = (key) =>
+            typeof data[key] === 'string'
+                ? data[key].trim()
                 : '';
-        };
 
 
         const replies =
             Array.isArray(data.replies)
                 ? data.replies
-                    .map((reply) =>
-                        this.normalizeReply(reply)
+                    .map(
+                        (reply) =>
+                            this.normalizeReply(reply)
                     )
                     .filter(Boolean)
                 : [];
@@ -329,75 +288,109 @@ export const VoiceAI = {
 
 
     // ========================================================
-    // NORMALIZE REPLY
+    // REPLY NORMALIZATION
     // ========================================================
 
     normalizeReply(reply) {
 
+        if (!reply) {
+            return null;
+        }
+
+
+        if (typeof reply === 'string') {
+
+            const japanese =
+                reply.trim();
+
+            if (!japanese) {
+                return null;
+            }
+
+            return {
+                japanese,
+                romaji: '',
+                sinhala: '',
+                english: ''
+            };
+        }
+
+
         if (
-            !reply ||
             typeof reply !== 'object'
         ) {
             return null;
         }
 
 
-        const textFrom =
-            (...keys) => {
+        const value = (
+            ...keys
+        ) => {
 
-                for (const key of keys) {
+            for (const key of keys) {
 
-                    if (
-                        typeof reply[key] ===
-                            'string' &&
-                        reply[key].trim()
-                    ) {
-                        return reply[key].trim();
+                if (
+                    typeof reply[key] ===
+                    'string'
+                ) {
+                    const value =
+                        reply[key].trim();
+
+                    if (value) {
+                        return value;
                     }
                 }
+            }
 
-                return '';
-            };
+            return '';
+        };
 
 
-        return {
+        const normalized = {
 
-            badge:
-                textFrom(
-                    'badge',
-                    'label',
-                    'title'
-                ),
-
-            jp:
-                textFrom(
-                    'jp',
+            japanese:
+                value(
                     'japanese',
+                    'jp',
                     'response_japanese',
                     'responseJapanese'
                 ),
 
             romaji:
-                textFrom(
+                value(
                     'romaji',
                     'response_romaji',
                     'responseRomaji'
                 ),
 
             sinhala:
-                textFrom(
+                value(
                     'sinhala',
+                    'si',
                     'response_sinhala',
                     'responseSinhala'
                 ),
 
             english:
-                textFrom(
+                value(
                     'english',
+                    'en',
                     'response_english',
                     'responseEnglish'
                 )
         };
+
+
+        if (
+            !normalized.japanese &&
+            !normalized.romaji &&
+            !normalized.sinhala &&
+            !normalized.english
+        ) {
+            return null;
+        }
+
+        return normalized;
     },
 
 
@@ -412,15 +405,10 @@ export const VoiceAI = {
             error
         );
 
-
         const message =
             '❌ Voice AI failed. Please speak again.';
 
-
-        Toast.show(
-            message
-        );
-
+        Toast.show(message);
 
         VoiceRenderer.showError(
             message
