@@ -1,144 +1,50 @@
-window.App = window.App || {};
+import { State } from '../state.js';
 
-App.Navigation = {
-
+export const Navigation = {
     switchView(viewName) {
+        const validViews = ["hero", "camera", "voice"];
+        if (!validViews.includes(viewName)) return;
 
-        const validViews = [
-            "hero",
-            "camera",
-            "voice"
-        ];
+        const previous = State.currentActiveView;
 
-        if (!validViews.includes(viewName)) {
-            return;
+        if (previous === "voice" && viewName !== "voice") {
+            if (window.App?.VoiceEngine?.stop) window.App.VoiceEngine.stop();
         }
 
-        const previous =
-            App.State.currentActiveView;
-
-        /*
-         * Stop previous voice session
-         */
-        if (
-            previous === "voice" &&
-            viewName !== "voice"
-        ) {
-            App.VoiceEngine?.stop?.();
+        if (previous === "camera" && viewName !== "camera") {
+            if (window.App?.CameraOCR?.cancel) window.App.CameraOCR.cancel();
+            if (window.App?.CameraEngine?.stop) window.App.CameraEngine.stop(true);
         }
 
-        /*
-         * Stop previous camera session
-         */
-        if (
-            previous === "camera" &&
-            viewName !== "camera"
-        ) {
-            App.CameraOCR?.cancel?.();
-            App.CameraEngine?.stop?.(true);
-        }
+        State.currentActiveView = viewName;
 
-        App.State.currentActiveView =
-            viewName;
+        document.querySelectorAll(".screen-view").forEach(view => {
+            view.classList.remove("active");
+        });
 
-        /*
-         * Change visible screen
-         */
-        document
-            .querySelectorAll(".screen-view")
-            .forEach(view => {
-                view.classList.remove("active");
-            });
+        const target = document.getElementById(`view-${viewName}`);
+        if (target) target.classList.add("active");
 
-        const target =
-            document.getElementById(
-                `view-${viewName}`
-            );
+        document.querySelectorAll(".nav-icon-btn").forEach(button => {
+            const nav = button.dataset.nav;
+            button.classList.toggle("text-emerald-700", nav === viewName);
+            button.classList.toggle("text-gray-400", nav !== viewName);
+        });
 
-        if (target) {
-            target.classList.add("active");
-        }
-
-        /*
-         * Update bottom navigation
-         */
-        document
-            .querySelectorAll(".nav-icon-btn")
-            .forEach(button => {
-
-                const nav =
-                    button.dataset.nav;
-
-                button.classList.toggle(
-                    "text-emerald-700",
-                    nav === viewName
-                );
-
-                button.classList.toggle(
-                    "text-gray-400",
-                    nav !== viewName
-                );
-            });
-
-        /*
-         * CAMERA
-         *
-         * Camera starts only when the
-         * camera screen is selected.
-         */
         if (viewName === "camera") {
-
-            App.CameraRenderer
-                ?.clearCard?.();
-
-            App.CameraEngine
-                ?.init?.();
+            if (window.App?.CameraRenderer?.clearCard) window.App.CameraRenderer.clearCard();
+            if (window.App?.CameraEngine?.init) window.App.CameraEngine.init();
         }
 
-        /*
-         * VOICE
-         *
-         * IMPORTANT:
-         * Do NOT automatically start speech
-         * recognition here.
-         *
-         * User must press the microphone.
-         * This is safer for iOS Safari.
-         */
         if (viewName === "voice") {
-
-            App.VoiceRenderer
-                ?.clearConversation?.();
-
-            App.VoiceRenderer
-                ?.setListeningState?.(
-                    false,
-                    "Tap microphone to start."
-                );
+            if (window.App?.VoiceRenderer?.clearConversation) window.App.VoiceRenderer.clearConversation();
         }
     },
 
     tickClock() {
-
-        const clock =
-            document.getElementById(
-                "hero-clock"
-            );
-
-        if (!clock) {
-            return;
-        }
-
+        const clock = document.getElementById("hero-clock");
+        if (!clock) return;
         const now = new Date();
-
-        clock.textContent =
-            now.toLocaleTimeString(
-                [],
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                }
-            );
+        clock.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
     }
 };
