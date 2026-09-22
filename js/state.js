@@ -1,6 +1,4 @@
-window.App = window.App || {};
-
-App.State = {
+export const State = {
     currentActiveView: "hero",
 
     // CAMERA
@@ -11,11 +9,7 @@ App.State = {
     currentArJapanese: "",
 
     currentCameraResult: {
-        japanese: "",
-        romaji: "",
-        sinhala: "",
-        english: "",
-        guide: ""
+        japanese: "", romaji: "", sinhala: "", english: "", guide: ""
     },
 
     // VOICE
@@ -23,32 +17,23 @@ App.State = {
     activeSpeakerLang: "ja-JP",
 
     VoiceState: {
-        IDLE: "IDLE",
-        STARTING: "STARTING",
-        LISTENING: "LISTENING",
-        PROCESSING: "PROCESSING",
-        STOPPING: "STOPPING"
+        IDLE: "IDLE", STARTING: "STARTING", LISTENING: "LISTENING",
+        PROCESSING: "PROCESSING", STOPPING: "STOPPING"
     },
 
     currentVoiceState: "IDLE",
     isContinuousListening: false,
-
     voiceRequestId: 0,
-
     lastTranscript: "",
     lastTranscriptTime: 0,
-
     currentVoiceTranscript: "",
-
     currentVoiceJapanese: "",
     currentVoiceRomaji: "",
     currentVoiceSinhala: "",
     currentVoiceEnglish: "",
-
     currentVoiceResponseJapanese: "",
     currentVoiceResponseRomaji: "",
     currentVoiceResponseSinhala: "",
     currentVoiceResponseEnglish: "",
-
     currentVoiceSuggestions: []
 };
