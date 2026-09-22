@@ -9,7 +9,7 @@
 
     <link rel="manifest" href="manifest.json">
 
-    <!-- 1. CRITICAL INLINE STYLES (External CSS පරක්කු වුණත් UI එක කඩන්නේ නැත) -->
+    <!-- CRITICAL INLINE STYLES -->
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
@@ -21,7 +21,6 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
         }
-        /* HIDE ALL INACTIVE VIEWS BY DEFAULT */
         .screen-view {
             display: none !important;
             opacity: 0;
@@ -41,7 +40,7 @@
         }
     </style>
 
-    <!-- 2. TAILWIND CSS CDN -->
+    <!-- TAILWIND CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -59,13 +58,13 @@
         };
     </script>
 
-    <!-- 3. FONTS & ICONS -->
+    <!-- FONTS & ICONS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- 4. CUSTOM APP CSS -->
+    <!-- CUSTOM APP CSS -->
     <link rel="stylesheet" href="css/app.css">
 </head>
 
@@ -98,7 +97,7 @@
 
         <div class="grid grid-cols-1 gap-3.5 mb-5">
             <!-- CAMERA CARD -->
-            <div onclick="App.Navigation.switchView('camera')" class="bg-gradient-to-br from-brandGreen via-[#22be0c] to-[#128004] rounded-[32px] p-5 relative overflow-hidden shadow-xl cursor-pointer hover:scale-[1.01] transition-transform active:scale-95 border border-white/20">
+            <div data-route="camera" class="bg-gradient-to-br from-brandGreen via-[#22be0c] to-[#128004] rounded-[32px] p-5 relative overflow-hidden shadow-xl cursor-pointer hover:scale-[1.01] transition-transform active:scale-95 border border-white/20">
                 <div class="flex justify-between items-start">
                     <div>
                         <span class="inline-flex items-center gap-1 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white mb-2 border border-white/10">
@@ -119,7 +118,7 @@
             </div>
 
             <!-- VOICE CARD -->
-            <div onclick="App.Navigation.switchView('voice')" class="bg-gradient-to-br from-[#1b3d22] to-[#0d2212] rounded-[32px] p-5 relative overflow-hidden border border-brandGreen/40 shadow-lg cursor-pointer hover:scale-[1.01] transition-transform active:scale-95">
+            <div data-route="voice" class="bg-gradient-to-br from-[#1b3d22] to-[#0d2212] rounded-[32px] p-5 relative overflow-hidden border border-brandGreen/40 shadow-lg cursor-pointer hover:scale-[1.01] transition-transform active:scale-95">
                 <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center gap-2">
                         <div class="w-10 h-10 rounded-full bg-brandGreen/20 text-brandGreen flex items-center justify-center text-xl">🤖</div>
@@ -139,7 +138,7 @@
         </div>
 
         <div class="mt-auto pb-4">
-            <button onclick="App.Navigation.switchView('camera')" class="w-full bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-3.5 rounded-full shadow-[0_0_25px_rgba(57,211,34,0.45)] transition-all active:scale-95 text-xs flex items-center justify-center gap-2">
+            <button data-route="camera" class="w-full bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-3.5 rounded-full shadow-[0_0_25px_rgba(57,211,34,0.45)] transition-all active:scale-95 text-xs flex items-center justify-center gap-2">
                 <i class="ph ph-camera text-base font-bold"></i><span>OPEN CAMERA AI PRO NOW</span>
             </button>
         </div>
@@ -154,9 +153,9 @@
         
         <div class="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
             <div class="flex justify-between items-center pointer-events-auto pt-1 z-30">
-                <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
+                <button data-route="hero" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
                 <span class="text-xs font-black bg-brandGreen text-darkForest px-3 py-1 rounded-full shadow-lg">📷 Camera AI Pro Live</span>
-                <button onclick="App.CameraEngine.toggleTorch()" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-flashlight text-lg"></i></button>
+                <button id="btn-toggle-torch" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-flashlight text-lg"></i></button>
             </div>
 
             <div class="relative w-full max-w-[250px] aspect-square mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center my-auto">
@@ -171,7 +170,7 @@
             <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[170px] overflow-y-auto no-scrollbar mb-2">
                 <div class="flex justify-between items-center mb-1">
                     <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1"><i class="ph ph-eye"></i>Vision AI Result</span>
-                    <button onclick="App.CameraRenderer.speakArDetected()" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i>Pronounce</button>
+                    <button id="btn-ar-pronounce" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i>Pronounce</button>
                 </div>
                 <div class="flex items-baseline gap-2">
                     <p id="ar-jp" class="text-xl font-black text-white leading-tight">Ready to scan</p>
@@ -187,10 +186,10 @@
             </div>
 
             <div class="flex items-center justify-center gap-8 pointer-events-auto z-30">
-                <button id="camera-scan-button" onclick="App.CameraOCR.scanFrame()" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
+                <button id="camera-scan-button" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
                     <div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold"><i class="ph ph-scan"></i></div>
                 </button>
-                <button onclick="App.CameraEngine.toggleFacing()" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
+                <button id="btn-toggle-facing" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
             </div>
         </div>
     </section>
@@ -199,7 +198,7 @@
     <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-32 text-gray-900">
         <div class="p-4 flex flex-col flex-1">
             <div class="flex justify-between items-center pt-1 mb-2">
-                <button onclick="App.Navigation.switchView('hero')" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
+                <button data-route="hero" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
                 <div class="text-center">
                     <h2 class="font-extrabold text-sm text-gray-900 flex items-center justify-center gap-1.5"><span>Hello Japan ! Voice AI</span><span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span></h2>
                     <p class="text-[10px] text-gray-500 font-semibold" id="voice-env-display">Context: Daily / Friendly</p>
@@ -210,21 +209,21 @@
             <div class="flex items-center justify-between gap-1.5 mb-2.5 bg-white/80 p-1.5 rounded-2xl border border-emerald-100 shadow-sm">
                 <span class="text-[10px] font-bold text-gray-600 pl-1">Speech Mode:</span>
                 <div class="flex gap-1 overflow-x-auto no-scrollbar">
-                    <button id="btn-speaker-jp" onclick="App.VoiceEngine.setSpeaker('ja-JP')" class="bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇯🇵 Japanese</button>
-                    <button id="btn-speaker-si" onclick="App.VoiceEngine.setSpeaker('si-LK')" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇱🇰 Sinhala</button>
-                    <button id="btn-speaker-en" onclick="App.VoiceEngine.setSpeaker('en-US')" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇬🇧 English</button>
+                    <button id="btn-speaker-jp" class="bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇯🇵 Japanese</button>
+                    <button id="btn-speaker-si" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇱🇰 Sinhala</button>
+                    <button id="btn-speaker-en" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇬🇧 English</button>
                 </div>
             </div>
 
             <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-2 py-0.5">
-                <button onclick="App.VoiceEngine.setContext('daily', this)" class="ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🌸 Daily Friendly</button>
-                <button onclick="App.VoiceEngine.setContext('workplace', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">💼 Workplace (Keigo)</button>
-                <button onclick="App.VoiceEngine.setContext('restaurant', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🍜 Restaurant</button>
-                <button onclick="App.VoiceEngine.setContext('konbini', this)" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🏪 Store / Konbini</button>
+                <button data-ctx="daily" class="ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🌸 Daily Friendly</button>
+                <button data-ctx="workplace" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">💼 Workplace (Keigo)</button>
+                <button data-ctx="restaurant" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🍜 Restaurant</button>
+                <button data-ctx="konbini" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🏪 Store / Konbini</button>
             </div>
 
             <div class="flex flex-col items-center justify-center my-1 select-none">
-                <button id="mic-avatar-btn" onclick="App.VoiceEngine.toggleListening()" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative my-1">
+                <button id="mic-avatar-btn" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative my-1">
                     <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-4xl shadow-inner relative">
                         🤖<span id="listening-badge-dot" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
                     </div>
@@ -238,7 +237,7 @@
                 <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-emerald-100">
                     <div class="flex justify-between items-center mb-1">
                         <span id="detected-speaker-badge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-black">🎙️ YOUR SPEECH</span>
-                        <button onclick="App.VoiceTTS.speakCurrentDetected()" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100"><i class="ph ph-speaker-high"></i></button>
+                        <button id="btn-voice-replay" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100"><i class="ph ph-speaker-high"></i></button>
                     </div>
                     <h3 id="detected-japanese" class="text-base font-black text-gray-900 leading-snug">Speak when you are ready...</h3>
                     <p id="detected-romaji" class="text-[11px] text-emerald-700 font-semibold mt-0.5">Your Japanese speech will appear here.</p>
@@ -262,9 +261,9 @@
 
     <!-- FLOATING BOTTOM NAVIGATION DOCK -->
     <nav id="bottom-nav-dock" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass-dock rounded-full px-6 py-2.5 flex justify-between items-center shadow-2xl border border-white/60 z-40">
-        <button onclick="App.Navigation.switchView('hero')" data-nav="hero" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Mode"><i class="ph ph-house font-bold"></i></button>
-        <button onclick="App.Navigation.switchView('camera')" data-nav="camera" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Camera AI Pro OCR"><i class="ph ph-camera font-bold"></i></button>
-        <button onclick="App.Navigation.switchView('voice')" data-nav="voice" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Voice AI Assistant"><i class="ph ph-microphone font-bold"></i></button>
+        <button data-route="hero" data-nav="hero" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Mode"><i class="ph ph-house font-bold"></i></button>
+        <button data-route="camera" data-nav="camera" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Camera AI Pro OCR"><i class="ph ph-camera font-bold"></i></button>
+        <button data-route="voice" data-nav="voice" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Voice AI Assistant"><i class="ph ph-microphone font-bold"></i></button>
     </nav>
 
     <!-- TOAST -->
