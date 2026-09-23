@@ -1,260 +1,185 @@
-// ============================================================
-// Hello Japan AI
-// js/ui/navigation.js
-// View Navigation + View Lifecycle
-// ============================================================
-
 import { State } from '../state.js';
+import { CameraEngine } from '../camera/cameraEngine.js';
+import { CameraOCR } from '../camera/cameraOCR.js';
+import { VoiceEngine } from '../voice/voiceEngine.js';
 
 export const Navigation = {
 
-    // ========================================================
-    // SWITCH VIEW
-    // ========================================================
+    VALID_VIEWS: [
+        'hero',
+        'camera',
+        'voice'
+    ],
 
-    switchView(viewName) {
+    goTo(view) {
 
-        const validViews = [
-            'hero',
-            'camera',
-            'voice'
-        ];
-
-        if (
-            !validViews.includes(viewName)
-        ) {
-            return false;
+        if (!this.VALID_VIEWS.includes(view)) {
+            return;
         }
 
-        const previous =
+        const previousView =
             State.currentActiveView;
 
         // ----------------------------------------------------
-        // Same-view navigation should be idempotent.
+        // Do not repeatedly initialize the same view.
+        // ----------------------------------------------------
+
+        if (previousView === view) {
+            return;
+        }
+
+        // ----------------------------------------------------
+        // Leaving Voice
         //
-        // Do not restart camera.
-        // Do not clear voice conversation.
-        // Do not stop/restart active resources.
+        // Stop microphone recognition safely.
+        // Do NOT clear the conversation.
         // ----------------------------------------------------
 
         if (
-            previous === viewName
-        ) {
-            this.updateNavigationUI(
-                viewName
-            );
-
-            return true;
-        }
-
-        // ----------------------------------------------------
-        // LEAVE VOICE
-        // ----------------------------------------------------
-
-        if (
-            previous === 'voice' &&
-            viewName !== 'voice'
+            previousView === 'voice' &&
+            view !== 'voice'
         ) {
 
-            if (
-                window.App?.VoiceEngine?.stop
-            ) {
-                window.App.VoiceEngine.stop();
-            }
-
-        }
-
-        // ----------------------------------------------------
-        // LEAVE CAMERA
-        // ----------------------------------------------------
-
-        if (
-            previous === 'camera' &&
-            viewName !== 'camera'
-        ) {
-
-            if (
-                window.App?.CameraOCR?.cancel
-            ) {
-                window.App.CameraOCR.cancel();
-            }
-
-            if (
-                window.App?.CameraEngine?.stop
-            ) {
-                window.App.CameraEngine.stop(
-                    true
+            try {
+                VoiceEngine.stop();
+            } catch (error) {
+                console.warn(
+                    '[Navigation] Voice stop failed:',
+                    error
                 );
             }
         }
 
         // ----------------------------------------------------
-        // UPDATE APPLICATION STATE
+        // Leaving Camera
+        // ----------------------------------------------------
+
+        if (
+            previousView === 'camera' &&
+            view !== 'camera'
+        ) {
+
+            try {
+                CameraOCR.cancel();
+            } catch (error) {
+                console.warn(
+                    '[Navigation] OCR cancel failed:',
+                    error
+                );
+            }
+
+            try {
+                CameraEngine.stop(true);
+            } catch (error) {
+                console.warn(
+                    '[Navigation] Camera stop failed:',
+                    error
+                );
+            }
+        }
+
+        // ----------------------------------------------------
+        // Update application state
         // ----------------------------------------------------
 
         State.currentActiveView =
-            viewName;
+            view;
 
         // ----------------------------------------------------
-        // UPDATE SCREEN
+        // Toggle screen visibility
         // ----------------------------------------------------
 
         document
             .querySelectorAll('.screen-view')
             .forEach(
-                (view) => {
-                    view.classList.remove(
-                        'active'
+                (screen) => {
+
+                    screen.classList.toggle(
+                        'active',
+                        screen.dataset.view === view
                     );
                 }
             );
 
-        const target =
-            document.getElementById(
-                `view-${viewName}`
-            );
-
-        if (target) {
-            target.classList.add(
-                'active'
-            );
-        }
-
         // ----------------------------------------------------
-        // UPDATE NAVIGATION BUTTONS
+        // Update bottom navigation
         // ----------------------------------------------------
-
-        this.updateNavigationUI(
-            viewName
-        );
-
-        // ----------------------------------------------------
-        // ENTER CAMERA
-        // ----------------------------------------------------
-
-        if (
-            viewName === 'camera'
-        ) {
-
-            if (
-                window.App?.CameraRenderer
-                    ?.clearCard
-            ) {
-                window.App.CameraRenderer
-                    .clearCard();
-            }
-
-            if (
-                window.App?.CameraEngine?.init
-            ) {
-                window.App.CameraEngine.init();
-            }
-        }
-
-        // ----------------------------------------------------
-        // ENTER VOICE
-        //
-        // IMPORTANT:
-        // Do NOT clear the conversation here.
-        //
-        // Navigation should not destroy user-visible
-        // conversation history.
-        // ----------------------------------------------------
-
-        if (
-            viewName === 'voice'
-        ) {
-
-            if (
-                window.App?.VoiceRenderer
-                    ?.setListeningState
-            ) {
-
-                window.App.VoiceRenderer
-                    .setListeningState(
-                        false,
-                        'Tap Mic to Speak'
-                    );
-            }
-        }
-
-        return true;
-    },
-
-    // ========================================================
-    // NAVIGATION UI
-    // ========================================================
-
-    updateNavigationUI(
-        activeView
-    ) {
 
         document
-            .querySelectorAll(
-                '.nav-icon-btn'
-            )
+            .querySelectorAll('[data-route]')
             .forEach(
                 (button) => {
 
-                    const nav =
-                        button.dataset.nav;
-
                     const isActive =
-                        nav === activeView;
+                        button.dataset.route === view;
 
                     button.classList.toggle(
-                        'text-emerald-700',
+                        'active',
                         isActive
                     );
 
-                    button.classList.toggle(
-                        'text-gray-400',
-                        !isActive
+                    button.setAttribute(
+                        'aria-current',
+                        isActive
+                            ? 'page'
+                            : 'false'
                     );
-
-                    if (isActive) {
-
-                        button.setAttribute(
-                            'aria-current',
-                            'page'
-                        );
-
-                    } else {
-
-                        button.removeAttribute(
-                            'aria-current'
-                        );
-                    }
                 }
             );
-    },
 
-    // ========================================================
-    // CLOCK
-    // ========================================================
+        // ----------------------------------------------------
+        // Camera entry
+        // ----------------------------------------------------
 
-    tickClock() {
+        if (view === 'camera') {
 
-        const clock =
-            document.getElementById(
-                'hero-clock'
-            );
+            try {
+                CameraOCR.cancel();
+            } catch (error) {
+                console.warn(
+                    '[Navigation] OCR reset failed:',
+                    error
+                );
+            }
 
-        if (!clock) {
-            return;
+            try {
+                CameraEngine.init();
+            } catch (error) {
+                console.error(
+                    '[Navigation] Camera init failed:',
+                    error
+                );
+            }
         }
 
-        const now =
-            new Date();
+        // ----------------------------------------------------
+        // Voice entry
+        //
+        // IMPORTANT:
+        // Do NOT call clearConversation().
+        //
+        // The conversation is intentionally preserved so the
+        // user can leave Voice and return without losing context.
+        // ----------------------------------------------------
 
-        clock.textContent =
-            now.toLocaleTimeString(
-                [],
-                {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
+        if (view === 'voice') {
+
+            try {
+
+                if (
+                    typeof VoiceEngine.prepareForView ===
+                    'function'
+                ) {
+                    VoiceEngine.prepareForView();
                 }
-            );
+
+            } catch (error) {
+
+                console.warn(
+                    '[Navigation] Voice preparation failed:',
+                    error
+                );
+            }
+        }
     }
 };
