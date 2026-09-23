@@ -1,44 +1,935 @@
-@keyframes floatSlow {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-6px); }
-}
-.animate-float { animation: floatSlow 3.2s ease-in-out infinite; }
+/* ============================================================
+   HELLO JAPAN AI
+   app.css
+   Custom application layer
+   ============================================================ */
 
-@keyframes scanBeam {
-    0% { top: 5%; opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { top: 90%; opacity: 0; }
-}
-.scanner-beam { animation: scanBeam 2.2s ease-in-out infinite; }
 
-@keyframes wavePulse {
-    0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
-    50% { transform: scaleY(1.3); opacity: 1; }
-}
-.audio-bar { animation: wavePulse 1.1s ease-in-out infinite; transform-origin: center; }
-.delay-1 { animation-delay: 0.15s; }
-.delay-2 { animation-delay: 0.3s; }
-.delay-3 { animation-delay: 0.45s; }
-.delay-4 { animation-delay: 0.6s; }
+/* ============================================================
+   ROOT
+   ============================================================ */
 
-.glass-dock {
-    background: rgba(255, 255, 255, 0.90);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+:root {
+
+    --hj-bg:
+        #071512;
+
+    --hj-surface:
+        #0d211c;
+
+    --hj-surface-2:
+        #123027;
+
+    --hj-border:
+        rgba(255, 255, 255, 0.10);
+
+    --hj-text:
+        #f4f7f5;
+
+    --hj-muted:
+        #aabbb4;
+
+    --hj-green:
+        #65d99a;
+
+    --hj-green-dark:
+        #173d2f;
+
+    --hj-warning:
+        #f5c66a;
+
+    --hj-danger:
+        #ff7777;
+
+    --hj-white:
+        #ffffff;
+
+    --hj-radius:
+        22px;
+
+    --hj-nav-height:
+        74px;
+
+    --hj-safe-bottom:
+        env(safe-area-inset-bottom, 0px);
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   GLOBAL
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+
+html {
+    width: 100%;
+    min-height: 100%;
+    background: var(--hj-bg);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    margin: 0;
+
+    background:
+        var(--hj-bg);
+
+    color:
+        var(--hj-text);
+
+    overflow-x: hidden;
+
+    -webkit-font-smoothing:
+        antialiased;
+
+    text-rendering:
+        optimizeLegibility;
+}
+
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+
+button {
+    -webkit-tap-highlight-color:
+        transparent;
+}
+
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+    outline:
+        2px solid var(--hj-green);
+
+    outline-offset:
+        3px;
+}
+
+
+/* ============================================================
+   APP ROOT
+   ============================================================ */
+
+#app,
+.app-root {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+
+/* ============================================================
+   SCREEN SYSTEM
+   ============================================================ */
 
 .screen-view {
-    display: none !important;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
 }
 
-.screen-view.active {
-    display: flex !important;
-    opacity: 1;
+
+.screen-view[hidden] {
+    display: none !important;
+}
+
+
+/* ============================================================
+   SAFE AREA
+   ============================================================ */
+
+.safe-bottom {
+    padding-bottom:
+        var(--hj-safe-bottom);
+}
+
+
+.safe-area-bottom {
+    padding-bottom:
+        calc(
+            var(--hj-safe-bottom) +
+            8px
+        );
+}
+
+
+/* ============================================================
+   COMMON INTERACTION
+   ============================================================ */
+
+button {
+    cursor: pointer;
+}
+
+
+button:disabled {
+    cursor:
+        not-allowed;
+
+    opacity:
+        0.55;
+}
+
+
+.hj-no-select {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.hj-card {
+    border:
+        1px solid var(--hj-border);
+
+    border-radius:
+        var(--hj-radius);
+
+    background:
+        var(--hj-surface);
+
+    overflow:
+        hidden;
+}
+
+
+.hj-card-soft {
+    border:
+        1px solid var(--hj-border);
+
+    border-radius:
+        var(--hj-radius);
+
+    background:
+        rgba(255, 255, 255, 0.04);
+}
+
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+#view-hero {
+    position: relative;
+
+    min-height:
+        100vh;
+
+    min-height:
+        100dvh;
+
+    overflow-x:
+        hidden;
+
+    padding-bottom:
+        calc(
+            var(--hj-nav-height) +
+            var(--hj-safe-bottom) +
+            18px
+        );
+}
+
+
+#view-hero button {
+    touch-action:
+        manipulation;
+}
+
+
+/* ============================================================
+   ROUTE CARDS
+   ============================================================ */
+
+[data-route] {
+    touch-action:
+        manipulation;
+
+    transition:
+        transform 160ms ease,
+        opacity 160ms ease;
+}
+
+
+[data-route]:active {
+    transform:
+        scale(0.98);
+}
+
+
+[data-route]:disabled {
+    transform:
+        none;
+}
+
+
+/* ============================================================
+   CAMERA
+   ============================================================ */
+
+#view-camera {
+    position: relative;
+
+    min-height:
+        100vh;
+
+    min-height:
+        100dvh;
+
+    background:
+        #000;
+
+    overflow:
+        hidden;
+}
+
+
+/* Camera video */
+
+#live-video {
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    object-fit:
+        cover;
+
+    background:
+        #000;
+
+    z-index:
+        1;
+}
+
+
+/* Snapshot canvas should never appear visually */
+
+#snapshot-canvas {
+    display:
+        none;
+}
+
+
+/* Camera dark gradient */
+
+#view-camera::after {
+    content:
+        "";
+
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    pointer-events:
+        none;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,0.42),
+            transparent 28%,
+            transparent 58%,
+            rgba(0,0,0,0.62)
+        );
+
+    z-index:
+        2;
+}
+
+
+/* Camera UI layer */
+
+#view-camera > * {
+    position:
+        relative;
+
+    z-index:
+        3;
+}
+
+
+/* ============================================================
+   CAMERA HUD
+   ============================================================ */
+
+#ar-side-hud {
+    position:
+        absolute;
+
+    left:
+        16px;
+
+    right:
+        16px;
+
+    bottom:
+        calc(
+            var(--hj-nav-height) +
+            var(--hj-safe-bottom) +
+            92px
+        );
+
+    z-index:
+        10;
+
+    pointer-events:
+        none;
+}
+
+
+#ar-side-hud button,
+#ar-side-hud [role="button"] {
+    pointer-events:
+        auto;
+}
+
+
+/* ============================================================
+   CAMERA RESULT CARD
+   ============================================================ */
+
+#ar-jp,
+#ar-romaji,
+#ar-si,
+#ar-en,
+#ar-guide {
+    overflow-wrap:
+        anywhere;
+
+    word-break:
+        break-word;
+}
+
+
+#ar-jp {
+    font-weight:
+        700;
+}
+
+
+#ar-romaji {
+    opacity:
+        0.88;
+}
+
+
+#ar-si {
+    line-height:
+        1.65;
+}
+
+
+#ar-en {
+    line-height:
+        1.55;
+}
+
+
+#ar-guide {
+    line-height:
+        1.55;
+}
+
+
+/* ============================================================
+   CAMERA STATUS
+   ============================================================ */
+
+#camera-status {
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+
+#camera-status:empty {
+    opacity:
+        0;
+}
+
+
+/* ============================================================
+   CAMERA CONTROLS
+   ============================================================ */
+
+#camera-scan-button,
+#btn-toggle-facing,
+#btn-toggle-torch,
+#btn-ar-pronounce {
+    touch-action:
+        manipulation;
+
+    -webkit-user-select:
+        none;
+
+    user-select:
+        none;
+}
+
+
+/* ============================================================
+   VOICE
+   ============================================================ */
+
+#view-voice {
+    position:
+        relative;
+
+    min-height:
+        100vh;
+
+    min-height:
+        100dvh;
+
+    overflow-x:
+        hidden;
+
+    padding-bottom:
+        calc(
+            var(--hj-nav-height) +
+            var(--hj-safe-bottom) +
+            24px
+        );
+
+    background:
+        #f6f8f7;
+
+    color:
+        #15201c;
+}
+
+
+/* ============================================================
+   VOICE STATUS
+   ============================================================ */
+
+#mic-status-label {
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+
+#listening-badge-dot {
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+
+/* ============================================================
+   MICROPHONE
+   ============================================================ */
+
+#mic-avatar-btn {
+    touch-action:
+        manipulation;
+
+    -webkit-user-select:
+        none;
+
+    user-select:
+        none;
+
+    transition:
+        transform 160ms ease,
+        box-shadow 180ms ease,
+        opacity 180ms ease;
+}
+
+
+#mic-avatar-btn:active {
+    transform:
+        scale(0.96);
+}
+
+
+#mic-avatar-btn:disabled {
+    transform:
+        none;
+}
+
+
+/* ============================================================
+   LIVE MICROPHONE ICON
+   ============================================================ */
+
+#mic-live-icon {
+    transition:
+        transform 180ms ease,
+        opacity 180ms ease;
+}
+
+
+/* ============================================================
+   DETECTED SPEAKER
+   ============================================================ */
+
+#detected-speaker-badge {
+    max-width:
+        100%;
+
+    overflow:
+        hidden;
+
+    text-overflow:
+        ellipsis;
+
+    white-space:
+        nowrap;
+}
+
+
+/* ============================================================
+   VOICE DETECTION TEXT
+   ============================================================ */
+
+#detected-japanese,
+#detected-romaji,
+#detected-sinhala,
+#detected-english {
+    overflow-wrap:
+        anywhere;
+
+    word-break:
+        break-word;
+}
+
+
+#detected-japanese {
+    font-weight:
+        700;
+}
+
+
+#detected-romaji {
+    opacity:
+        0.84;
+}
+
+
+/* ============================================================
+   VOICE SUGGESTIONS
+   ============================================================ */
+
+#suggestions-list {
+    width:
+        100%;
+
+    overflow:
+        visible;
+}
+
+
+#suggestions-list button {
+    width:
+        100%;
+
+    text-align:
+        left;
+
+    touch-action:
+        manipulation;
+}
+
+
+#voice-suggestion-empty[hidden] {
+    display:
+        none !important;
+}
+
+
+/* ============================================================
+   VOICE SPEAKER BUTTONS
+   ============================================================ */
+
+#btn-speaker-jp,
+#btn-speaker-si,
+#btn-speaker-en,
+#btn-voice-replay {
+    touch-action:
+        manipulation;
+}
+
+
+/* ============================================================
+   BOTTOM NAVIGATION
+   ============================================================ */
+
+.bottom-nav,
+nav[data-bottom-nav] {
+    position:
+        fixed;
+
+    left:
+        0;
+
+    right:
+        0;
+
+    bottom:
+        0;
+
+    z-index:
+        100;
+
+    padding-bottom:
+        var(--hj-safe-bottom);
+}
+
+
+.bottom-nav button,
+nav[data-bottom-nav] button {
+    min-height:
+        48px;
+
+    touch-action:
+        manipulation;
+}
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+#toast {
+    position:
+        fixed;
+
+    left:
+        16px;
+
+    right:
+        16px;
+
+    bottom:
+        calc(
+            var(--hj-nav-height) +
+            var(--hj-safe-bottom) +
+            18px
+        );
+
+    z-index:
+        1000;
+
+    pointer-events:
+        none;
+
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+
+#toast[hidden] {
+    display:
+        none !important;
+}
+
+
+#toast-text {
+    overflow-wrap:
+        anywhere;
+}
+
+
+/* ============================================================
+   LOADING / BUSY
+   ============================================================ */
+
+[aria-busy="true"] {
+    cursor:
+        progress;
+}
+
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (
+    prefers-reduced-motion: reduce
+) {
+
+    *,
+    *::before,
+    *::after {
+
+        scroll-behavior:
+            auto !important;
+
+        transition-duration:
+            0.01ms !important;
+
+        animation-duration:
+            0.01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+    }
+}
+
+
+/* ============================================================
+   SMALL PHONES
+   ============================================================ */
+
+@media (
+    max-width: 360px
+) {
+
+    :root {
+        --hj-nav-height:
+            68px;
+    }
+
+
+    #ar-side-hud {
+        left:
+            10px;
+
+        right:
+            10px;
+
+        bottom:
+            calc(
+                var(--hj-nav-height) +
+                var(--hj-safe-bottom) +
+                78px
+            );
+    }
+}
+
+
+/* ============================================================
+   LANDSCAPE MOBILE
+   ============================================================ */
+
+@media (
+    orientation: landscape
+) and (
+    max-height: 520px
+) {
+
+    #view-camera {
+        min-height:
+            100dvh;
+    }
+
+
+    #ar-side-hud {
+        bottom:
+            calc(
+                var(--hj-safe-bottom) +
+                12px
+            );
+
+        max-width:
+            420px;
+    }
+
+
+    #view-voice {
+        padding-bottom:
+            calc(
+                var(--hj-safe-bottom) +
+                12px
+            );
+    }
+}
+
+
+/* ============================================================
+   TABLET / DESKTOP
+   ============================================================ */
+
+@media (
+    min-width: 768px
+) {
+
+    #view-hero,
+    #view-voice {
+        padding-left:
+            max(
+                20px,
+                env(safe-area-inset-left)
+            );
+
+        padding-right:
+            max(
+                20px,
+                env(safe-area-inset-right)
+            );
+    }
+
+
+    #ar-side-hud {
+        left:
+            24px;
+
+        right:
+            24px;
+    }
+
+
+    #toast {
+        left:
+            50%;
+
+        right:
+            auto;
+
+        width:
+            min(
+                520px,
+                calc(100vw - 48px)
+            );
+
+        transform:
+            translateX(-50%);
+    }
+}
+
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+
+@media print {
+
+    .bottom-nav,
+    #toast,
+    #view-camera {
+        display:
+            none !important;
+    }
 }
