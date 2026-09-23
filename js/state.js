@@ -12,8 +12,9 @@ export const State = {
 
     currentActiveView: 'hero',
 
+
     // ========================================================
-    // CAMERA
+    // CAMERA STATE
     // ========================================================
 
     mediaStream: null,
@@ -34,6 +35,7 @@ export const State = {
         guide: ''
     },
 
+
     // ========================================================
     // VOICE CONTEXT
     // ========================================================
@@ -43,6 +45,7 @@ export const State = {
     activeSpeakerLang: 'ja-JP',
 
     detectedEnvironment: 'Daily / Friendly',
+
 
     // ========================================================
     // VOICE CONVERSATION
@@ -54,8 +57,13 @@ export const State = {
 
     selectedVoiceResponse: null,
 
+
     // ========================================================
-    // VOICE STATE CONSTANTS
+    // VOICE STATE
+    //
+    // IMPORTANT:
+    // VoiceEngine owns the actual recognition lifecycle.
+    // State stores the application-level state label only.
     // ========================================================
 
     VoiceState: {
@@ -68,23 +76,34 @@ export const State = {
 
     currentVoiceState: 'IDLE',
 
-    isContinuousListening: false,
 
     // ========================================================
     // VOICE REQUEST CONTROL
+    //
+    // Incremented whenever a new AI request supersedes
+    // an older request.
     // ========================================================
 
     voiceRequestId: 0,
+
+
+    // ========================================================
+    // SPEECH RECOGNITION DATA
+    //
+    // VoiceEngine owns recognition.
+    // State stores the latest recognized transcript only.
+    // ========================================================
 
     lastTranscript: '',
 
     lastTranscriptTime: 0,
 
-    // ========================================================
-    // CURRENT VOICE DATA
-    // ========================================================
-
     currentVoiceTranscript: '',
+
+
+    // ========================================================
+    // CURRENT VOICE INTERPRETATION
+    // ========================================================
 
     currentVoiceJapanese: '',
 
@@ -93,6 +112,11 @@ export const State = {
     currentVoiceSinhala: '',
 
     currentVoiceEnglish: '',
+
+
+    // ========================================================
+    // CURRENT AI RESPONSE
+    // ========================================================
 
     currentVoiceResponseJapanese: '',
 
@@ -104,32 +128,157 @@ export const State = {
 
     currentVoiceSuggestions: [],
 
+
     // ========================================================
-    // OPTIONAL STATE INITIALIZER
+    // INITIALIZATION
     // ========================================================
 
     init() {
-        this.currentVoiceState = this.VoiceState.IDLE;
 
-        if (!this.activeVoiceContext) {
+        // ----------------------------------------------------
+        // Application defaults
+        // ----------------------------------------------------
+
+        if (
+            !this.currentActiveView ||
+            typeof this.currentActiveView !== 'string'
+        ) {
+            this.currentActiveView = 'hero';
+        }
+
+
+        // ----------------------------------------------------
+        // Voice context
+        // ----------------------------------------------------
+
+        if (
+            !this.activeVoiceContext ||
+            typeof this.activeVoiceContext !== 'string'
+        ) {
             this.activeVoiceContext = 'daily';
         }
 
-        if (!this.activeSpeakerLang) {
+
+        // ----------------------------------------------------
+        // Speaker language
+        // ----------------------------------------------------
+
+        if (
+            !this.activeSpeakerLang ||
+            typeof this.activeSpeakerLang !== 'string'
+        ) {
             this.activeSpeakerLang = 'ja-JP';
         }
 
-        if (!Array.isArray(this.conversationHistory)) {
+
+        // ----------------------------------------------------
+        // Voice state
+        // ----------------------------------------------------
+
+        if (
+            !this.currentVoiceState ||
+            typeof this.currentVoiceState !== 'string'
+        ) {
+            this.currentVoiceState =
+                this.VoiceState.IDLE;
+        }
+
+
+        // ----------------------------------------------------
+        // Conversation history
+        // ----------------------------------------------------
+
+        if (
+            !Array.isArray(this.conversationHistory)
+        ) {
             this.conversationHistory = [];
         }
 
-        if (!Array.isArray(this.currentVoiceSuggestions)) {
+
+        // ----------------------------------------------------
+        // Current suggestions
+        // ----------------------------------------------------
+
+        if (
+            !Array.isArray(this.currentVoiceSuggestions)
+        ) {
             this.currentVoiceSuggestions = [];
         }
-    },
 
-    // Backward-compatible alias.
-    initialize() {
-        this.init();
+
+        // ----------------------------------------------------
+        // Request ID
+        // ----------------------------------------------------
+
+        if (
+            !Number.isFinite(this.voiceRequestId)
+        ) {
+            this.voiceRequestId = 0;
+        }
+
+
+        // ----------------------------------------------------
+        // Camera request ID
+        // ----------------------------------------------------
+
+        if (
+            !Number.isFinite(this.cameraRequestId)
+        ) {
+            this.cameraRequestId = 0;
+        }
+
+
+        // ----------------------------------------------------
+        // Camera facing mode
+        // ----------------------------------------------------
+
+        const validFacingModes = [
+            'environment',
+            'user'
+        ];
+
+        if (
+            !validFacingModes.includes(
+                this.useFacingMode
+            )
+        ) {
+            this.useFacingMode =
+                'environment';
+        }
+
+
+        // ----------------------------------------------------
+        // Torch state
+        // ----------------------------------------------------
+
+        this.isTorchOn =
+            Boolean(this.isTorchOn);
+
+
+        // ----------------------------------------------------
+        // Detection environment
+        // ----------------------------------------------------
+
+        if (
+            typeof this.detectedEnvironment !== 'string'
+        ) {
+            this.detectedEnvironment =
+                'Daily / Friendly';
+        }
+
+        this.detectedEnvironment =
+            this.detectedEnvironment.trim() ||
+            'Daily / Friendly';
+
+
+        // ----------------------------------------------------
+        // Transcript timestamp
+        // ----------------------------------------------------
+
+        if (
+            !Number.isFinite(this.lastTranscriptTime)
+        ) {
+            this.lastTranscriptTime = 0;
+        }
     }
 };
