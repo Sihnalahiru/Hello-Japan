@@ -12,7 +12,6 @@ import { Gemini } from '../ai/gemini.js';
 import { VoiceRenderer } from './voiceRenderer.js';
 import { Toast } from '../ui/toast.js';
 
-
 export const VoiceAI = {
 
     // ========================================================
@@ -30,6 +29,11 @@ export const VoiceAI = {
             return false;
         }
 
+        // ----------------------------------------------------
+        // Every new request receives a unique ID.
+        // This protects against stale Gemini responses.
+        // ----------------------------------------------------
+
         const requestId =
             ++State.voiceRequestId;
 
@@ -46,16 +50,29 @@ export const VoiceAI = {
             transcript
         );
 
-
         try {
+
+            // ------------------------------------------------
+            // Build a small recent conversation context.
+            //
+            // Do not send the entire 50-record history.
+            // Keep only the latest few useful turns.
+            // ------------------------------------------------
+
+            const recentHistory =
+                this.getRecentHistory(5);
 
             const prompt =
                 Prompts.getVoicePrompt(
                     State.activeVoiceContext,
                     State.activeSpeakerLang,
-                    transcript
+                    transcript,
+                    recentHistory
                 );
 
+            // ------------------------------------------------
+            // Gemini request
+            // ------------------------------------------------
 
             const result =
                 await Gemini.callContent(
@@ -74,8 +91,15 @@ export const VoiceAI = {
                     Schemas.VOICE_RESPONSE_SCHEMA
                 );
 
-
+            // ------------------------------------------------
             // Ignore stale AI responses.
+            //
+            // Example:
+            // User presses STOP while Gemini is processing.
+            // VoiceEngine increments voiceRequestId.
+            // This response must be ignored.
+            // ------------------------------------------------
+
             if (
                 requestId !==
                 State.voiceRequestId
@@ -83,10 +107,12 @@ export const VoiceAI = {
                 return false;
             }
 
+            // ------------------------------------------------
+            // Validate + normalize
+            // ------------------------------------------------
 
             const validated =
                 this.validateResponse(result);
-
 
             if (!validated) {
                 throw new Error(
@@ -94,9 +120,8 @@ export const VoiceAI = {
                 );
             }
 
-
             // ------------------------------------------------
-            // Save state
+            // Save current voice state
             // ------------------------------------------------
 
             State.detectedEnvironment =
@@ -129,7 +154,6 @@ export const VoiceAI = {
             State.currentVoiceSuggestions =
                 validated.replies;
 
-
             // ------------------------------------------------
             // Render
             // ------------------------------------------------
@@ -138,23 +162,60 @@ export const VoiceAI = {
                 validated
             );
 
-
             // ------------------------------------------------
             // Save conversation record
             // ------------------------------------------------
 
-            State.lastVoiceResponse = {
-                ...validated,
-                timestamp: Date.now()
+            const conversationRecord = {
+                transcript,
+
+                heardJapanese:
+                    validated.heardJapanese,
+
+                heardRomaji:
+                    validated.heardRomaji,
+
+                heardSinhala:
+                    validated.heardSinhala,
+
+                heardEnglish:
+                    validated.heardEnglish,
+
+                responseJapanese:
+                    validated.responseJapanese,
+
+                responseRomaji:
+                    validated.responseRomaji,
+
+                responseSinhala:
+                    validated.responseSinhala,
+
+                responseEnglish:
+                    validated.responseEnglish,
+
+                detectedEnvironment:
+                    validated.detectedEnvironment,
+
+                replies:
+                    validated.replies,
+
+                timestamp:
+                    Date.now()
             };
 
+            State.lastVoiceResponse =
+                conversationRecord;
+
+            if (
+                !Array.isArray(
+                    State.conversationHistory
+                )
+            ) {
+                State.conversationHistory = [];
+            }
 
             State.conversationHistory.push(
-                {
-                    transcript,
-                    ...validated,
-                    timestamp: Date.now()
-                }
+                conversationRecord
             );
 
             // Keep memory bounded.
@@ -165,9 +226,8 @@ export const VoiceAI = {
                     State.conversationHistory.slice(-50);
             }
 
-
             // ------------------------------------------------
-            // SAFE TTS
+            // SAFE JAPANESE TTS
             // ------------------------------------------------
 
             if (
@@ -202,6 +262,10 @@ export const VoiceAI = {
 
         } catch (error) {
 
+            // ------------------------------------------------
+            // Never display an error for an obsolete request.
+            // ------------------------------------------------
+
             if (
                 requestId !==
                 State.voiceRequestId
@@ -220,6 +284,50 @@ export const VoiceAI = {
         }
     },
 
+    // ========================================================
+    // RECENT CONVERSATION HISTORY
+    // ========================================================
+
+    getRecentHistory(limit = 5) {
+
+        if (
+            !Array.isArray(
+                State.conversationHistory
+            )
+        ) {
+            return [];
+        }
+
+        const safeLimit =
+            Math.max(
+                0,
+                Math.min(
+                    Number(limit) || 5,
+                    5
+                )
+            );
+
+        return State.conversationHistory
+            .slice(-safeLimit)
+            .map(
+                (item) => ({
+                    user:
+                        typeof item?.transcript === 'string'
+                            ? item.transcript.trim()
+                            : '',
+
+                    assistant:
+                        typeof item?.responseJapanese === 'string'
+                            ? item.responseJapanese.trim()
+                            : ''
+                })
+            )
+            .filter(
+                (item) =>
+                    item.user ||
+                    item.assistant
+            );
+    },
 
     // ========================================================
     // RESPONSE VALIDATION / NORMALIZATION
@@ -234,12 +342,10 @@ export const VoiceAI = {
             return null;
         }
 
-
         const text = (key) =>
             typeof data[key] === 'string'
                 ? data[key].trim()
                 : '';
-
 
         const replies =
             Array.isArray(data.replies)
@@ -251,8 +357,7 @@ export const VoiceAI = {
                     .filter(Boolean)
                 : [];
 
-
-        return {
+        const normalized = {
 
             detectedEnvironment:
                 text('detected_environment') ||
@@ -284,8 +389,39 @@ export const VoiceAI = {
 
             replies
         };
-    },
 
+        // ----------------------------------------------------
+        // Application-level validation.
+        //
+        // The Gemini schema guarantees field structure,
+        // but it does NOT guarantee useful non-empty content.
+        // ----------------------------------------------------
+
+        const hasHeardContent =
+            Boolean(
+                normalized.heardJapanese ||
+                normalized.heardRomaji ||
+                normalized.heardSinhala ||
+                normalized.heardEnglish
+            );
+
+        const hasResponseContent =
+            Boolean(
+                normalized.responseJapanese ||
+                normalized.responseRomaji ||
+                normalized.responseSinhala ||
+                normalized.responseEnglish
+            );
+
+        if (
+            !hasHeardContent ||
+            !hasResponseContent
+        ) {
+            return null;
+        }
+
+        return normalized;
+    },
 
     // ========================================================
     // REPLY NORMALIZATION
@@ -297,8 +433,13 @@ export const VoiceAI = {
             return null;
         }
 
+        // ----------------------------------------------------
+        // String reply
+        // ----------------------------------------------------
 
-        if (typeof reply === 'string') {
+        if (
+            typeof reply === 'string'
+        ) {
 
             const japanese =
                 reply.trim();
@@ -308,6 +449,7 @@ export const VoiceAI = {
             }
 
             return {
+                badge: '',
                 japanese,
                 romaji: '',
                 sinhala: '',
@@ -315,13 +457,15 @@ export const VoiceAI = {
             };
         }
 
+        // ----------------------------------------------------
+        // Object reply
+        // ----------------------------------------------------
 
         if (
             typeof reply !== 'object'
         ) {
             return null;
         }
-
 
         const value = (
             ...keys
@@ -333,6 +477,7 @@ export const VoiceAI = {
                     typeof reply[key] ===
                     'string'
                 ) {
+
                     const value =
                         reply[key].trim();
 
@@ -345,8 +490,14 @@ export const VoiceAI = {
             return '';
         };
 
-
         const normalized = {
+
+            badge:
+                value(
+                    'badge',
+                    'label',
+                    'type'
+                ),
 
             japanese:
                 value(
@@ -380,7 +531,6 @@ export const VoiceAI = {
                 )
         };
 
-
         if (
             !normalized.japanese &&
             !normalized.romaji &&
@@ -392,7 +542,6 @@ export const VoiceAI = {
 
         return normalized;
     },
-
 
     // ========================================================
     // ERROR
