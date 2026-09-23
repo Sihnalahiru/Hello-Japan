@@ -11,29 +11,44 @@ export const Navigation = {
         'voice'
     ],
 
+    // ========================================================
+    // PUBLIC NAVIGATION API
+    // ========================================================
+
+    switchView(view) {
+        return this.goTo(view);
+    },
+
     goTo(view) {
 
+        // ----------------------------------------------------
+        // Validate requested view
+        // ----------------------------------------------------
+
         if (!this.VALID_VIEWS.includes(view)) {
-            return;
+            console.warn(
+                `[Navigation] Invalid view: ${view}`
+            );
+
+            return false;
         }
 
         const previousView =
             State.currentActiveView;
 
+
         // ----------------------------------------------------
-        // Do not repeatedly initialize the same view.
+        // Already on requested view
         // ----------------------------------------------------
 
         if (previousView === view) {
-            return;
+            return true;
         }
 
-        // ----------------------------------------------------
-        // Leaving Voice
-        //
-        // Stop microphone recognition safely.
-        // Do NOT clear the conversation.
-        // ----------------------------------------------------
+
+        // ====================================================
+        // LEAVING VOICE
+        // ====================================================
 
         if (
             previousView === 'voice' &&
@@ -41,8 +56,11 @@ export const Navigation = {
         ) {
 
             try {
+
                 VoiceEngine.stop();
+
             } catch (error) {
+
                 console.warn(
                     '[Navigation] Voice stop failed:',
                     error
@@ -50,9 +68,10 @@ export const Navigation = {
             }
         }
 
-        // ----------------------------------------------------
-        // Leaving Camera
-        // ----------------------------------------------------
+
+        // ====================================================
+        // LEAVING CAMERA
+        // ====================================================
 
         if (
             previousView === 'camera' &&
@@ -60,17 +79,24 @@ export const Navigation = {
         ) {
 
             try {
+
                 CameraOCR.cancel();
+
             } catch (error) {
+
                 console.warn(
                     '[Navigation] OCR cancel failed:',
                     error
                 );
             }
 
+
             try {
+
                 CameraEngine.stop(true);
+
             } catch (error) {
+
                 console.warn(
                     '[Navigation] Camera stop failed:',
                     error
@@ -78,32 +104,38 @@ export const Navigation = {
             }
         }
 
-        // ----------------------------------------------------
-        // Update application state
-        // ----------------------------------------------------
+
+        // ====================================================
+        // UPDATE ACTIVE VIEW
+        // ====================================================
 
         State.currentActiveView =
             view;
 
-        // ----------------------------------------------------
-        // Toggle screen visibility
-        // ----------------------------------------------------
+
+        // ====================================================
+        // SCREEN VISIBILITY
+        // ====================================================
 
         document
             .querySelectorAll('.screen-view')
             .forEach(
                 (screen) => {
 
+                    const isActive =
+                        screen.dataset.view === view;
+
                     screen.classList.toggle(
                         'active',
-                        screen.dataset.view === view
+                        isActive
                     );
                 }
             );
 
-        // ----------------------------------------------------
-        // Update bottom navigation
-        // ----------------------------------------------------
+
+        // ====================================================
+        // NAVIGATION BUTTON STATE
+        // ====================================================
 
         document
             .querySelectorAll('[data-route]')
@@ -127,24 +159,32 @@ export const Navigation = {
                 }
             );
 
-        // ----------------------------------------------------
-        // Camera entry
-        // ----------------------------------------------------
+
+        // ====================================================
+        // CAMERA ENTRY
+        // ====================================================
 
         if (view === 'camera') {
 
             try {
+
                 CameraOCR.cancel();
+
             } catch (error) {
+
                 console.warn(
                     '[Navigation] OCR reset failed:',
                     error
                 );
             }
 
+
             try {
+
                 CameraEngine.init();
+
             } catch (error) {
+
                 console.error(
                     '[Navigation] Camera init failed:',
                     error
@@ -152,15 +192,19 @@ export const Navigation = {
             }
         }
 
-        // ----------------------------------------------------
-        // Voice entry
+
+        // ====================================================
+        // VOICE ENTRY
+        // ====================================================
         //
         // IMPORTANT:
-        // Do NOT call clearConversation().
         //
-        // The conversation is intentionally preserved so the
-        // user can leave Voice and return without losing context.
-        // ----------------------------------------------------
+        // Do NOT clear conversation here.
+        //
+        // The user may leave Voice and return later.
+        // Existing conversation must remain available.
+        //
+        // ====================================================
 
         if (view === 'voice') {
 
@@ -170,6 +214,7 @@ export const Navigation = {
                     typeof VoiceEngine.prepareForView ===
                     'function'
                 ) {
+
                     VoiceEngine.prepareForView();
                 }
 
@@ -181,5 +226,12 @@ export const Navigation = {
                 );
             }
         }
+
+
+        // ====================================================
+        // SUCCESS
+        // ====================================================
+
+        return true;
     }
 };
