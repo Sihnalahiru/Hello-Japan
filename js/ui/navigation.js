@@ -11,36 +11,46 @@ export const Navigation = {
         'voice'
     ],
 
-    // Compatibility API used by app.js
+    // --------------------------------------------------------
+    // Compatibility API
+    //
+    // app.js calls Navigation.switchView().
+    // Keep goTo() as the single source of navigation logic.
+    // --------------------------------------------------------
     switchView(view) {
         return this.goTo(view);
     },
 
+    // --------------------------------------------------------
+    // Main navigation handler
+    // --------------------------------------------------------
     goTo(view) {
 
         if (!this.VALID_VIEWS.includes(view)) {
-            console.warn(
-                `[Navigation] Invalid view: ${view}`
-            );
-
-            return false;
+            return;
         }
 
         const previousView =
             State.currentActiveView;
 
+        // ----------------------------------------------------
+        // Do not repeatedly initialize the same view.
+        // ----------------------------------------------------
         if (previousView === view) {
-            return true;
+            return;
         }
 
         // ----------------------------------------------------
         // Leaving Voice
+        //
+        // Stop microphone recognition safely.
+        // Do NOT clear the conversation.
         // ----------------------------------------------------
-
         if (
             previousView === 'voice' &&
             view !== 'voice'
         ) {
+
             try {
                 VoiceEngine.stop();
             } catch (error) {
@@ -54,11 +64,11 @@ export const Navigation = {
         // ----------------------------------------------------
         // Leaving Camera
         // ----------------------------------------------------
-
         if (
             previousView === 'camera' &&
             view !== 'camera'
         ) {
+
             try {
                 CameraOCR.cancel();
             } catch (error) {
@@ -79,54 +89,54 @@ export const Navigation = {
         }
 
         // ----------------------------------------------------
-        // Update active view
+        // Update application state
         // ----------------------------------------------------
-
         State.currentActiveView =
             view;
 
         // ----------------------------------------------------
-        // Screen visibility
+        // Toggle screen visibility
         // ----------------------------------------------------
-
         document
             .querySelectorAll('.screen-view')
-            .forEach((screen) => {
+            .forEach(
+                (screen) => {
 
-                screen.classList.toggle(
-                    'active',
-                    screen.dataset.view === view
-                );
-            });
+                    screen.classList.toggle(
+                        'active',
+                        screen.dataset.view === view
+                    );
+                }
+            );
 
         // ----------------------------------------------------
-        // Navigation state
+        // Update bottom navigation
         // ----------------------------------------------------
-
         document
             .querySelectorAll('[data-route]')
-            .forEach((button) => {
+            .forEach(
+                (button) => {
 
-                const isActive =
-                    button.dataset.route === view;
+                    const isActive =
+                        button.dataset.route === view;
 
-                button.classList.toggle(
-                    'active',
-                    isActive
-                );
+                    button.classList.toggle(
+                        'active',
+                        isActive
+                    );
 
-                button.setAttribute(
-                    'aria-current',
-                    isActive
-                        ? 'page'
-                        : 'false'
-                );
-            });
+                    button.setAttribute(
+                        'aria-current',
+                        isActive
+                            ? 'page'
+                            : 'false'
+                    );
+                }
+            );
 
         // ----------------------------------------------------
-        // Enter Camera
+        // Camera entry
         // ----------------------------------------------------
-
         if (view === 'camera') {
 
             try {
@@ -149,12 +159,14 @@ export const Navigation = {
         }
 
         // ----------------------------------------------------
-        // Enter Voice
+        // Voice entry
         //
         // IMPORTANT:
-        // Conversation is intentionally preserved.
+        // Do NOT call clearConversation().
+        //
+        // Conversation history must remain available when
+        // the user leaves Voice and returns later.
         // ----------------------------------------------------
-
         if (view === 'voice') {
 
             try {
@@ -174,7 +186,5 @@ export const Navigation = {
                 );
             }
         }
-
-        return true;
     }
 };
