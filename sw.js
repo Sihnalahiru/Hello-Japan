@@ -1,4 +1,5 @@
-const CACHE_NAME = "hello-japan-v6";
+const CACHE_NAME =
+    "hello-japan-v6";
 
 const APP_SHELL = [
     "./",
@@ -23,6 +24,7 @@ const APP_SHELL = [
     "./js/voice/voiceTTS.js",
     "./js/voice/voiceRenderer.js",
 
+    "./js/ui/apiModal.js",
     "./js/ui/navigation.js",
     "./js/ui/toast.js"
 ];
@@ -37,34 +39,21 @@ self.addEventListener(
     event => {
 
         event.waitUntil(
-
             caches
-                .open(CACHE_NAME)
-                .then(cache => {
-
-                    return cache.addAll(
-                        APP_SHELL
-                    );
-
-                })
-                .catch(error => {
-
-                    console.error(
-                        "[SW] App shell cache failed:",
-                        error
-                    );
-
-                    /*
-                     * Do not prevent the service worker
-                     * from installing if one optional shell
-                     * resource fails.
-                     */
-                    return null;
-                })
-
+                .open(
+                    CACHE_NAME
+                )
+                .then(
+                    cache =>
+                        cache.addAll(
+                            APP_SHELL
+                        )
+                )
+                .then(
+                    () =>
+                        self.skipWaiting()
+                )
         );
-
-        self.skipWaiting();
     }
 );
 
@@ -81,39 +70,30 @@ self.addEventListener(
 
             caches
                 .keys()
-                .then(keys => {
-
-                    return Promise.all(
-
-                        keys
-                            .filter(key => {
-
-                                return (
-                                    key.startsWith(
-                                        "hello-japan-"
-                                    ) &&
-                                    key !==
-                                        CACHE_NAME
-                                );
-
-                            })
-                            .map(key => {
-
-                                return caches.delete(
-                                    key
-                                );
-
-                            })
-
-                    );
-
-                })
-                .then(() => {
-
-                    return self.clients.claim();
-
-                })
-
+                .then(
+                    keys =>
+                        Promise.all(
+                            keys
+                                .filter(
+                                    key =>
+                                        key.startsWith(
+                                            "hello-japan-"
+                                        ) &&
+                                        key !==
+                                            CACHE_NAME
+                                )
+                                .map(
+                                    key =>
+                                        caches.delete(
+                                            key
+                                        )
+                                )
+                        )
+                )
+                .then(
+                    () =>
+                        self.clients.claim()
+                )
         );
     }
 );
@@ -132,14 +112,13 @@ self.addEventListener(
 
 
         // ----------------------------------------------------
-        // Only GET requests belong to the static cache layer.
+        // Only GET requests are cacheable.
         // ----------------------------------------------------
 
         if (
             request.method !==
             "GET"
         ) {
-
             return;
         }
 
@@ -151,55 +130,45 @@ self.addEventListener(
 
 
         // ----------------------------------------------------
-        // Never intercept cross-origin requests.
+        // Only same-origin resources.
         // ----------------------------------------------------
 
         if (
             url.origin !==
             self.location.origin
         ) {
-
             return;
         }
 
 
         // ----------------------------------------------------
-        // NEVER CACHE API REQUESTS
-        // ----------------------------------------------------
+        // NEVER intercept API requests.
         //
-        // This protects:
-        //
-        // /api/gemini
-        // /api/health
-        // /api/*
-        //
-        // API responses must always use the network.
+        // Gemini requests must always reach the Worker.
         // ----------------------------------------------------
 
         if (
-            url.pathname === "/api" ||
+            url.pathname ===
+                "/api" ||
             url.pathname.startsWith(
                 "/api/"
             )
         ) {
-
             return;
         }
 
 
         event.respondWith(
-
             networkFirst(
                 request
             )
-
         );
     }
 );
 
 
 // ============================================================
-// NETWORK-FIRST STATIC STRATEGY
+// NETWORK FIRST
 // ============================================================
 
 async function networkFirst(
@@ -212,7 +181,8 @@ async function networkFirst(
             await fetch(
                 request,
                 {
-                    cache: "no-store"
+                    cache:
+                        "no-store"
                 }
             );
 
@@ -243,16 +213,10 @@ async function networkFirst(
                 request
             );
 
-
         if (cached) {
-
             return cached;
         }
 
-
-        // ----------------------------------------------------
-        // Navigation fallback
-        // ----------------------------------------------------
 
         if (
             request.mode ===
@@ -264,9 +228,7 @@ async function networkFirst(
                     "./index.html"
                 );
 
-
             if (fallback) {
-
                 return fallback;
             }
         }
