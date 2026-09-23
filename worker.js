@@ -1,8 +1,8 @@
-// ============================================================
-// Hello Japan AI
-// worker.js
-// Cloudflare Worker -> Gemini API
-// ============================================================
+ // ============================================================
+ // Hello Japan AI
+ // worker.js
+ // Cloudflare Worker -> Gemini API
+ // ============================================================
 
 const GEMINI_MODEL =
     'gemini-3.8-flash';
@@ -49,6 +49,7 @@ function jsonResponse(
             status,
 
             headers: {
+
                 'Content-Type':
                     'application/json; charset=utf-8',
 
@@ -71,7 +72,9 @@ function handleOptions() {
         null,
         {
             status: 204,
-            headers: corsHeaders()
+
+            headers:
+                corsHeaders()
         }
     );
 }
@@ -157,7 +160,8 @@ async function handlePost(
 
     if (
         !payload ||
-        typeof payload !== 'object'
+        typeof payload !== 'object' ||
+        Array.isArray(payload)
     ) {
 
         return jsonResponse(
@@ -173,7 +177,10 @@ async function handlePost(
     const incomingGenerationConfig =
         payload.generationConfig &&
         typeof payload.generationConfig ===
-            'object'
+            'object' &&
+        !Array.isArray(
+            payload.generationConfig
+        )
             ? payload.generationConfig
             : {};
 
@@ -186,7 +193,10 @@ async function handlePost(
     };
 
 
-    // Remove obsolete sampling controls.
+    // --------------------------------------------------------
+    // Gemini 3.8 compatibility cleanup.
+    // --------------------------------------------------------
+
     delete generationConfig.temperature;
     delete generationConfig.topP;
     delete generationConfig.topK;
@@ -213,6 +223,7 @@ async function handlePost(
                     method: 'POST',
 
                     headers: {
+
                         'Content-Type':
                             'application/json',
 
@@ -247,7 +258,6 @@ async function handlePost(
     const responseText =
         await response.text();
 
-
     let responseData;
 
     try {
@@ -260,6 +270,7 @@ async function handlePost(
     } catch {
 
         responseData = {
+
             error:
                 responseText ||
                 'Invalid Gemini response.'
@@ -328,7 +339,6 @@ async function handlePost(
                 details:
                     responseData
             },
-
             response.status
         );
     }
@@ -382,39 +392,52 @@ export default {
 
 
         // ----------------------------------------------------
-        // GET
+        // HEALTH
+        // ----------------------------------------------------
+
+        if (
+            request.method ===
+            'GET' &&
+            (
+                url.pathname ===
+                    '/api/health' ||
+                url.pathname ===
+                    '/health'
+            )
+        ) {
+
+            return handleHealth(
+                env
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // GEMINI API
+        // ----------------------------------------------------
+
+        if (
+            request.method ===
+            'POST' &&
+            url.pathname ===
+                '/api/gemini'
+        ) {
+
+            return handlePost(
+                request,
+                env
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // STATIC ASSETS
         // ----------------------------------------------------
 
         if (
             request.method ===
             'GET'
         ) {
-
-            // Health endpoint.
-            if (
-                url.pathname ===
-                    '/api/health' ||
-                url.pathname ===
-                    '/health'
-            ) {
-
-                return handleHealth(
-                    env
-                );
-            }
-
-
-            // ------------------------------------------------
-            // IMPORTANT:
-            //
-            // All non-API GET requests are static assets.
-            // wrangler.jsonc provides:
-            //
-            // binding: "ASSETS"
-            //
-            // Therefore index.html, JS, CSS, manifest,
-            // icons, etc. must be served through ASSETS.
-            // ------------------------------------------------
 
             if (
                 env?.ASSETS &&
@@ -439,35 +462,15 @@ export default {
 
 
         // ----------------------------------------------------
-        // POST -> GEMINI
-        // ----------------------------------------------------
-
-        if (
-            request.method ===
-            'POST'
-        ) {
-
-            return handlePost(
-                request,
-                env
-            );
-        }
-
-
-        // ----------------------------------------------------
-        // OTHER METHODS
+        // OTHER METHODS / PATHS
         // ----------------------------------------------------
 
         return jsonResponse(
             {
                 error:
-                    'Method not allowed.'
+                    'Not found.'
             },
-            405,
-            {
-                Allow:
-                    'GET, POST, OPTIONS'
-            }
+            404
         );
     }
 };
