@@ -11,24 +11,20 @@ export const Gemini = {
         const url =
             Config.WORKER_ENDPOINT;
 
-
         if (!url) {
             throw new Error(
                 "WORKER_ENDPOINT_MISSING"
             );
         }
 
-
         const controller =
             new AbortController();
-
 
         const timer =
             setTimeout(
                 () => controller.abort(),
                 timeoutMs
             );
-
 
         try {
 
@@ -37,11 +33,11 @@ export const Gemini = {
 
                 generationConfig: {
                     ...(payload?.generationConfig || {}),
+
                     responseMimeType:
                         "application/json"
                 }
             };
-
 
             if (schema) {
 
@@ -50,7 +46,6 @@ export const Gemini = {
                     .responseSchema =
                     schema;
             }
-
 
             const response =
                 await fetch(
@@ -73,10 +68,8 @@ export const Gemini = {
                     }
                 );
 
-
             const responseText =
                 await response.text();
-
 
             if (!response.ok) {
 
@@ -89,54 +82,43 @@ export const Gemini = {
                     );
                 }
 
-
                 if (
-                    response.status ===
-                        401 ||
-                    response.status ===
-                        403
+                    response.status === 401 ||
+                    response.status === 403
                 ) {
                     throw new Error(
                         "API_KEY_INVALID"
                     );
                 }
 
-
                 if (
-                    response.status ===
-                    413
+                    response.status === 413
                 ) {
                     throw new Error(
                         "REQUEST_TOO_LARGE"
                     );
                 }
 
-
                 if (
-                    response.status ===
-                    429
+                    response.status === 429
                 ) {
                     throw new Error(
                         "RATE_LIMIT"
                     );
                 }
 
-
                 if (
-                    response.status >=
-                    500
+                    response.status >= 500
                 ) {
                     throw new Error(
                         `API_ERROR_${response.status}`
                     );
                 }
 
-
                 throw new Error(
                     `API_ERROR_${response.status}`
                 );
             }
-
 
             let data;
 
@@ -154,10 +136,8 @@ export const Gemini = {
                 );
             }
 
-
             const candidate =
                 data?.candidates?.[0];
-
 
             if (!candidate) {
 
@@ -166,14 +146,12 @@ export const Gemini = {
                 );
             }
 
-
             const parts =
                 Array.isArray(
                     candidate?.content?.parts
                 )
                     ? candidate.content.parts
                     : [];
-
 
             const textParts =
                 parts
@@ -189,7 +167,6 @@ export const Gemini = {
                             part.text.trim()
                     );
 
-
             if (
                 textParts.length ===
                 0
@@ -200,12 +177,10 @@ export const Gemini = {
                 );
             }
 
-
             const outputText =
                 textParts
                     .join("\n")
                     .trim();
-
 
             const cleaned =
                 outputText
@@ -222,7 +197,6 @@ export const Gemini = {
                         ""
                     )
                     .trim();
-
 
             try {
 
@@ -248,7 +222,6 @@ export const Gemini = {
                     "TIMEOUT"
                 );
             }
-
 
             throw error;
 
