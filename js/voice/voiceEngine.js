@@ -8,7 +8,6 @@ import { State } from '../state.js';
 import { VoiceRenderer } from './voiceRenderer.js';
 import { VoiceAI } from './voiceAI.js';
 
-
 export const VoiceEngine = {
 
     // ========================================================
@@ -38,7 +37,6 @@ export const VoiceEngine = {
     activeSessionId: 0,
 
     speechLanguage: 'ja-JP',
-
 
     // ========================================================
     // INITIALIZE
@@ -83,15 +81,15 @@ export const VoiceEngine = {
         recognition.lang =
             this.speechLanguage;
 
-
         // ====================================================
-        // START
+        // RECOGNITION START
         // ====================================================
 
         recognition.onstart = () => {
 
             this.starting = false;
             this.stopping = false;
+
             this.isListening = true;
 
             State.currentVoiceState =
@@ -103,9 +101,8 @@ export const VoiceEngine = {
             );
         };
 
-
         // ====================================================
-        // RESULT
+        // RECOGNITION RESULT
         // ====================================================
 
         recognition.onresult = async (event) => {
@@ -113,11 +110,16 @@ export const VoiceEngine = {
             const sessionId =
                 this.activeSessionId;
 
+            // Ignore results after cancellation.
             if (!this.shouldListen) {
                 return;
             }
 
-            if (sessionId !== this.activeSessionId) {
+            // Ignore results belonging to an old session.
+            if (
+                sessionId !==
+                this.activeSessionId
+            ) {
                 return;
             }
 
@@ -131,9 +133,10 @@ export const VoiceEngine = {
                 return;
             }
 
-
+            // Recognition has produced a usable transcript.
             this.isListening = false;
             this.shouldListen = false;
+
             this.isProcessing = true;
             this.requestInProgress = true;
 
@@ -149,19 +152,17 @@ export const VoiceEngine = {
             State.lastTranscriptTime =
                 Date.now();
 
-
             VoiceRenderer.setListeningState(
                 false,
                 'Processing...'
             );
 
-
+            // Stop recognition immediately.
             try {
                 recognition.stop();
             } catch {
-                // Already stopped.
+                // Recognition may already have stopped.
             }
-
 
             try {
 
@@ -176,9 +177,17 @@ export const VoiceEngine = {
                     error
                 );
 
-                VoiceRenderer.showError(
-                    'Voice AI failed. Please speak again.'
-                );
+                // Only display the error if this request
+                // has not been invalidated.
+                if (
+                    sessionId ===
+                    this.activeSessionId
+                ) {
+
+                    VoiceRenderer.showError(
+                        'Voice AI failed. Please speak again.'
+                    );
+                }
 
             } finally {
 
@@ -186,15 +195,15 @@ export const VoiceEngine = {
                 this.isProcessing = false;
 
                 if (!this.isSpeaking) {
+
                     State.currentVoiceState =
                         State.VoiceState.IDLE;
                 }
             }
         };
 
-
         // ====================================================
-        // ERROR
+        // RECOGNITION ERROR
         // ====================================================
 
         recognition.onerror = (event) => {
@@ -205,6 +214,7 @@ export const VoiceEngine = {
             this.starting = false;
             this.isListening = false;
 
+            // Expected error while manually stopping.
             if (
                 error === 'aborted' &&
                 this.stopping
@@ -212,6 +222,7 @@ export const VoiceEngine = {
                 return;
             }
 
+            // Permission problem.
             if (
                 error === 'not-allowed' ||
                 error === 'service-not-allowed'
@@ -227,6 +238,7 @@ export const VoiceEngine = {
                 return;
             }
 
+            // No speech.
             if (error === 'no-speech') {
 
                 this.shouldListen = false;
@@ -239,6 +251,7 @@ export const VoiceEngine = {
                 return;
             }
 
+            // Microphone unavailable.
             if (error === 'audio-capture') {
 
                 this.shouldListen = false;
@@ -251,6 +264,7 @@ export const VoiceEngine = {
                 return;
             }
 
+            // Do not interfere with active AI/TTS lifecycle.
             if (
                 this.isProcessing ||
                 this.requestInProgress ||
@@ -272,9 +286,8 @@ export const VoiceEngine = {
             );
         };
 
-
         // ====================================================
-        // END
+        // RECOGNITION END
         // ====================================================
 
         recognition.onend = () => {
@@ -282,26 +295,34 @@ export const VoiceEngine = {
             this.isListening = false;
             this.starting = false;
 
+            // If the engine is intentionally stopping,
+            // do not restart recognition.
+            if (this.stopping) {
+
+                this.stopping = false;
+
+                return;
+            }
+
+            // Never restart while processing, speaking,
+            // or when the user has cancelled listening.
             if (
-                this.stopping ||
                 !this.shouldListen ||
                 this.isProcessing ||
                 this.requestInProgress ||
                 this.isSpeaking
             ) {
-                this.stopping = false;
                 return;
             }
 
             this.scheduleRestart();
         };
 
-
-        this.recognition = recognition;
+        this.recognition =
+            recognition;
 
         return true;
     },
-
 
     // ========================================================
     // START LISTENING
@@ -309,6 +330,7 @@ export const VoiceEngine = {
 
     start() {
 
+        // Voice recognition is only valid on the voice view.
         if (
             State.currentActiveView &&
             State.currentActiveView !== 'voice'
@@ -320,6 +342,7 @@ export const VoiceEngine = {
             return false;
         }
 
+        // Prevent duplicate starts.
         if (
             this.isListening ||
             this.starting ||
@@ -336,6 +359,7 @@ export const VoiceEngine = {
         this.stopping = false;
         this.starting = true;
 
+        // New recognition session.
         this.activeSessionId += 1;
 
         State.currentVoiceState =
@@ -365,36 +389,58 @@ export const VoiceEngine = {
                 'Tap Mic to try again.'
             );
 
+            State.currentVoiceState =
+                State.VoiceState.IDLE;
+
             return false;
         }
     },
 
-
     // ========================================================
-    // STOP LISTENING
+    // STOP LISTENING / CANCEL CURRENT VOICE LIFECYCLE
     // ========================================================
 
     stop() {
 
+        // ----------------------------------------------------
+        // IMPORTANT:
+        //
+        // Invalidate BOTH:
+        // 1. recognition session
+        // 2. pending VoiceAI request
+        //
+        // This prevents an old Gemini response from starting
+        // TTS after the user has already stopped.
+        // ----------------------------------------------------
+
         this.shouldListen = false;
+
         this.starting = false;
         this.stopping = true;
 
         this.activeSessionId += 1;
 
+        if (
+            typeof State.voiceRequestId === 'number'
+        ) {
+            State.voiceRequestId += 1;
+        }
+
         this.clearRestartTimer();
 
+        // Stop speech recognition.
         if (this.recognition) {
 
             try {
                 this.recognition.stop();
             } catch {
-                // Already stopped.
+                // Recognition may already be stopped.
             }
         }
 
         this.isListening = false;
 
+        // Stop TTS if active.
         if (this.isSpeaking) {
 
             const tts =
@@ -410,6 +456,7 @@ export const VoiceEngine = {
             this.isSpeaking = false;
         }
 
+        // Cancel processing flags.
         this.isProcessing = false;
         this.requestInProgress = false;
 
@@ -422,29 +469,38 @@ export const VoiceEngine = {
         );
     },
 
-
     // ========================================================
-    // TOGGLE
+    // TOGGLE LISTENING
     // ========================================================
 
     toggleListening() {
 
-        if (this.isListening || this.starting) {
+        if (
+            this.isListening ||
+            this.starting
+        ) {
+
             this.stop();
+
             return false;
         }
 
-        if (this.isProcessing || this.requestInProgress) {
+        // Do not allow another recognition session
+        // while AI is processing.
+        if (
+            this.isProcessing ||
+            this.requestInProgress
+        ) {
             return false;
         }
 
+        // Do not interrupt protected TTS through the mic.
         if (this.isSpeaking) {
             return false;
         }
 
         return this.start();
     },
-
 
     // ========================================================
     // SPEAKER LANGUAGE
@@ -453,8 +509,11 @@ export const VoiceEngine = {
     setSpeaker(language) {
 
         const normalized =
-            this.normalizeLanguage(language);
+            this.normalizeLanguage(
+                language
+            );
 
+        // Stop current recognition/AI/TTS lifecycle.
         this.stop();
 
         this.speechLanguage =
@@ -463,9 +522,11 @@ export const VoiceEngine = {
         State.activeSpeakerLang =
             normalized;
 
+        // Recognition object is reusable.
         this.init();
 
         if (this.recognition) {
+
             this.recognition.lang =
                 normalized;
         }
@@ -477,7 +538,10 @@ export const VoiceEngine = {
             tts &&
             typeof tts.setLanguage === 'function'
         ) {
-            tts.setLanguage(normalized);
+
+            tts.setLanguage(
+                normalized
+            );
         }
 
         VoiceRenderer.updateSpeakerUI(
@@ -485,9 +549,8 @@ export const VoiceEngine = {
         );
     },
 
-
     // ========================================================
-    // CONTEXT
+    // VOICE CONTEXT
     // ========================================================
 
     setContext(context) {
@@ -512,7 +575,6 @@ export const VoiceEngine = {
         );
     },
 
-
     // ========================================================
     // TTS PROTECTION
     // ========================================================
@@ -525,6 +587,7 @@ export const VoiceEngine = {
 
         this.clearRestartTimer();
 
+        // Invalidate current recognition session.
         this.activeSessionId += 1;
 
         if (this.recognition) {
@@ -532,16 +595,20 @@ export const VoiceEngine = {
             try {
                 this.recognition.stop();
             } catch {
-                // Already stopped.
+                // Recognition may already be stopped.
             }
         }
 
         this.isListening = false;
+        this.starting = false;
 
         State.currentVoiceState =
             State.VoiceState.IDLE;
     },
 
+    // ========================================================
+    // RESUME AFTER TTS
+    // ========================================================
 
     resumeAfterSpeech() {
 
@@ -552,7 +619,6 @@ export const VoiceEngine = {
         this.isListening = false;
 
         this.starting = false;
-
         this.stopping = false;
 
         State.currentVoiceState =
@@ -564,8 +630,14 @@ export const VoiceEngine = {
         );
     },
 
+    // ========================================================
+    // PROTECTED TTS ENTRY POINT
+    // ========================================================
 
-    speakWithProtection(text, options = {}) {
+    speakWithProtection(
+        text,
+        options = {}
+    ) {
 
         const cleanText =
             typeof text === 'string'
@@ -583,6 +655,7 @@ export const VoiceEngine = {
             !tts ||
             typeof tts.speakText !== 'function'
         ) {
+
             this.notifySpeechFinished(
                 'tts-unavailable'
             );
@@ -590,6 +663,7 @@ export const VoiceEngine = {
             return false;
         }
 
+        // Pause recognition before speech.
         this.pauseForSpeech();
 
         const success =
@@ -604,6 +678,7 @@ export const VoiceEngine = {
             );
 
         if (!success) {
+
             this.notifySpeechFinished(
                 'tts-failed'
             );
@@ -612,8 +687,13 @@ export const VoiceEngine = {
         return success;
     },
 
+    // ========================================================
+    // TTS FINISHED CALLBACK
+    // ========================================================
 
-    notifySpeechFinished(reason = 'finished') {
+    notifySpeechFinished(
+        reason = 'finished'
+    ) {
 
         if (!this.isSpeaking) {
             return;
@@ -626,9 +706,8 @@ export const VoiceEngine = {
         this.resumeAfterSpeech();
     },
 
-
     // ========================================================
-    // RESTART CONTROL
+    // AUTOMATIC RESTART
     // ========================================================
 
     scheduleRestart() {
@@ -656,24 +735,33 @@ export const VoiceEngine = {
                         this.shouldListen &&
                         !this.isProcessing &&
                         !this.requestInProgress &&
-                        !this.isSpeaking
+                        !this.isSpeaking &&
+                        !this.starting &&
+                        !this.stopping
                     ) {
                         this.start();
                     }
+
                 },
                 250
             );
     },
 
+    // ========================================================
+    // CLEAR RESTART TIMER
+    // ========================================================
 
     clearRestartTimer() {
 
         if (this.restartTimer) {
-            clearTimeout(this.restartTimer);
+
+            clearTimeout(
+                this.restartTimer
+            );
+
             this.restartTimer = null;
         }
     },
-
 
     // ========================================================
     // LANGUAGE NORMALIZATION
@@ -689,7 +777,9 @@ export const VoiceEngine = {
                 .replace('_', '-')
                 .toLowerCase();
 
-        if (value.startsWith('ja')) {
+        if (
+            value.startsWith('ja')
+        ) {
             return 'ja-JP';
         }
 
@@ -700,7 +790,9 @@ export const VoiceEngine = {
             return 'si-LK';
         }
 
-        if (value.startsWith('en')) {
+        if (
+            value.startsWith('en')
+        ) {
             return 'en-US';
         }
 
