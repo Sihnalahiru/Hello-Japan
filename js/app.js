@@ -8,7 +8,6 @@ import { Config } from './config.js';
 import { State } from './state.js';
 
 import { Toast } from './ui/toast.js';
-import { UI } from './ui/apiModal.js';
 import { Navigation } from './ui/navigation.js';
 
 import { Schemas } from './ai/schemas.js';
@@ -36,7 +35,6 @@ Object.assign(window.App, {
     State,
 
     Toast,
-    UI,
     Navigation,
 
     Schemas,
@@ -62,6 +60,7 @@ const Boot = {
     started: false,
     ready: false,
     eventsBound: false,
+    errorHandlersBound: false,
     clockTimer: null,
     serviceWorker: null
 };
@@ -76,14 +75,21 @@ window.App.Boot = Boot;
 function safeCall(name, fn) {
     try {
         if (typeof fn !== 'function') {
-            console.warn(`[Hello Japan] ${name}: unavailable`);
+            console.warn(
+                `[Hello Japan] ${name}: unavailable`
+            );
+
             return undefined;
         }
 
         return fn();
 
     } catch (error) {
-        console.error(`[Hello Japan] ${name} failed:`, error);
+        console.error(
+            `[Hello Japan] ${name} failed:`,
+            error
+        );
+
         return undefined;
     }
 }
@@ -92,14 +98,21 @@ function safeCall(name, fn) {
 async function safeAsync(name, fn) {
     try {
         if (typeof fn !== 'function') {
-            console.warn(`[Hello Japan] ${name}: unavailable`);
+            console.warn(
+                `[Hello Japan] ${name}: unavailable`
+            );
+
             return undefined;
         }
 
         return await fn();
 
     } catch (error) {
-        console.error(`[Hello Japan] ${name} failed:`, error);
+        console.error(
+            `[Hello Japan] ${name} failed:`,
+            error
+        );
+
         return undefined;
     }
 }
@@ -206,7 +219,6 @@ function handleVoiceReplay() {
 // ============================================================
 
 function handleDocumentClick(event) {
-
     const target = event.target;
 
     if (!(target instanceof Element)) {
@@ -223,7 +235,9 @@ function handleDocumentClick(event) {
 
     if (routeTarget) {
         event.preventDefault();
+
         handleNavigation(routeTarget);
+
         return;
     }
 
@@ -234,28 +248,36 @@ function handleDocumentClick(event) {
 
     if (target.closest('#camera-scan-button')) {
         event.preventDefault();
+
         handleCameraScan();
+
         return;
     }
 
 
     if (target.closest('#btn-toggle-facing')) {
         event.preventDefault();
+
         handleFacingToggle();
+
         return;
     }
 
 
     if (target.closest('#btn-toggle-torch')) {
         event.preventDefault();
+
         handleTorchToggle();
+
         return;
     }
 
 
     if (target.closest('#btn-ar-pronounce')) {
         event.preventDefault();
+
         handleARPronounce();
+
         return;
     }
 
@@ -266,35 +288,45 @@ function handleDocumentClick(event) {
 
     if (target.closest('#mic-avatar-btn')) {
         event.preventDefault();
+
         handleMic();
+
         return;
     }
 
 
     if (target.closest('#btn-voice-replay')) {
         event.preventDefault();
+
         handleVoiceReplay();
+
         return;
     }
 
 
     if (target.closest('#btn-speaker-jp')) {
         event.preventDefault();
+
         handleSpeaker('ja-JP');
+
         return;
     }
 
 
     if (target.closest('#btn-speaker-si')) {
         event.preventDefault();
+
         handleSpeaker('si-LK');
+
         return;
     }
 
 
     if (target.closest('#btn-speaker-en')) {
         event.preventDefault();
+
         handleSpeaker('en-US');
+
         return;
     }
 
@@ -308,7 +340,10 @@ function handleDocumentClick(event) {
 
     if (contextTarget) {
         event.preventDefault();
+
         handleContext(contextTarget);
+
+        return;
     }
 }
 
@@ -318,7 +353,6 @@ function handleDocumentClick(event) {
 // ============================================================
 
 function initializeEvents() {
-
     if (Boot.eventsBound) {
         return;
     }
@@ -342,9 +376,9 @@ function initializeEvents() {
 // ============================================================
 
 function initializeClock() {
-
     if (Boot.clockTimer) {
         clearInterval(Boot.clockTimer);
+
         Boot.clockTimer = null;
     }
 
@@ -358,25 +392,10 @@ function initializeClock() {
     tick();
 
     Boot.clockTimer =
-        window.setInterval(tick, 1000);
-}
-
-
-// ============================================================
-// API STATUS
-// ============================================================
-
-function initializeAPI() {
-
-    if (
-        UI &&
-        typeof UI.updateApiStatus === 'function'
-    ) {
-        safeCall(
-            'API status',
-            () => UI.updateApiStatus()
+        window.setInterval(
+            tick,
+            1000
         );
-    }
 }
 
 
@@ -385,7 +404,6 @@ function initializeAPI() {
 // ============================================================
 
 function initializeTTS() {
-
     safeCall(
         'Voice TTS',
         () => VoiceTTS.init()
@@ -398,18 +416,23 @@ function initializeTTS() {
 // ============================================================
 
 function initializeVoiceEngine() {
-
     safeCall(
         'Voice Engine',
         () => VoiceEngine.init()
     );
 
-    VoiceRenderer.updateSpeakerUI(
-        State.activeSpeakerLang
+    safeCall(
+        'Voice speaker UI',
+        () => VoiceRenderer.updateSpeakerUI(
+            State.activeSpeakerLang
+        )
     );
 
-    VoiceRenderer.updateContextUI(
-        State.activeVoiceContext
+    safeCall(
+        'Voice context UI',
+        () => VoiceRenderer.updateContextUI(
+            State.activeVoiceContext
+        )
     );
 }
 
@@ -419,7 +442,6 @@ function initializeVoiceEngine() {
 // ============================================================
 
 function initializeState() {
-
     safeCall(
         'State',
         () => State.init()
@@ -432,16 +454,15 @@ function initializeState() {
 // ============================================================
 
 async function initializeServiceWorker() {
-
     if (!('serviceWorker' in navigator)) {
         console.warn(
             '[Hello Japan] Service Worker unsupported.'
         );
+
         return null;
     }
 
     try {
-
         const registration =
             await navigator.serviceWorker.register(
                 './sw.js',
@@ -450,16 +471,20 @@ async function initializeServiceWorker() {
                 }
             );
 
-        Boot.serviceWorker = registration;
+        Boot.serviceWorker =
+            registration;
+
 
         try {
             await registration.update();
+
         } catch (error) {
             console.warn(
                 '[Hello Japan] Service Worker update check failed:',
                 error
             );
         }
+
 
         console.log(
             '[Hello Japan] Service Worker active:',
@@ -469,7 +494,6 @@ async function initializeServiceWorker() {
         return registration;
 
     } catch (error) {
-
         console.warn(
             '[Hello Japan] Service Worker registration failed:',
             error
@@ -485,6 +509,10 @@ async function initializeServiceWorker() {
 // ============================================================
 
 function initializeErrorHandling() {
+    if (Boot.errorHandlersBound) {
+        return;
+    }
+
 
     window.addEventListener(
         'error',
@@ -506,6 +534,9 @@ function initializeErrorHandling() {
             );
         }
     );
+
+
+    Boot.errorHandlersBound = true;
 }
 
 
@@ -514,26 +545,30 @@ function initializeErrorHandling() {
 // ============================================================
 
 function cleanupApplication() {
-
     if (Boot.clockTimer) {
         clearInterval(Boot.clockTimer);
+
         Boot.clockTimer = null;
     }
+
 
     safeCall(
         'Voice Engine cleanup',
         () => VoiceEngine.stop()
     );
 
+
     safeCall(
         'Voice TTS cleanup',
         () => VoiceTTS.stop()
     );
 
+
     safeCall(
         'Camera OCR cleanup',
         () => CameraOCR.cancel()
     );
+
 
     safeCall(
         'Camera cleanup',
@@ -547,36 +582,73 @@ function cleanupApplication() {
 // ============================================================
 
 async function boot() {
-
     if (Boot.started) {
         return;
     }
 
     Boot.started = true;
 
+
     console.log(
         '🚀 Hello Japan AI booting...'
     );
 
 
+    // --------------------------------------------------------
+    // 1. Error handling
+    // --------------------------------------------------------
+
     initializeErrorHandling();
+
+
+    // --------------------------------------------------------
+    // 2. Application state
+    // --------------------------------------------------------
 
     initializeState();
 
+
+    // --------------------------------------------------------
+    // 3. Global event delegation
+    // --------------------------------------------------------
+
     initializeEvents();
+
+
+    // --------------------------------------------------------
+    // 4. Clock
+    // --------------------------------------------------------
 
     initializeClock();
 
-    initializeAPI();
+
+    // --------------------------------------------------------
+    // 5. Text-to-speech
+    // --------------------------------------------------------
 
     initializeTTS();
 
+
+    // --------------------------------------------------------
+    // 6. Voice engine
+    // --------------------------------------------------------
+
     initializeVoiceEngine();
+
+
+    // --------------------------------------------------------
+    // 7. Service worker
+    // --------------------------------------------------------
 
     await initializeServiceWorker();
 
 
+    // --------------------------------------------------------
+    // Application ready
+    // --------------------------------------------------------
+
     Boot.ready = true;
+
 
     console.log(
         '✅ Hello Japan AI initialized successfully.'
@@ -603,6 +675,7 @@ if (document.readyState === 'loading') {
 } else {
 
     void boot();
+
 }
 
 
