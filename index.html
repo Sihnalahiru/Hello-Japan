@@ -1,281 +1,2121 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#08170B">
-    <title>Hello Japan ! - Camera AI Pro & Voice Assistant</title>
 
-    <link rel="manifest" href="manifest.json">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
-    <!-- CRITICAL INLINE STYLES -->
+    <meta
+        name="theme-color"
+        content="#07120B"
+    >
+
+    <meta
+        name="description"
+        content="Hello Japan AI — Japanese voice assistant and camera translation for everyday life and work in Japan."
+    >
+
+    <meta
+        name="mobile-web-app-capable"
+        content="yes"
+    >
+
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
+
+    <title>Hello Japan AI</title>
+
+    <link
+        rel="manifest"
+        href="manifest.json"
+    >
+
+    <!-- =======================================================
+         BASE APP STYLES
+    ======================================================== -->
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
-        html, body {
-            margin: 0;
-            padding: 0;
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             width: 100%;
             height: 100%;
-            background-color: #071109;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
         }
+
+        body {
+            overflow: hidden;
+            background: #07120B;
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Helvetica,
+                Arial,
+                sans-serif;
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+
         .screen-view {
             display: none !important;
             opacity: 0;
-            transition: opacity 0.2s ease;
         }
+
         .screen-view.active {
             display: flex !important;
             opacity: 1;
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         .glass-dock {
-            background: rgba(255, 255, 255, 0.90);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+        }
+
+        .safe-bottom {
+            padding-bottom: env(
+                safe-area-inset-bottom,
+                0px
+            );
+        }
+
+        @media (min-width: 768px) {
+            body {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
         }
     </style>
 
-    <!-- TAILWIND CSS CDN -->
+    <!-- =======================================================
+         TAILWIND
+    ======================================================== -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        darkForest: "#08170B",
-                        mintBg: "#EDF8EE",
+                        darkForest: "#07120B",
+                        deepForest: "#0D2114",
+                        cardForest: "#15361E",
                         brandGreen: "#39D322",
                         brandNeon: "#20E300",
+                        softGreen: "#EAF8EC",
                         deepCard: "#1C4D26"
+                    },
+
+                    fontFamily: {
+                        jakarta: [
+                            "Plus Jakarta Sans",
+                            "sans-serif"
+                        ],
+
+                        jp: [
+                            "Noto Sans JP",
+                            "sans-serif"
+                        ]
                     }
                 }
             }
         };
     </script>
 
-    <!-- FONTS & ICONS -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- =======================================================
+         FONTS / ICONS
+    ======================================================== -->
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
 
-    <!-- CUSTOM APP CSS -->
-    <link rel="stylesheet" href="css/app.css">
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet"
+    >
+
+    <script
+        src="https://unpkg.com/@phosphor-icons/web"
+    ></script>
+
+    <!-- =======================================================
+         APP CSS
+    ======================================================== -->
+    <link
+        rel="stylesheet"
+        href="css/app.css"
+    >
 </head>
 
-<body class="w-full h-screen overflow-hidden flex justify-center items-center bg-[#071109]">
+<body class="w-full h-screen">
 
-<main class="w-full max-w-md h-full md:h-[94vh] md:max-h-[890px] relative flex flex-col overflow-hidden shadow-2xl md:rounded-[48px] md:border-[8px] md:border-[#102414] bg-white">
+<main
+    class="
+        w-full
+        h-full
+        md:h-[94vh]
+        md:max-h-[900px]
+        md:max-w-md
+        relative
+        overflow-hidden
+        bg-white
+        md:rounded-[38px]
+        md:border-[7px]
+        md:border-[#102414]
+        md:shadow-2xl
+    "
+>
 
-    <!-- VIEW 1: HERO SCREEN -->
-    <section id="view-hero" class="screen-view active flex-col flex-1 h-full w-full bg-darkForest p-5 relative overflow-y-auto no-scrollbar text-white">
-        <div class="flex justify-between items-center text-xs text-white/80 mb-4 px-1 font-semibold">
-            <span id="hero-clock">9:41</span>
-            <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 text-[10px] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20 text-brandGreen font-bold">
-                    <span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span>
-                    <span>AI Engine Active</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="ph ph-cell-signal-full text-sm"></i>
-                    <i class="ph ph-wifi-high text-sm"></i>
-                    <i class="ph ph-battery-charging text-brandGreen text-base"></i>
-                </div>
-            </div>
-        </div>
+    <!-- =====================================================
+         VIEW: HOME
+    ====================================================== -->
+    <section
+        id="view-hero"
+        class="
+            screen-view
+            active
+            flex-col
+            w-full
+            h-full
+            bg-darkForest
+            text-white
+            overflow-y-auto
+            no-scrollbar
+            relative
+        "
+    >
 
-        <div class="mb-4">
-            <span class="text-[10px] bg-brandGreen/20 text-brandGreen border border-brandGreen/30 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">Instant AI Engine</span>
-            <h1 class="text-3xl font-black text-white mt-1 leading-tight">Hello Japan !</h1>
-            <p class="text-xs text-gray-300 mt-0.5">AI Vision OCR & Conversational Assistant</p>
-        </div>
+        <!-- HEADER -->
+        <header class="px-5 pt-6 pb-4">
 
-        <div class="grid grid-cols-1 gap-3.5 mb-5">
-            <!-- CAMERA CARD -->
-            <div data-route="camera" class="bg-gradient-to-br from-brandGreen via-[#22be0c] to-[#128004] rounded-[32px] p-5 relative overflow-hidden shadow-xl cursor-pointer hover:scale-[1.01] transition-transform active:scale-95 border border-white/20">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span class="inline-flex items-center gap-1 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white mb-2 border border-white/10">
-                            <i class="ph ph-sparkle text-amber-300"></i>ULTRA PRO VISION
-                        </span>
-                        <h2 class="text-2xl font-black text-white leading-tight">Camera AI Pro 📷</h2>
-                        <p class="text-xs text-emerald-100 mt-1 max-w-[210px] leading-relaxed">Scan Japanese signs, menus, labels and workplace text with AI Vision.</p>
+            <div class="flex items-center justify-between">
+
+                <div>
+                    <div
+                        class="
+                            inline-flex
+                            items-center
+                            gap-1.5
+                            px-2.5
+                            py-1
+                            rounded-full
+                            bg-brandGreen/10
+                            border
+                            border-brandGreen/25
+                            text-brandGreen
+                            text-[9px]
+                            font-black
+                            uppercase
+                            tracking-[0.14em]
+                        "
+                    >
+                        <span
+                            class="
+                                w-1.5
+                                h-1.5
+                                rounded-full
+                                bg-brandGreen
+                                animate-pulse
+                            "
+                        ></span>
+
+                        AI Ready
                     </div>
-                    <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0">📸</div>
+
+                    <h1
+                        class="
+                            mt-2
+                            text-3xl
+                            font-black
+                            tracking-tight
+                            leading-none
+                        "
+                    >
+                        Hello Japan
+                    </h1>
+
+                    <p
+                        class="
+                            mt-2
+                            text-xs
+                            text-white/55
+                            leading-relaxed
+                        "
+                    >
+                        Your practical Japanese AI companion.
+                    </p>
                 </div>
-                <div class="mt-4 bg-black/25 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-between border border-white/15">
-                    <div class="flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-                        <span class="text-xs font-bold text-white">AI Scan Mode Ready</span>
-                    </div>
-                    <span class="bg-white text-darkForest text-[10px] font-black px-3 py-1 rounded-xl shadow">Launch Cam Pro →</span>
+
+                <div
+                    class="
+                        w-12
+                        h-12
+                        rounded-2xl
+                        bg-white/5
+                        border
+                        border-white/10
+                        flex
+                        items-center
+                        justify-center
+                        text-2xl
+                    "
+                    aria-hidden="true"
+                >
+                    🇯🇵
                 </div>
+
             </div>
 
-            <!-- VOICE CARD -->
-            <div data-route="voice" class="bg-gradient-to-br from-[#1b3d22] to-[#0d2212] rounded-[32px] p-5 relative overflow-hidden border border-brandGreen/40 shadow-lg cursor-pointer hover:scale-[1.01] transition-transform active:scale-95">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center gap-2">
-                        <div class="w-10 h-10 rounded-full bg-brandGreen/20 text-brandGreen flex items-center justify-center text-xl">🤖</div>
-                        <div>
-                            <h3 class="text-base font-extrabold text-white">2-Way Voice Assistant</h3>
-                            <p class="text-[10px] text-emerald-300">Hands-Free Speech AI</p>
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-brandGreen bg-brandGreen/10 px-2.5 py-1 rounded-full border border-brandGreen/30">Live Listen</span>
-                </div>
-                <p class="text-xs text-gray-300 leading-relaxed mb-3">Speak naturally. The AI understands the situation and suggests the appropriate Japanese response.</p>
-                <div class="flex items-center justify-between bg-black/40 p-2.5 rounded-2xl border border-white/10">
-                    <span class="text-[11px] font-bold text-brandGreen">🎙️ Real-time Translator</span>
-                    <span class="text-[11px] font-bold text-white">Tap to Start Voice →</span>
-                </div>
-            </div>
-        </div>
+            <div
+                class="
+                    mt-4
+                    flex
+                    items-center
+                    justify-between
+                    px-3
+                    py-2.5
+                    rounded-2xl
+                    bg-white/[0.04]
+                    border
+                    border-white/[0.07]
+                "
+            >
 
-        <div class="mt-auto pb-4">
-            <button data-route="camera" class="w-full bg-brandGreen hover:bg-brandNeon text-darkForest font-black py-3.5 rounded-full shadow-[0_0_25px_rgba(57,211,34,0.45)] transition-all active:scale-95 text-xs flex items-center justify-center gap-2">
-                <i class="ph ph-camera text-base font-bold"></i><span>OPEN CAMERA AI PRO NOW</span>
+                <span
+                    class="
+                        text-[10px]
+                        text-white/45
+                        font-semibold
+                    "
+                >
+                    Local time
+                </span>
+
+                <span
+                    id="hero-clock"
+                    class="
+                        text-xs
+                        font-black
+                        text-brandGreen
+                        tracking-wide
+                    "
+                >
+                    09:41
+                </span>
+
+            </div>
+
+        </header>
+
+
+        <!-- MAIN TOOLS -->
+        <div class="px-5 pb-32 space-y-4">
+
+            <!-- CAMERA TOOL -->
+            <button
+                type="button"
+                data-route="camera"
+                class="
+                    w-full
+                    text-left
+                    relative
+                    overflow-hidden
+                    rounded-[30px]
+                    p-5
+                    bg-gradient-to-br
+                    from-[#3DDE28]
+                    via-[#20B912]
+                    to-[#087005]
+                    border
+                    border-white/15
+                    shadow-xl
+                    active:scale-[0.98]
+                    transition-transform
+                "
+                aria-label="Open Camera AI"
+            >
+
+                <div
+                    class="
+                        absolute
+                        -right-8
+                        -top-8
+                        w-32
+                        h-32
+                        rounded-full
+                        bg-white/10
+                    "
+                ></div>
+
+                <div
+                    class="
+                        absolute
+                        right-5
+                        top-5
+                        w-14
+                        h-14
+                        rounded-2xl
+                        bg-white/15
+                        flex
+                        items-center
+                        justify-center
+                        text-3xl
+                        backdrop-blur-sm
+                    "
+                    aria-hidden="true"
+                >
+                    📷
+                </div>
+
+                <div class="relative">
+
+                    <span
+                        class="
+                            inline-flex
+                            items-center
+                            gap-1
+                            px-2.5
+                            py-1
+                            rounded-full
+                            bg-black/20
+                            text-[9px]
+                            font-black
+                            uppercase
+                            tracking-wider
+                        "
+                    >
+                        <i class="ph ph-sparkle"></i>
+                        Vision AI
+                    </span>
+
+                    <h2
+                        class="
+                            mt-3
+                            text-2xl
+                            font-black
+                            tracking-tight
+                        "
+                    >
+                        Camera AI
+                    </h2>
+
+                    <p
+                        class="
+                            mt-1.5
+                            max-w-[235px]
+                            text-xs
+                            leading-relaxed
+                            text-white/80
+                        "
+                    >
+                        Scan Japanese signs, menus, labels
+                        and workplace instructions.
+                    </p>
+
+                    <div
+                        class="
+                            mt-5
+                            inline-flex
+                            items-center
+                            gap-2
+                            px-3
+                            py-2
+                            rounded-xl
+                            bg-black/20
+                            text-[10px]
+                            font-black
+                        "
+                    >
+                        <i class="ph ph-scan"></i>
+                        Scan Japanese Text
+                        <i class="ph ph-arrow-right"></i>
+                    </div>
+
+                </div>
+
             </button>
+
+
+            <!-- VOICE TOOL -->
+            <button
+                type="button"
+                data-route="voice"
+                class="
+                    w-full
+                    text-left
+                    relative
+                    overflow-hidden
+                    rounded-[30px]
+                    p-5
+                    bg-gradient-to-br
+                    from-[#173D22]
+                    to-[#0A1A0E]
+                    border
+                    border-brandGreen/25
+                    shadow-lg
+                    active:scale-[0.98]
+                    transition-transform
+                "
+                aria-label="Open Voice AI"
+            >
+
+                <div
+                    class="
+                        absolute
+                        right-0
+                        top-0
+                        w-28
+                        h-28
+                        rounded-full
+                        bg-brandGreen/5
+                        blur-2xl
+                    "
+                ></div>
+
+                <div
+                    class="
+                        relative
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+
+                    <div>
+
+                        <div
+                            class="
+                                flex
+                                items-center
+                                gap-2
+                            "
+                        >
+
+                            <div
+                                class="
+                                    w-10
+                                    h-10
+                                    rounded-2xl
+                                    bg-brandGreen/10
+                                    border
+                                    border-brandGreen/15
+                                    flex
+                                    items-center
+                                    justify-center
+                                    text-xl
+                                "
+                            >
+                                🎙️
+                            </div>
+
+                            <div>
+                                <h2
+                                    class="
+                                        text-base
+                                        font-black
+                                    "
+                                >
+                                    Voice AI
+                                </h2>
+
+                                <p
+                                    class="
+                                        text-[9px]
+                                        text-brandGreen
+                                        font-bold
+                                    "
+                                >
+                                    Hands-free Japanese
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <p
+                            class="
+                                mt-4
+                                text-xs
+                                leading-relaxed
+                                text-white/60
+                            "
+                        >
+                            Speak naturally and get
+                            practical Japanese responses
+                            for daily life and work.
+                        </p>
+
+                    </div>
+
+                    <span
+                        class="
+                            shrink-0
+                            px-2.5
+                            py-1
+                            rounded-full
+                            bg-brandGreen/10
+                            border
+                            border-brandGreen/20
+                            text-[9px]
+                            text-brandGreen
+                            font-black
+                        "
+                    >
+                        LIVE
+                    </span>
+
+                </div>
+
+                <div
+                    class="
+                        relative
+                        mt-5
+                        flex
+                        items-center
+                        justify-between
+                        px-3
+                        py-2.5
+                        rounded-2xl
+                        bg-black/20
+                        border
+                        border-white/5
+                    "
+                >
+
+                    <span
+                        class="
+                            text-[10px]
+                            text-white/70
+                            font-bold
+                        "
+                    >
+                        Japanese • Sinhala • English
+                    </span>
+
+                    <i
+                        class="
+                            ph
+                            ph-arrow-right
+                            text-brandGreen
+                        "
+                    ></i>
+
+                </div>
+
+            </button>
+
+
+            <!-- QUICK INFO -->
+            <div
+                class="
+                    rounded-[26px]
+                    bg-white/[0.04]
+                    border
+                    border-white/[0.07]
+                    p-4
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-center
+                        gap-2
+                        mb-3
+                    "
+                >
+                    <span
+                        class="
+                            w-7
+                            h-7
+                            rounded-lg
+                            bg-brandGreen/10
+                            text-brandGreen
+                            flex
+                            items-center
+                            justify-center
+                        "
+                    >
+                        <i class="ph ph-lightbulb"></i>
+                    </span>
+
+                    <span
+                        class="
+                            text-xs
+                            font-black
+                            text-white
+                        "
+                    >
+                        Quick Start
+                    </span>
+                </div>
+
+                <div
+                    class="
+                        grid
+                        grid-cols-3
+                        gap-2
+                    "
+                >
+
+                    <div
+                        class="
+                            rounded-2xl
+                            bg-black/15
+                            p-3
+                            text-center
+                        "
+                    >
+                        <div class="text-lg">📷</div>
+
+                        <p
+                            class="
+                                mt-1
+                                text-[9px]
+                                text-white/55
+                                font-bold
+                            "
+                        >
+                            Scan
+                        </p>
+                    </div>
+
+                    <div
+                        class="
+                            rounded-2xl
+                            bg-black/15
+                            p-3
+                            text-center
+                        "
+                    >
+                        <div class="text-lg">🎙️</div>
+
+                        <p
+                            class="
+                                mt-1
+                                text-[9px]
+                                text-white/55
+                                font-bold
+                            "
+                        >
+                            Speak
+                        </p>
+                    </div>
+
+                    <div
+                        class="
+                            rounded-2xl
+                            bg-black/15
+                            p-3
+                            text-center
+                        "
+                    >
+                        <div class="text-lg">🇯🇵</div>
+
+                        <p
+                            class="
+                                mt-1
+                                text-[9px]
+                                text-white/55
+                                font-bold
+                            "
+                        >
+                            Learn
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
-        <div class="w-32 h-1 bg-white/20 rounded-full mx-auto"></div>
+
     </section>
 
-    <!-- VIEW 2: CAMERA AI PRO -->
-    <section id="view-camera" class="screen-view flex-col flex-1 h-full w-full bg-black relative overflow-hidden text-white pb-36">
-        <video id="live-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline muted></video>
-        <canvas id="snapshot-canvas" class="hidden"></canvas>
-        <div id="camera-status" class="absolute top-16 left-4 right-4 z-20 hidden bg-black/80 backdrop-blur-md p-3 rounded-xl text-center text-xs text-emerald-300 border border-brandGreen/40 shadow-lg">Camera ready</div>
-        
-        <div class="relative z-10 flex flex-col justify-between h-full p-4 pointer-events-none">
-            <div class="flex justify-between items-center pointer-events-auto pt-1 z-30">
-                <button data-route="hero" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
-                <span class="text-xs font-black bg-brandGreen text-darkForest px-3 py-1 rounded-full shadow-lg">📷 Camera AI Pro Live</span>
-                <button id="btn-toggle-torch" class="w-9 h-9 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-flashlight text-lg"></i></button>
-            </div>
 
-            <div class="relative w-full max-w-[250px] aspect-square mx-auto border-2 border-brandGreen/40 rounded-3xl overflow-hidden pointer-events-auto flex items-center justify-center my-auto">
-                <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-brandGreen rounded-tl-2xl"></div>
-                <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-brandGreen rounded-tr-2xl"></div>
-                <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-brandGreen rounded-bl-2xl"></div>
-                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-brandGreen rounded-br-2xl"></div>
-                <span class="text-[10px] bg-black/70 backdrop-blur-md text-emerald-300 font-bold px-3 py-1 rounded-full border border-white/10 pointer-events-none text-center">Point at Japanese Signs / Menus</span>
-            </div>
+    <!-- =====================================================
+         VIEW: CAMERA
+    ====================================================== -->
+    <section
+        id="view-camera"
+        class="
+            screen-view
+            flex-col
+            w-full
+            h-full
+            bg-black
+            text-white
+            relative
+            overflow-hidden
+        "
+    >
 
-            <!-- INSTANT BOTTOM PREVIEW SHEET -->
-            <div id="ar-side-hud" class="pointer-events-auto bg-black/85 backdrop-blur-md p-3 rounded-2xl border border-brandGreen/50 shadow-2xl mx-1 max-h-[170px] overflow-y-auto no-scrollbar mb-2">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-[9px] text-brandGreen font-black tracking-widest uppercase flex items-center gap-1"><i class="ph ph-eye"></i>Vision AI Result</span>
-                    <button id="btn-ar-pronounce" class="text-xs bg-brandGreen/20 text-brandGreen px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-brandGreen/30"><i class="ph ph-speaker-high"></i>Pronounce</button>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <p id="ar-jp" class="text-xl font-black text-white leading-tight">Ready to scan</p>
-                    <p id="ar-romaji" class="text-xs text-brandGreen font-bold">Point camera at Japanese text</p>
-                </div>
-                <div class="border-t border-white/10 my-1 pt-1 space-y-0.5 text-[11px]">
-                    <p class="text-gray-200"><b class="text-emerald-400 font-bold">🇱🇰 සිංහල:</b> <span id="ar-si">Japanese text එකක් camera එකට පෙන්වන්න.</span></p>
-                    <p class="text-gray-300"><b class="text-blue-300 font-bold">🇬🇧 English:</b> <span id="ar-en">Point the camera at Japanese text and press Scan.</span></p>
-                </div>
-                <div class="bg-white/10 p-1.5 rounded-lg text-[9px] text-gray-300 mt-1 border border-brandGreen/20">
-                    <span class="text-brandGreen font-bold">🎌 AI Guide:</span> <span id="ar-guide">The AI will explain visible Japanese signs, menus, notices, labels and workplace instructions.</span>
-                </div>
-            </div>
+        <video
+            id="live-video"
+            class="
+                absolute
+                inset-0
+                w-full
+                h-full
+                object-cover
+            "
+            autoplay
+            playsinline
+            muted
+        ></video>
 
-            <div class="flex items-center justify-center gap-8 pointer-events-auto z-30">
-                <button id="camera-scan-button" class="w-16 h-16 p-1 rounded-full border-4 border-brandGreen/60 flex items-center justify-center active:scale-95 transition-all shadow-[0_0_30px_rgba(57,211,34,0.5)]">
-                    <div class="w-12 h-12 bg-brandGreen hover:bg-brandNeon rounded-full flex items-center justify-center text-darkForest text-2xl font-bold"><i class="ph ph-scan"></i></div>
+        <canvas
+            id="snapshot-canvas"
+            class="hidden"
+        ></canvas>
+
+
+        <!-- CAMERA STATUS -->
+        <div
+            id="camera-status"
+            class="
+                absolute
+                top-16
+                left-4
+                right-4
+                z-30
+                hidden
+                px-4
+                py-3
+                rounded-2xl
+                bg-black/75
+                backdrop-blur-md
+                border
+                border-brandGreen/30
+                text-center
+                text-xs
+                text-emerald-300
+                font-semibold
+            "
+        >
+            Camera ready
+        </div>
+
+
+        <!-- CAMERA OVERLAY -->
+        <div
+            class="
+                relative
+                z-10
+                w-full
+                h-full
+                p-4
+                flex
+                flex-col
+                justify-between
+                pointer-events-none
+            "
+        >
+
+            <!-- TOP BAR -->
+            <div
+                class="
+                    flex
+                    items-center
+                    justify-between
+                    pointer-events-auto
+                "
+            >
+
+                <button
+                    type="button"
+                    data-route="hero"
+                    class="
+                        w-10
+                        h-10
+                        rounded-full
+                        bg-black/55
+                        backdrop-blur-md
+                        border
+                        border-white/15
+                        flex
+                        items-center
+                        justify-center
+                        active:scale-95
+                    "
+                    aria-label="Back to home"
+                >
+                    <i class="ph ph-caret-left text-lg"></i>
                 </button>
-                <button id="btn-toggle-facing" class="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95"><i class="ph ph-arrows-clockwise text-lg"></i></button>
+
+                <div
+                    class="
+                        px-3
+                        py-1.5
+                        rounded-full
+                        bg-black/55
+                        backdrop-blur-md
+                        border
+                        border-white/10
+                        text-[10px]
+                        font-black
+                        text-brandGreen
+                    "
+                >
+                    CAMERA AI
+                </div>
+
+                <button
+                    id="btn-toggle-torch"
+                    type="button"
+                    class="
+                        w-10
+                        h-10
+                        rounded-full
+                        bg-black/55
+                        backdrop-blur-md
+                        border
+                        border-white/15
+                        flex
+                        items-center
+                        justify-center
+                        active:scale-95
+                    "
+                    aria-label="Toggle camera torch"
+                >
+                    <i class="ph ph-flashlight text-lg"></i>
+                </button>
+
             </div>
+
+
+            <!-- SCAN FRAME -->
+            <div
+                class="
+                    relative
+                    w-[min(78vw,280px)]
+                    aspect-square
+                    mx-auto
+                    border
+                    border-brandGreen/40
+                    rounded-[32px]
+                    flex
+                    items-center
+                    justify-center
+                    pointer-events-auto
+                "
+            >
+
+                <span
+                    class="
+                        absolute
+                        top-0
+                        left-0
+                        w-9
+                        h-9
+                        border-t-4
+                        border-l-4
+                        border-brandGreen
+                        rounded-tl-2xl
+                    "
+                ></span>
+
+                <span
+                    class="
+                        absolute
+                        top-0
+                        right-0
+                        w-9
+                        h-9
+                        border-t-4
+                        border-r-4
+                        border-brandGreen
+                        rounded-tr-2xl
+                    "
+                ></span>
+
+                <span
+                    class="
+                        absolute
+                        bottom-0
+                        left-0
+                        w-9
+                        h-9
+                        border-b-4
+                        border-l-4
+                        border-brandGreen
+                        rounded-bl-2xl
+                    "
+                ></span>
+
+                <span
+                    class="
+                        absolute
+                        bottom-0
+                        right-0
+                        w-9
+                        h-9
+                        border-b-4
+                        border-r-4
+                        border-brandGreen
+                        rounded-br-2xl
+                    "
+                ></span>
+
+                <div
+                    class="
+                        px-3
+                        py-2
+                        rounded-full
+                        bg-black/60
+                        backdrop-blur-md
+                        text-[10px]
+                        text-white/75
+                        font-semibold
+                    "
+                >
+                    Point at Japanese text
+                </div>
+
+            </div>
+
+
+            <!-- RESULT CARD -->
+            <div
+                id="ar-side-hud"
+                class="
+                    pointer-events-auto
+                    mx-1
+                    mb-3
+                    max-h-[185px]
+                    overflow-y-auto
+                    no-scrollbar
+                    p-4
+                    rounded-[24px]
+                    bg-black/80
+                    backdrop-blur-xl
+                    border
+                    border-brandGreen/30
+                    shadow-2xl
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-center
+                        justify-between
+                        gap-2
+                        mb-2
+                    "
+                >
+
+                    <span
+                        class="
+                            flex
+                            items-center
+                            gap-1.5
+                            text-[9px]
+                            text-brandGreen
+                            font-black
+                            uppercase
+                            tracking-widest
+                        "
+                    >
+                        <i class="ph ph-sparkle"></i>
+                        Vision Result
+                    </span>
+
+                    <button
+                        id="btn-ar-pronounce"
+                        type="button"
+                        class="
+                            px-2.5
+                            py-1
+                            rounded-full
+                            bg-brandGreen/10
+                            text-brandGreen
+                            text-[10px]
+                            font-bold
+                            border
+                            border-brandGreen/20
+                        "
+                    >
+                        <i class="ph ph-speaker-high"></i>
+                        Speak
+                    </button>
+
+                </div>
+
+                <div
+                    class="
+                        flex
+                        flex-col
+                        gap-0.5
+                    "
+                >
+
+                    <p
+                        id="ar-jp"
+                        class="
+                            text-xl
+                            font-black
+                            leading-tight
+                        "
+                    >
+                        Ready to scan
+                    </p>
+
+                    <p
+                        id="ar-romaji"
+                        class="
+                            text-xs
+                            text-brandGreen
+                            font-bold
+                        "
+                    >
+                        Point camera at Japanese text
+                    </p>
+
+                </div>
+
+                <div
+                    class="
+                        mt-3
+                        pt-3
+                        border-t
+                        border-white/10
+                        space-y-1.5
+                    "
+                >
+
+                    <p
+                        class="
+                            text-[11px]
+                            leading-relaxed
+                            text-white/85
+                        "
+                    >
+                        <span
+                            class="
+                                text-emerald-400
+                                font-bold
+                            "
+                        >
+                            🇱🇰 සිංහල:
+                        </span>
+
+                        <span id="ar-si">
+                            Japanese text එකක් camera එකට පෙන්වන්න.
+                        </span>
+                    </p>
+
+                    <p
+                        class="
+                            text-[11px]
+                            leading-relaxed
+                            text-white/65
+                        "
+                    >
+                        <span
+                            class="
+                                text-blue-300
+                                font-bold
+                            "
+                        >
+                            🇬🇧 English:
+                        </span>
+
+                        <span id="ar-en">
+                            Point the camera at Japanese text and press Scan.
+                        </span>
+                    </p>
+
+                </div>
+
+                <div
+                    class="
+                        mt-3
+                        p-2.5
+                        rounded-xl
+                        bg-white/5
+                        border
+                        border-brandGreen/10
+                        text-[9px]
+                        leading-relaxed
+                        text-white/55
+                    "
+                >
+                    <span
+                        class="
+                            text-brandGreen
+                            font-bold
+                        "
+                    >
+                        AI Guide:
+                    </span>
+
+                    <span id="ar-guide">
+                        The AI will explain visible Japanese signs,
+                        menus, notices, labels and workplace instructions.
+                    </span>
+                </div>
+
+            </div>
+
+
+            <!-- CAMERA CONTROLS -->
+            <div
+                class="
+                    flex
+                    items-center
+                    justify-center
+                    gap-8
+                    pointer-events-auto
+                    pb-2
+                "
+            >
+
+                <button
+                    id="camera-scan-button"
+                    type="button"
+                    class="
+                        w-[72px]
+                        h-[72px]
+                        rounded-full
+                        border-4
+                        border-brandGreen/50
+                        flex
+                        items-center
+                        justify-center
+                        shadow-[0_0_30px_rgba(57,211,34,0.35)]
+                        active:scale-95
+                        transition-transform
+                    "
+                    aria-label="Scan Japanese text"
+                >
+                    <span
+                        class="
+                            w-14
+                            h-14
+                            rounded-full
+                            bg-brandGreen
+                            text-darkForest
+                            flex
+                            items-center
+                            justify-center
+                            text-2xl
+                        "
+                    >
+                        <i class="ph ph-scan"></i>
+                    </span>
+                </button>
+
+                <button
+                    id="btn-toggle-facing"
+                    type="button"
+                    class="
+                        w-11
+                        h-11
+                        rounded-full
+                        bg-white/10
+                        backdrop-blur-md
+                        border
+                        border-white/15
+                        flex
+                        items-center
+                        justify-center
+                        active:scale-95
+                    "
+                    aria-label="Switch camera"
+                >
+                    <i class="ph ph-arrows-clockwise text-lg"></i>
+                </button>
+
+            </div>
+
         </div>
+
     </section>
 
-    <!-- VIEW 3: VOICE ASSISTANT -->
-    <section id="view-voice" class="screen-view flex-col flex-1 h-full w-full bg-gradient-to-b from-[#D4F5DA] via-[#EDF9EF] to-[#F5FCF7] relative overflow-y-auto no-scrollbar pb-32 text-gray-900">
-        <div class="p-4 flex flex-col flex-1">
-            <div class="flex justify-between items-center pt-1 mb-2">
-                <button data-route="hero" class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-700 hover:text-emerald-600 active:scale-95"><i class="ph ph-caret-left text-lg"></i></button>
+
+    <!-- =====================================================
+         VIEW: VOICE
+    ====================================================== -->
+    <section
+        id="view-voice"
+        class="
+            screen-view
+            flex-col
+            w-full
+            h-full
+            relative
+            overflow-y-auto
+            no-scrollbar
+            bg-gradient-to-b
+            from-[#DDF7E2]
+            via-[#EFFAF1]
+            to-[#F8FCF8]
+            text-gray-900
+        "
+    >
+
+        <div
+            class="
+                w-full
+                min-h-full
+                px-4
+                pt-4
+                pb-32
+            "
+        >
+
+            <!-- VOICE HEADER -->
+            <header
+                class="
+                    flex
+                    items-center
+                    justify-between
+                    mb-3
+                "
+            >
+
+                <button
+                    type="button"
+                    data-route="hero"
+                    class="
+                        w-10
+                        h-10
+                        rounded-full
+                        bg-white
+                        border
+                        border-gray-100
+                        shadow-sm
+                        flex
+                        items-center
+                        justify-center
+                        text-gray-700
+                        active:scale-95
+                    "
+                    aria-label="Back to home"
+                >
+                    <i class="ph ph-caret-left text-lg"></i>
+                </button>
+
                 <div class="text-center">
-                    <h2 class="font-extrabold text-sm text-gray-900 flex items-center justify-center gap-1.5"><span>Hello Japan ! Voice AI</span><span class="w-2 h-2 rounded-full bg-brandGreen animate-pulse"></span></h2>
-                    <p class="text-[10px] text-gray-500 font-semibold" id="voice-env-display">Context: Daily / Friendly</p>
+
+                    <h2
+                        class="
+                            text-sm
+                            font-black
+                            flex
+                            items-center
+                            justify-center
+                            gap-1.5
+                        "
+                    >
+                        Hello Japan
+                        <span
+                            class="
+                                w-2
+                                h-2
+                                rounded-full
+                                bg-brandGreen
+                                animate-pulse
+                            "
+                        ></span>
+                    </h2>
+
+                    <p
+                        id="voice-env-display"
+                        class="
+                            mt-0.5
+                            text-[9px]
+                            text-gray-500
+                            font-semibold
+                        "
+                    >
+                        Context: Daily / Friendly
+                    </p>
+
                 </div>
-                <div class="w-9"></div>
-            </div>
 
-            <div class="flex items-center justify-between gap-1.5 mb-2.5 bg-white/80 p-1.5 rounded-2xl border border-emerald-100 shadow-sm">
-                <span class="text-[10px] font-bold text-gray-600 pl-1">Speech Mode:</span>
-                <div class="flex gap-1 overflow-x-auto no-scrollbar">
-                    <button id="btn-speaker-jp" class="bg-deepCard text-white text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇯🇵 Japanese</button>
-                    <button id="btn-speaker-si" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇱🇰 Sinhala</button>
-                    <button id="btn-speaker-en" class="bg-white text-gray-700 text-[10px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm flex items-center gap-1 transition-all">🇬🇧 English</button>
+                <div class="w-10"></div>
+
+            </header>
+
+
+            <!-- SPEAKER LANGUAGE -->
+            <div
+                class="
+                    flex
+                    items-center
+                    justify-between
+                    gap-2
+                    p-1.5
+                    rounded-2xl
+                    bg-white
+                    border
+                    border-emerald-100
+                    shadow-sm
+                "
+            >
+
+                <span
+                    class="
+                        pl-2
+                        text-[9px]
+                        text-gray-500
+                        font-bold
+                        whitespace-nowrap
+                    "
+                >
+                    Voice:
+                </span>
+
+                <div
+                    class="
+                        flex
+                        gap-1
+                        overflow-x-auto
+                        no-scrollbar
+                    "
+                >
+
+                    <button
+                        id="btn-speaker-jp"
+                        type="button"
+                        class="
+                            bg-deepCard
+                            text-white
+                            text-[9px]
+                            font-black
+                            px-3
+                            py-1.5
+                            rounded-xl
+                            whitespace-nowrap
+                        "
+                    >
+                        🇯🇵 Japanese
+                    </button>
+
+                    <button
+                        id="btn-speaker-si"
+                        type="button"
+                        class="
+                            bg-white
+                            text-gray-700
+                            text-[9px]
+                            font-black
+                            px-3
+                            py-1.5
+                            rounded-xl
+                            whitespace-nowrap
+                        "
+                    >
+                        🇱🇰 Sinhala
+                    </button>
+
+                    <button
+                        id="btn-speaker-en"
+                        type="button"
+                        class="
+                            bg-white
+                            text-gray-700
+                            text-[9px]
+                            font-black
+                            px-3
+                            py-1.5
+                            rounded-xl
+                            whitespace-nowrap
+                        "
+                    >
+                        🇬🇧 English
+                    </button>
+
                 </div>
+
             </div>
 
-            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-2 py-0.5">
-                <button data-ctx="daily" class="ctx-pill active bg-deepCard text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🌸 Daily Friendly</button>
-                <button data-ctx="workplace" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">💼 Workplace (Keigo)</button>
-                <button data-ctx="restaurant" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🍜 Restaurant</button>
-                <button data-ctx="konbini" class="ctx-pill bg-white text-gray-600 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">🏪 Store / Konbini</button>
-            </div>
 
-            <div class="flex flex-col items-center justify-center my-1 select-none">
-                <button id="mic-avatar-btn" class="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-300 via-brandGreen to-emerald-600 p-1 flex items-center justify-center shadow-[0_0_30px_rgba(57,211,34,0.45)] cursor-pointer active:scale-95 transition-all relative my-1">
-                    <div class="w-full h-full rounded-full bg-[#9BE15D] flex items-center justify-center text-4xl shadow-inner relative">
-                        🤖<span id="listening-badge-dot" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-ping"></span>
-                    </div>
+            <!-- CONTEXT -->
+            <div
+                class="
+                    mt-3
+                    flex
+                    gap-1.5
+                    overflow-x-auto
+                    no-scrollbar
+                "
+            >
+
+                <button
+                    type="button"
+                    data-ctx="daily"
+                    class="
+                        ctx-pill
+                        active
+                        bg-deepCard
+                        text-white
+                        text-[9px]
+                        font-black
+                        px-3
+                        py-1.5
+                        rounded-full
+                        whitespace-nowrap
+                        shadow-sm
+                    "
+                >
+                    🌸 Daily
                 </button>
-                <div class="bg-white/95 border border-emerald-200 text-emerald-900 text-[10px] font-bold px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1.5 mt-1">
-                    <span id="mic-live-icon" class="w-2 h-2 rounded-full bg-gray-400"></span><span id="mic-status-label">Tap Mic to Speak</span>
-                </div>
+
+                <button
+                    type="button"
+                    data-ctx="workplace"
+                    class="
+                        ctx-pill
+                        bg-white
+                        text-gray-600
+                        text-[9px]
+                        font-bold
+                        px-3
+                        py-1.5
+                        rounded-full
+                        whitespace-nowrap
+                        shadow-sm
+                    "
+                >
+                    💼 Workplace
+                </button>
+
+                <button
+                    type="button"
+                    data-ctx="restaurant"
+                    class="
+                        ctx-pill
+                        bg-white
+                        text-gray-600
+                        text-[9px]
+                        font-bold
+                        px-3
+                        py-1.5
+                        rounded-full
+                        whitespace-nowrap
+                        shadow-sm
+                    "
+                >
+                    🍜 Restaurant
+                </button>
+
+                <button
+                    type="button"
+                    data-ctx="konbini"
+                    class="
+                        ctx-pill
+                        bg-white
+                        text-gray-600
+                        text-[9px]
+                        font-bold
+                        px-3
+                        py-1.5
+                        rounded-full
+                        whitespace-nowrap
+                        shadow-sm
+                    "
+                >
+                    🏪 Store
+                </button>
+
             </div>
 
-            <div class="flex flex-col gap-2.5 mt-2">
-                <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-emerald-100">
-                    <div class="flex justify-between items-center mb-1">
-                        <span id="detected-speaker-badge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[9px] font-black">🎙️ YOUR SPEECH</span>
-                        <button id="btn-voice-replay" class="text-xs bg-emerald-50 text-emerald-700 p-1.5 rounded-full hover:bg-emerald-100"><i class="ph ph-speaker-high"></i></button>
-                    </div>
-                    <h3 id="detected-japanese" class="text-base font-black text-gray-900 leading-snug">Speak when you are ready...</h3>
-                    <p id="detected-romaji" class="text-[11px] text-emerald-700 font-semibold mt-0.5">Your Japanese speech will appear here.</p>
-                    <div class="border-t border-gray-100 pt-2 mt-2 space-y-1">
-                        <div class="flex items-start gap-1.5 text-xs"><span class="bg-red-50 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-black shrink-0">🇱🇰 සිංහල</span><p id="detected-sinhala" class="text-gray-900 font-semibold">ඔබ කතා කරන Japanese වාක්‍යයේ තේරුම මෙහි පෙන්වයි.</p></div>
-                        <div class="flex items-start gap-1.5 text-xs"><span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[9px] font-black shrink-0">🇬🇧 English</span><p id="detected-english" class="text-gray-600 font-medium">Your recognized speech will be translated here.</p></div>
-                    </div>
+
+            <!-- MICROPHONE -->
+            <div
+                class="
+                    flex
+                    flex-col
+                    items-center
+                    justify-center
+                    py-4
+                    select-none
+                "
+            >
+
+                <button
+                    id="mic-avatar-btn"
+                    type="button"
+                    class="
+                        w-24
+                        h-24
+                        rounded-full
+                        bg-gradient-to-br
+                        from-emerald-300
+                        via-brandGreen
+                        to-emerald-700
+                        p-1
+                        flex
+                        items-center
+                        justify-center
+                        shadow-[0_0_35px_rgba(57,211,34,0.35)]
+                        active:scale-95
+                        transition-transform
+                        relative
+                    "
+                    aria-label="Start voice listening"
+                    aria-pressed="false"
+                >
+
+                    <span
+                        class="
+                            w-full
+                            h-full
+                            rounded-full
+                            bg-[#9BE15D]
+                            flex
+                            items-center
+                            justify-center
+                            text-4xl
+                            shadow-inner
+                            relative
+                        "
+                    >
+                        🎙️
+
+                        <span
+                            id="listening-badge-dot"
+                            class="
+                                hidden
+                                absolute
+                                top-0
+                                right-0
+                                w-4
+                                h-4
+                                rounded-full
+                                bg-red-500
+                                border-2
+                                border-white
+                                animate-ping
+                            "
+                        ></span>
+
+                    </span>
+
+                </button>
+
+
+                <div
+                    class="
+                        mt-2
+                        px-3.5
+                        py-1.5
+                        rounded-full
+                        bg-white
+                        border
+                        border-emerald-100
+                        shadow-sm
+                        flex
+                        items-center
+                        gap-1.5
+                    "
+                >
+
+                    <span
+                        id="mic-live-icon"
+                        class="
+                            w-2
+                            h-2
+                            rounded-full
+                            bg-gray-400
+                        "
+                    ></span>
+
+                    <span
+                        id="mic-status-label"
+                        class="
+                            text-[10px]
+                            text-emerald-900
+                            font-bold
+                        "
+                    >
+                        Tap Mic to Speak
+                    </span>
+
                 </div>
 
-                <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-3.5 shadow-sm border border-emerald-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-[11px] font-black uppercase text-gray-800 tracking-wide flex items-center gap-1"><i class="ph ph-sparkle text-brandGreen font-bold"></i><span>Suggested Response</span></span>
-                        <span class="text-[9px] bg-brandGreen/25 text-emerald-900 px-2 py-0.5 rounded-full font-extrabold">Tap to Speak</span>
-                    </div>
-                    <div id="suggestions-list" class="flex flex-col gap-2"></div>
-                    <div id="voice-suggestion-empty" class="text-center py-3 text-[10px] text-gray-500">Speak naturally and the AI will suggest an appropriate Japanese response.</div>
-                </div>
             </div>
+
+
+            <!-- DETECTED SPEECH -->
+            <div
+                class="
+                    bg-white
+                    rounded-[24px]
+                    p-4
+                    border
+                    border-emerald-100
+                    shadow-sm
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-center
+                        justify-between
+                        gap-2
+                    "
+                >
+
+                    <span
+                        id="detected-speaker-badge"
+                        class="
+                            bg-emerald-100
+                            text-emerald-800
+                            px-2.5
+                            py-1
+                            rounded-lg
+                            text-[8px]
+                            font-black
+                        "
+                    >
+                        🎙️ YOUR SPEECH
+                    </span>
+
+                    <button
+                        id="btn-voice-replay"
+                        type="button"
+                        class="
+                            w-8
+                            h-8
+                            rounded-full
+                            bg-emerald-50
+                            text-emerald-700
+                            flex
+                            items-center
+                            justify-center
+                            active:scale-95
+                        "
+                        aria-label="Replay detected speech"
+                    >
+                        <i class="ph ph-speaker-high"></i>
+                    </button>
+
+                </div>
+
+
+                <h3
+                    id="detected-japanese"
+                    class="
+                        mt-3
+                        text-base
+                        font-black
+                        leading-snug
+                    "
+                >
+                    Speak when you are ready...
+                </h3>
+
+                <p
+                    id="detected-romaji"
+                    class="
+                        mt-1
+                        text-[10px]
+                        text-emerald-700
+                        font-semibold
+                    "
+                >
+                    Your Japanese speech will appear here.
+                </p>
+
+
+                <div
+                    class="
+                        mt-3
+                        pt-3
+                        border-t
+                        border-gray-100
+                        space-y-2
+                    "
+                >
+
+                    <div
+                        class="
+                            flex
+                            items-start
+                            gap-2
+                        "
+                    >
+
+                        <span
+                            class="
+                                shrink-0
+                                px-2
+                                py-1
+                                rounded-lg
+                                bg-red-50
+                                text-red-700
+                                text-[8px]
+                                font-black
+                            "
+                        >
+                            🇱🇰
+                        </span>
+
+                        <p
+                            id="detected-sinhala"
+                            class="
+                                text-[11px]
+                                text-gray-800
+                                font-semibold
+                                leading-relaxed
+                            "
+                        >
+                            ඔබ කතා කරන Japanese වාක්‍යයේ
+                            තේරුම මෙහි පෙන්වයි.
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            flex
+                            items-start
+                            gap-2
+                        "
+                    >
+
+                        <span
+                            class="
+                                shrink-0
+                                px-2
+                                py-1
+                                rounded-lg
+                                bg-blue-50
+                                text-blue-700
+                                text-[8px]
+                                font-black
+                            "
+                        >
+                            🇬🇧
+                        </span>
+
+                        <p
+                            id="detected-english"
+                            class="
+                                text-[11px]
+                                text-gray-600
+                                font-medium
+                                leading-relaxed
+                            "
+                        >
+                            Your recognized speech will be
+                            translated here.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SUGGESTED RESPONSES -->
+            <div
+                class="
+                    mt-3
+                    bg-white/90
+                    rounded-[24px]
+                    p-4
+                    border
+                    border-emerald-100
+                    shadow-sm
+                "
+            >
+
+                <div
+                    class="
+                        flex
+                        items-center
+                        justify-between
+                        gap-2
+                        mb-3
+                    "
+                >
+
+                    <div
+                        class="
+                            flex
+                            items-center
+                            gap-1.5
+                        "
+                    >
+
+                        <span
+                            class="
+                                w-7
+                                h-7
+                                rounded-lg
+                                bg-brandGreen/10
+                                text-brandGreen
+                                flex
+                                items-center
+                                justify-center
+                            "
+                        >
+                            <i class="ph ph-sparkle"></i>
+                        </span>
+
+                        <span
+                            class="
+                                text-[11px]
+                                font-black
+                                text-gray-800
+                            "
+                        >
+                            Suggested Responses
+                        </span>
+
+                    </div>
+
+                    <span
+                        class="
+                            text-[8px]
+                            bg-brandGreen/15
+                            text-emerald-900
+                            px-2
+                            py-1
+                            rounded-full
+                            font-black
+                        "
+                    >
+                        TAP TO SPEAK
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="suggestions-list"
+                    class="
+                        flex
+                        flex-col
+                        gap-2
+                    "
+                ></div>
+
+
+                <div
+                    id="voice-suggestion-empty"
+                    class="
+                        text-center
+                        py-5
+                        px-3
+                        text-[10px]
+                        text-gray-500
+                        leading-relaxed
+                    "
+                >
+                    Speak naturally and the AI will
+                    suggest an appropriate Japanese response.
+                </div>
+
+            </div>
+
         </div>
+
     </section>
 
-    <!-- FLOATING BOTTOM NAVIGATION DOCK -->
-    <nav id="bottom-nav-dock" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[85%] max-w-sm glass-dock rounded-full px-6 py-2.5 flex justify-between items-center shadow-2xl border border-white/60 z-40">
-        <button data-route="hero" data-nav="hero" class="nav-icon-btn text-emerald-700 text-xl flex flex-col items-center transition-transform active:scale-90" title="Home Mode"><i class="ph ph-house font-bold"></i></button>
-        <button data-route="camera" data-nav="camera" class="w-12 h-12 -mt-6 rounded-full bg-brandGreen hover:bg-brandNeon text-darkForest flex items-center justify-center text-2xl shadow-lg shadow-brandGreen/50 border-4 border-white transition-all active:scale-95" title="Camera AI Pro OCR"><i class="ph ph-camera font-bold"></i></button>
-        <button data-route="voice" data-nav="voice" class="nav-icon-btn text-gray-400 hover:text-emerald-600 text-xl flex flex-col items-center transition-transform active:scale-90" title="Voice AI Assistant"><i class="ph ph-microphone font-bold"></i></button>
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+    ====================================================== -->
+    <nav
+        id="bottom-nav-dock"
+        class="
+            absolute
+            bottom-4
+            left-1/2
+            -translate-x-1/2
+            z-50
+            w-[82%]
+            max-w-[330px]
+            px-5
+            py-2.5
+            rounded-full
+            glass-dock
+            flex
+            items-center
+            justify-between
+            shadow-2xl
+        "
+        aria-label="Main navigation"
+    >
+
+        <button
+            type="button"
+            data-route="hero"
+            data-nav="hero"
+            class="
+                nav-icon-btn
+                w-11
+                h-11
+                rounded-full
+                text-emerald-700
+                flex
+                items-center
+                justify-center
+                text-xl
+                active:scale-90
+            "
+            title="Home"
+            aria-label="Home"
+        >
+            <i class="ph ph-house"></i>
+        </button>
+
+
+        <button
+            type="button"
+            data-route="camera"
+            data-nav="camera"
+            class="
+                w-12
+                h-12
+                -mt-7
+                rounded-full
+                bg-brandGreen
+                text-darkForest
+                flex
+                items-center
+                justify-center
+                text-2xl
+                shadow-lg
+                border-4
+                border-white
+                active:scale-95
+            "
+            title="Camera AI"
+            aria-label="Camera AI"
+        >
+            <i class="ph ph-camera"></i>
+        </button>
+
+
+        <button
+            type="button"
+            data-route="voice"
+            data-nav="voice"
+            class="
+                nav-icon-btn
+                w-11
+                h-11
+                rounded-full
+                text-gray-400
+                flex
+                items-center
+                justify-center
+                text-xl
+                active:scale-90
+            "
+            title="Voice AI"
+            aria-label="Voice AI"
+        >
+            <i class="ph ph-microphone"></i>
+        </button>
+
     </nav>
 
-    <!-- TOAST -->
-    <div id="toast" class="hidden fixed top-10 left-1/2 -translate-x-1/2 z-50 bg-darkForest/95 backdrop-blur-md px-4 py-2 rounded-full border border-brandGreen/50 text-brandGreen text-xs font-bold shadow-xl flex items-center gap-2 pointer-events-none transition-all">
-        <i class="ph ph-check-circle"></i>
-        <span id="toast-text">Alert</span>
+
+    <!-- =====================================================
+         GLOBAL TOAST
+    ====================================================== -->
+    <div
+        id="toast"
+        class="
+            hidden
+            fixed
+            top-8
+            left-1/2
+            -translate-x-1/2
+            z-[100]
+            max-w-[88%]
+            px-4
+            py-2.5
+            rounded-full
+            bg-darkForest/95
+            backdrop-blur-md
+            border
+            border-brandGreen/30
+            text-brandGreen
+            text-[10px]
+            font-bold
+            shadow-xl
+            items-center
+            gap-2
+            pointer-events-none
+        "
+        role="status"
+        aria-live="polite"
+    >
+
+        <i class="ph ph-info"></i>
+
+        <span id="toast-text">
+            Alert
+        </span>
+
     </div>
 
 </main>
 
-<!-- MAIN ES6 JAVASCRIPT MODULE -->
-<script type="module" src="js/app.js"></script>
+
+<!-- =========================================================
+     APPLICATION ENTRY
+========================================================== -->
+<script
+    type="module"
+    src="js/app.js"
+></script>
 
 </body>
 </html>
